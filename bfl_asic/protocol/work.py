@@ -57,7 +57,7 @@ def _rotr(x: int, n: int) -> int:
 
 
 def _ch(x: int, y: int, z: int) -> int:
-    return (x & y) ^ (~x & z) & _MASK32
+    return ((x & y) ^ (~x & z)) & _MASK32
 
 
 def _maj(x: int, y: int, z: int) -> int:
