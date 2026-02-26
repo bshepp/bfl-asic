@@ -12,6 +12,9 @@ dependencies = [
     "pyserial",
     "pyserial-asyncio",
     "click",
+    "numpy",
+    "scipy",
+    "matplotlib",
 ]
 
 [project.optional-dependencies]
