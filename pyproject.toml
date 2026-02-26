@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "bfl-asic"
+version = "0.1.0"
+description = "Communication layer for Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "pyserial",
+    "pyserial-asyncio",
+    "click",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.scripts]
+bfl-asic = "bfl_asic.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["bfl_asic*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
