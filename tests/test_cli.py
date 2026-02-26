@@ -161,3 +161,5 @@ class TestHelp:
         assert "discover" in result.output
         assert "benchmark" in result.output
         assert "hash" in result.output
+        assert "stats" in result.output
+        assert "dynamics" in result.output

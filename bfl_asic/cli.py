@@ -1,13 +1,16 @@
 """Click-based command-line interface for interacting with BFL ASIC devices.
 
 Provides subcommands for device identification, temperature monitoring,
-probing, discovery, benchmarking, and hashing through either a real serial
-connection or the built-in simulator.
+probing, discovery, benchmarking, hashing, statistical analysis, and
+iterated hash dynamics through either a real serial connection or the
+built-in simulator.
 """
 
 from __future__ import annotations
 
+import json
 import time
+from pathlib import Path
 
 import click
 
@@ -213,3 +216,276 @@ def hash_cmd(ctx: click.Context, input_data: str) -> None:
         click.echo(f"Nonces found: {len(nonces)}")
         for nonce in nonces:
             click.echo(f"  0x{nonce:08x}")
+
+
+# ======================================================================
+# stats
+# ======================================================================
+
+
+class _MutuallyExclusive(click.Option):
+    """Click option that is mutually exclusive with another option."""
+
+    def __init__(self, *args, **kwargs):
+        self.mutually_exclusive = set(kwargs.pop("mutually_exclusive", []))
+        super().__init__(*args, **kwargs)
+
+    def handle_parse_result(self, ctx, opts, args):
+        current = self.name in opts and opts[self.name] is not None
+        for other in self.mutually_exclusive:
+            if other in opts and opts[other] is not None and current:
+                raise click.UsageError(
+                    f"--{self.name} and --{other} are mutually exclusive."
+                )
+        return super().handle_parse_result(ctx, opts, args)
+
+
+@main.group()
+def stats() -> None:
+    """SHA-256 statistical analysis commands."""
+
+
+@stats.command(name="run")
+@click.option(
+    "--samples", default=None, type=int,
+    cls=_MutuallyExclusive, mutually_exclusive=["duration"],
+    help="Number of hash samples to collect (default: 10000).",
+)
+@click.option(
+    "--duration", default=None, type=float,
+    cls=_MutuallyExclusive, mutually_exclusive=["samples"],
+    help="Run for N seconds instead of a fixed sample count.",
+)
+@click.option("--report-interval", default=2000, type=int, help="Progress report interval.")
+@click.option("-o", "--output", default=None, type=click.Path(), help="Save snapshot to JSON file.")
+@click.option("--plot", is_flag=True, default=False, help="Generate dashboard PNG.")
+def stats_run(samples, duration, report_interval, output, plot) -> None:
+    """Run the statistical analysis pipeline."""
+    from bfl_asic.stats import StatsPipeline
+
+    def _progress(count: int, report: dict) -> None:
+        hr = report.get("hash_rate", 0.0)
+        click.echo(f"  [{count:,} samples] hash rate: {hr:,.0f} H/s")
+
+    pipeline = StatsPipeline(report_interval=report_interval, on_progress=_progress)
+
+    if duration is not None:
+        click.echo(f"Running statistical analysis for {duration:.1f} seconds...")
+        snapshot = pipeline.run_timed(duration)
+    else:
+        n = samples if samples is not None else 10_000
+        click.echo(f"Running statistical analysis ({n:,} samples)...")
+        snapshot = pipeline.run(n)
+
+    # Print summary
+    click.echo("")
+    click.echo("=== Summary ===")
+    click.echo(f"  Samples:           {snapshot.sample_count:,}")
+    click.echo(f"  Hash rate:         {snapshot.hash_rate:,.0f} H/s")
+    click.echo(f"  Max bias:          {snapshot.bit_frequency.get('max_bias', 'N/A')}")
+    click.echo(f"  Mean Hamming:      {snapshot.avalanche.get('mean', 'N/A')}")
+    click.echo(f"  Shannon entropy:   {snapshot.entropy.get('shannon_entropy', 'N/A')}")
+
+    # Save snapshot
+    if output is not None:
+        snapshot.save(Path(output))
+        click.echo(f"  Snapshot saved to: {output}")
+
+    # Generate dashboard plot
+    if plot:
+        from bfl_asic.stats.visualization import plot_dashboard
+
+        if output is not None:
+            png_path = Path(output).with_suffix(".png")
+        else:
+            png_path = Path("dashboard.png")
+        plot_dashboard(snapshot, save_path=png_path)
+        click.echo(f"  Dashboard saved to: {png_path}")
+
+
+@stats.command(name="report")
+@click.argument("snapshot_path", type=click.Path(exists=True))
+def stats_report(snapshot_path: str) -> None:
+    """Load a snapshot JSON file and print a formatted summary."""
+    from bfl_asic.stats.snapshot import StatsSnapshot
+
+    snapshot = StatsSnapshot.load(Path(snapshot_path))
+
+    click.echo("=== Stats Report ===")
+    click.echo(f"  Timestamp:         {snapshot.timestamp}")
+    click.echo(f"  Engine:            {snapshot.engine_name}")
+    click.echo(f"  Samples:           {snapshot.sample_count:,}")
+    click.echo(f"  Duration:          {snapshot.duration_seconds:.2f}s")
+    click.echo(f"  Hash rate:         {snapshot.hash_rate:,.0f} H/s")
+    click.echo("")
+    click.echo("--- Bit Frequency ---")
+    click.echo(f"  Max bias:          {snapshot.bit_frequency.get('max_bias', 'N/A')}")
+    click.echo("")
+    click.echo("--- Avalanche ---")
+    click.echo(f"  Mean Hamming:      {snapshot.avalanche.get('mean', 'N/A')}")
+    click.echo(f"  Std Hamming:       {snapshot.avalanche.get('std', 'N/A')}")
+    click.echo("")
+    click.echo("--- Correlation ---")
+    click.echo(f"  Max deviation:     {snapshot.correlation.get('max_deviation', 'N/A')}")
+    click.echo("")
+    click.echo("--- Near Collision ---")
+    click.echo(f"  Collisions found:  {snapshot.near_collision.get('collision_count', 'N/A')}")
+    click.echo("")
+    click.echo("--- Byte Distribution ---")
+    click.echo(f"  Chi-squared:       {snapshot.byte_distribution.get('chi_squared', 'N/A')}")
+    click.echo("")
+    click.echo("--- Entropy ---")
+    click.echo(f"  Shannon entropy:   {snapshot.entropy.get('shannon_entropy', 'N/A')}")
+
+
+# ======================================================================
+# dynamics
+# ======================================================================
+
+
+def _orbit_to_dict(orbit) -> dict:
+    """Serialize an OrbitResult to a JSON-compatible dict."""
+    return {
+        "seed": orbit.seed.hex(),
+        "iterations": orbit.iterations,
+        "tail_length": orbit.tail_length,
+        "cycle_length": orbit.cycle_length,
+        "cycle_entry": orbit.cycle_entry.hex() if orbit.cycle_entry else None,
+        "is_fixed_point": orbit.is_fixed_point,
+        "hamming_distances": orbit.hamming_distances,
+        "mean_hamming": orbit.mean_hamming,
+        "min_hamming": orbit.min_hamming,
+        "max_hamming": orbit.max_hamming,
+        "trajectory_sample": [
+            {"iteration": pt.iteration, "value": pt.value.hex()}
+            for pt in orbit.trajectory_sample
+        ],
+    }
+
+
+def _orbit_from_dict(d: dict):
+    """Deserialize an OrbitResult from a dict."""
+    from bfl_asic.dynamics.orbit import OrbitResult, OrbitPoint
+
+    return OrbitResult(
+        seed=bytes.fromhex(d["seed"]),
+        iterations=d["iterations"],
+        tail_length=d["tail_length"],
+        cycle_length=d["cycle_length"],
+        cycle_entry=bytes.fromhex(d["cycle_entry"]) if d["cycle_entry"] else None,
+        is_fixed_point=d["is_fixed_point"],
+        hamming_distances=d["hamming_distances"],
+        mean_hamming=d["mean_hamming"],
+        min_hamming=d["min_hamming"],
+        max_hamming=d["max_hamming"],
+        trajectory_sample=[
+            OrbitPoint(iteration=pt["iteration"], value=bytes.fromhex(pt["value"]))
+            for pt in d["trajectory_sample"]
+        ],
+    )
+
+
+def _convergence_to_dict(result) -> dict:
+    """Serialize a ConvergenceResult to a JSON-compatible dict."""
+    return {
+        "seed_count": result.seed_count,
+        "max_iterations": result.max_iterations,
+        "orbits": [_orbit_to_dict(o) for o in result.orbits],
+        "convergence_pairs": result.convergence_pairs,
+        "common_states": result.common_states,
+    }
+
+
+def _convergence_from_dict(d: dict):
+    """Deserialize a ConvergenceResult from a dict."""
+    from bfl_asic.dynamics.convergence import ConvergenceResult
+
+    return ConvergenceResult(
+        seed_count=d["seed_count"],
+        max_iterations=d["max_iterations"],
+        orbits=[_orbit_from_dict(o) for o in d["orbits"]],
+        convergence_pairs=[tuple(p) for p in d["convergence_pairs"]],
+        common_states=d["common_states"],
+    )
+
+
+@main.group()
+def dynamics() -> None:
+    """Iterated hash dynamics analysis commands."""
+
+
+@dynamics.command(name="run")
+@click.option("--seeds", default=3, type=int, help="Number of random seeds.")
+@click.option("--max-iterations", default=10000, type=int, help="Max iterations per orbit.")
+@click.option("-o", "--output", default=None, type=click.Path(), help="Save results to JSON file.")
+def dynamics_run(seeds: int, max_iterations: int, output: str | None) -> None:
+    """Run iterated hash dynamics analysis."""
+    from bfl_asic.dynamics.convergence import analyze_convergence, generate_random_seeds
+
+    seed_list = generate_random_seeds(seeds)
+    click.echo(f"Running dynamics analysis ({seeds} seeds, {max_iterations:,} max iterations)...")
+
+    result = analyze_convergence(
+        seeds=seed_list,
+        max_iterations=max_iterations,
+        check_interval=max(1, max_iterations // 100),
+    )
+
+    # Print orbit summaries
+    click.echo("")
+    click.echo("=== Orbit Summary ===")
+    for idx, orbit in enumerate(result.orbits):
+        seed_hex = orbit.seed[:8].hex()
+        mean_hd = f"{orbit.mean_hamming:.1f}" if orbit.mean_hamming is not None else "N/A"
+        min_hd = orbit.min_hamming if orbit.min_hamming is not None else "N/A"
+        max_hd = orbit.max_hamming if orbit.max_hamming is not None else "N/A"
+        click.echo(f"  Seed {idx} ({seed_hex}...):")
+        click.echo(f"    Iterations:     {orbit.iterations:,}")
+        click.echo(f"    Mean Hamming:   {mean_hd}")
+        click.echo(f"    Min Hamming:    {min_hd}")
+        click.echo(f"    Max Hamming:    {max_hd}")
+        click.echo(f"    Fixed point:    {orbit.is_fixed_point}")
+
+    # Print convergence summary
+    click.echo("")
+    click.echo("=== Convergence Summary ===")
+    click.echo(f"  Pairs found:      {len(result.convergence_pairs)}")
+    click.echo(f"  Common states:    {result.common_states}")
+
+    # Save results
+    if output is not None:
+        data = _convergence_to_dict(result)
+        Path(output).write_text(json.dumps(data, indent=2))
+        click.echo(f"  Results saved to: {output}")
+
+
+@dynamics.command(name="plot")
+@click.argument("results_path", type=click.Path(exists=True))
+def dynamics_plot(results_path: str) -> None:
+    """Load dynamics results JSON and generate plots."""
+    from bfl_asic.dynamics.visualization import (
+        plot_orbit_hamming,
+        plot_convergence,
+        plot_tail_cycle_distribution,
+    )
+
+    data = json.loads(Path(results_path).read_text())
+    result = _convergence_from_dict(data)
+
+    base = Path(results_path).with_suffix("")
+
+    # Plot individual orbits
+    for idx, orbit in enumerate(result.orbits):
+        png_path = Path(f"{base}_orbit_{idx}.png")
+        plot_orbit_hamming(orbit, save_path=png_path)
+        click.echo(f"  Orbit {idx} plot saved to: {png_path}")
+
+    # Convergence plot
+    conv_path = Path(f"{base}_convergence.png")
+    plot_convergence(result, save_path=conv_path)
+    click.echo(f"  Convergence plot saved to: {conv_path}")
+
+    # Tail/cycle distribution
+    dist_path = Path(f"{base}_tail_cycle.png")
+    plot_tail_cycle_distribution(result.orbits, save_path=dist_path)
+    click.echo(f"  Tail/cycle plot saved to: {dist_path}")
