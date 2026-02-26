@@ -2,6 +2,8 @@
 
 __version__ = "0.1.0"
 
+from bfl_asic.async_device import AsyncBFLDevice
+from bfl_asic.device import BFLDevice
 from bfl_asic.exceptions import (
     BFLConnectionError,
     BFLDeviceError,
@@ -12,6 +14,8 @@ from bfl_asic.exceptions import (
 
 __all__ = [
     "__version__",
+    "BFLDevice",
+    "AsyncBFLDevice",
     "BFLError",
     "BFLConnectionError",
     "BFLProtocolError",
