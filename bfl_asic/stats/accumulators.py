@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import collections
 import math
-from typing import Sequence
 
 import numpy as np
 
