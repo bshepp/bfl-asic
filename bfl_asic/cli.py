@@ -293,13 +293,15 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
 
     # Generate dashboard plot
     if plot:
+        import matplotlib.pyplot as plt
         from bfl_asic.stats.visualization import plot_dashboard
 
         if output is not None:
             png_path = Path(output).with_suffix(".png")
         else:
             png_path = Path("dashboard.png")
-        plot_dashboard(snapshot, save_path=png_path)
+        fig = plot_dashboard(snapshot, save_path=png_path)
+        plt.close(fig)
         click.echo(f"  Dashboard saved to: {png_path}")
 
 
@@ -309,7 +311,10 @@ def stats_report(snapshot_path: str) -> None:
     """Load a snapshot JSON file and print a formatted summary."""
     from bfl_asic.stats.snapshot import StatsSnapshot
 
-    snapshot = StatsSnapshot.load(Path(snapshot_path))
+    try:
+        snapshot = StatsSnapshot.load(Path(snapshot_path))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        raise click.ClickException(f"Failed to load snapshot: {exc}")
 
     click.echo("=== Stats Report ===")
     click.echo(f"  Timestamp:         {snapshot.timestamp}")
@@ -469,23 +474,31 @@ def dynamics_plot(results_path: str) -> None:
         plot_tail_cycle_distribution,
     )
 
-    data = json.loads(Path(results_path).read_text())
-    result = _convergence_from_dict(data)
+    import matplotlib.pyplot as plt
+
+    try:
+        data = json.loads(Path(results_path).read_text())
+        result = _convergence_from_dict(data)
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        raise click.ClickException(f"Failed to load dynamics results: {exc}")
 
     base = Path(results_path).with_suffix("")
 
     # Plot individual orbits
     for idx, orbit in enumerate(result.orbits):
         png_path = Path(f"{base}_orbit_{idx}.png")
-        plot_orbit_hamming(orbit, save_path=png_path)
+        fig = plot_orbit_hamming(orbit, save_path=png_path)
+        plt.close(fig)
         click.echo(f"  Orbit {idx} plot saved to: {png_path}")
 
     # Convergence plot
     conv_path = Path(f"{base}_convergence.png")
-    plot_convergence(result, save_path=conv_path)
+    fig = plot_convergence(result, save_path=conv_path)
+    plt.close(fig)
     click.echo(f"  Convergence plot saved to: {conv_path}")
 
     # Tail/cycle distribution
     dist_path = Path(f"{base}_tail_cycle.png")
-    plot_tail_cycle_distribution(result.orbits, save_path=dist_path)
+    fig = plot_tail_cycle_distribution(result.orbits, save_path=dist_path)
+    plt.close(fig)
     click.echo(f"  Tail/cycle plot saved to: {dist_path}")
