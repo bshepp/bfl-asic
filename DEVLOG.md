@@ -155,6 +155,108 @@ Final state: **597 tests passing**, repo at https://github.com/bshepp/bfl-asic
 
 ---
 
+## 2026-03-02 — Hardware Characterization
+
+### Overview
+
+Ran a structured characterization suite (`scripts/characterize.py`) against the real device on COM3 through an isolating USB hub. Six test levels with increasing intensity, repeated 4 times for consistency.
+
+### Test Levels
+
+| Level | Name | Work Units | Spacing | Purpose |
+|-------|------|-----------|---------|---------|
+| 0 | Idle baseline | 0 | — | 5 temp/voltage readings at 1s intervals |
+| 1 | Single work | 1 | — | Measure baseline round-trip time |
+| 2 | Light burst | 5 | back-to-back | Short burst behavior |
+| 3 | Medium burst | 15 | back-to-back | Medium load with mid-test temp reads |
+| 4 | Extended run | 30 | 100ms gaps | Extended load — hits firmware limit |
+| 5 | Sustained paced | 20 | 2s gaps | Steady state — post-limit behavior |
+
+### Key Findings
+
+#### 1. Thermal Profile — Zero Stress at USB Throughput
+
+| Condition | Chip 1 | Chip 2 | Ambient |
+|-----------|--------|--------|---------|
+| Idle baseline | 31°C | 30°C | ~21°C |
+| After 1 work unit | 31°C | 30°C | — |
+| After 5 work units | 31°C | 30°C | — |
+| After 15 work units | 31°C | 30°C | — |
+| After 21 work units | 29°C | 31°C | — |
+
+The device shows zero thermal response to USB-submitted work. At ~1 work unit/sec throughput (USB-limited), the ASIC generates negligible heat. The ±2°C fluctuation is within normal sensor noise. Real thermal stress would require direct bus access at the ASIC's native 5 GH/s rate.
+
+#### 2. Round-Trip Timing — Remarkably Consistent
+
+| Level | Mean RT (ms) | Min-Max | Throughput |
+|-------|-------------|---------|------------|
+| 1 (single) | 1008-1024 | — | 0.98 wps |
+| 2 (light burst) | 1014-1021 | 1008-1024 | 0.98 wps |
+| 3 (medium) | 1013-1018 | 1008-1024 | 0.98 wps |
+| 4 (extended) | 1015-1018 | 1007-1024 | 0.67 wps* |
+
+*\*Includes error recovery time in denominator.*
+
+Round-trip times are locked to 1008ms or 1024ms — exactly multiples of 16ms, which is the Windows timer resolution. The actual serial transaction takes ~1.0 seconds, dominated by the ASIC processing the full 2^32 nonce space at 5 GH/s (theoretical: 2^32 ÷ 5×10^9 = 0.86s, plus serial overhead).
+
+#### 3. VCC1 Voltage Anomaly
+
+| Reading Context | VCC1 Range | VCC2 | VMAIN |
+|----------------|-----------|------|-------|
+| Idle, standalone | 3.18-3.58V | 1.008-1.011V | 11.29-11.52V |
+| Immediately after ZLX/ZTX | 2.18-2.57V | 1.004-1.014V | 11.26-11.52V |
+
+VCC1 shows a consistent ~1.2V drop when read immediately after other ADC queries. VCC2 and VMAIN are stable. Possible explanations:
+- **ADC multiplexer settling time**: The ZTX command samples three ADC channels in sequence; VCC1 may be read before the analog multiplexer settles
+- **Shared ADC reference**: The 3.3V rail may be both the measured value and the ADC reference, creating circular measurement artifacts
+- **Switching regulator ripple**: The VCC1 rail may have high ripple that the single-sample ADC captures at random phases
+
+The high readings (3.4-3.6V, ~8% above 3.3V nominal) are more likely to be accurate, consistent with a slightly high-set voltage regulator. The low readings (~2.2V) are almost certainly measurement artifacts.
+
+#### 4. Firmware Work Limit — 42 Submissions Per Session
+
+**Critical discovery:** The SC firmware stops responding to ZDX (work submission) after exactly **42 cumulative work submissions** per session. This was reproduced identically across all 4 test runs:
+
+| Cumulative Count | Level | Result |
+|-----------------|-------|--------|
+| 1-1 | Level 1 | OK |
+| 2-6 | Level 2 | OK |
+| 7-21 | Level 3 | OK |
+| 22-42 | Level 4 | OK |
+| 43 | Level 4 | **FAIL** (empty response) |
+| 44+ | Level 5 | **FAIL** (persistent) |
+
+The failure mode:
+- The device returns an empty response (`b""`) — serial readline times out
+- Retries fail identically (with 0.5s delay between retries)
+- ZGX (identify) and ZLX/ZTX (temp/voltage) still work after the error
+- Closing and reopening the serial port does not reset the counter
+- Flushing serial buffers does not help
+- Only a power cycle resets the work counter
+
+This limit is firmware-level, not serial/FTDI-level. The device accepts non-work commands after hitting the limit but refuses all ZDX work submissions. This means the SC firmware maintains a persistent work counter that cannot be reset through the protocol.
+
+**Implications for software design:** Applications submitting work must track the submission count and either power-cycle the device or implement a workaround (such as a USB power relay) for sustained operation.
+
+#### 5. Work Result Status — IDLE vs NO-NONCE
+
+All work units return `IDLE` status (not `NO-NONCE` or `NONCE-FOUND`). The SC firmware appears to:
+1. Accept work (ZDX → `OK`)
+2. Process the full nonce range at 5 GH/s in ~0.86s
+3. Return `IDLE` on the next ZFX poll if no nonces met the difficulty target
+
+This differs from the expected `NO-NONCE` response. The SC firmware may use IDLE as its equivalent of NO-NONCE, or there may be a timing window where the result expires before the poll arrives. Miners (cgminer/bfgminer) handle this by continuously submitting work and only caring about `NONCE-FOUND` responses.
+
+### Characterization Data
+
+Raw JSON logs saved in `scripts/`:
+- `characterize_hardware.json` — Run 1 (no recovery)
+- `characterize_hardware_2.json` — Run 2 (with retry logic)
+- `characterize_hardware_3.json` — Run 3 (with recovery + 100ms spacing)
+- `characterize_hardware_reset.json` — Run 4 (with serial port reset)
+
+---
+
 ## Project Metrics
 
 | Metric | Value |
@@ -181,5 +283,6 @@ Remaining applications from the seed document not yet implemented:
 Next priorities to consider:
 - ASIC-accelerated hash source (swap `SoftwareHashEngine` for device-backed `HashSource`)
 - Direct ASIC bus tapping for full hash throughput (bypasses USB bottleneck)
-- Thermal stress testing under sustained load
-- VCC1 voltage investigation (3.564V vs 3.3V nominal)
+- Firmware work limit workaround (USB power relay for automated power cycling, or direct FPGA/ASIC reset via GPIO)
+- VCC1 ADC settling time investigation (add configurable delay between ADC reads)
+- Work result polling strategy (test faster polling to catch BUSY→NO-NONCE transition)

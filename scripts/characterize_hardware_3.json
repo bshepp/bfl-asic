@@ -1,0 +1,574 @@
+{
+  "start_time": "2026-03-02T01:00:22.371880+00:00",
+  "end_time": "2026-03-02T01:01:30.715967+00:00",
+  "device_id": "BitForce SHA256 SC 1.0",
+  "port": "COM3",
+  "ambient_note": "",
+  "tests": [
+    {
+      "level": 0,
+      "name": "idle_baseline",
+      "description": "5 temperature/voltage readings at idle, 1s apart",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:00:22.436803+00:00",
+        "elapsed_s": 0.065,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 3.538,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.36
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:00:26.532734+00:00",
+        "elapsed_s": 4.161,
+        "temps_c": [
+          31.0,
+          29.0
+        ],
+        "vcc1_v": 3.43,
+        "vcc2_v": 1.008,
+        "vmain_v": 11.48
+      },
+      "work_entries": [],
+      "total_work": 0,
+      "total_nonces": 0,
+      "duration_s": 4.1,
+      "throughput_wps": 0.0,
+      "mean_round_trip_ms": 0.0,
+      "temp_delta_c": 0.0,
+      "cooldown_s": 0.0,
+      "error": null
+    },
+    {
+      "level": 1,
+      "name": "single_work",
+      "description": "1 work unit \u2014 measure baseline round-trip",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:00:26.564601+00:00",
+        "elapsed_s": 4.193,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 2.552,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.42
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:00:27.620751+00:00",
+        "elapsed_s": 5.249,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 3.43,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.42
+      },
+      "work_entries": [
+        {
+          "index": 1000,
+          "submit_time_s": 4.193,
+          "result_time_s": 5.217,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        }
+      ],
+      "total_work": 1,
+      "total_nonces": 0,
+      "duration_s": 1.02,
+      "throughput_wps": 0.98,
+      "mean_round_trip_ms": 1023.8,
+      "temp_delta_c": 0.0,
+      "cooldown_s": 0.03,
+      "error": null
+    },
+    {
+      "level": 2,
+      "name": "light_burst",
+      "description": "5 work units back-to-back \u2014 short burst",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:00:27.684568+00:00",
+        "elapsed_s": 5.313,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 2.296,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.42
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:00:32.820745+00:00",
+        "elapsed_s": 10.449,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 3.576,
+        "vcc2_v": 1.008,
+        "vmain_v": 11.45
+      },
+      "work_entries": [
+        {
+          "index": 2000,
+          "submit_time_s": 5.313,
+          "result_time_s": 6.337,
+          "round_trip_ms": 1023.7,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 2001,
+          "submit_time_s": 6.337,
+          "result_time_s": 7.361,
+          "round_trip_ms": 1024.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 2002,
+          "submit_time_s": 7.361,
+          "result_time_s": 8.385,
+          "round_trip_ms": 1023.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 2003,
+          "submit_time_s": 8.385,
+          "result_time_s": 9.409,
+          "round_trip_ms": 1024.1,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 2004,
+          "submit_time_s": 9.409,
+          "result_time_s": 10.417,
+          "round_trip_ms": 1007.6,
+          "status": "idle",
+          "nonces_found": 0
+        }
+      ],
+      "total_work": 5,
+      "total_nonces": 0,
+      "duration_s": 5.1,
+      "throughput_wps": 0.98,
+      "mean_round_trip_ms": 1020.6,
+      "temp_delta_c": 0.0,
+      "cooldown_s": 0.03,
+      "error": null
+    },
+    {
+      "level": 3,
+      "name": "medium_burst",
+      "description": "15 work units back-to-back \u2014 medium load",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:00:32.884748+00:00",
+        "elapsed_s": 10.513,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 2.29,
+        "vcc2_v": 1.004,
+        "vmain_v": 11.42
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:00:48.228909+00:00",
+        "elapsed_s": 25.857,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 2.488,
+        "vcc2_v": 1.004,
+        "vmain_v": 11.42
+      },
+      "work_entries": [
+        {
+          "index": 3000,
+          "submit_time_s": 10.513,
+          "result_time_s": 11.537,
+          "round_trip_ms": 1023.6,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3001,
+          "submit_time_s": 11.537,
+          "result_time_s": 12.561,
+          "round_trip_ms": 1024.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3002,
+          "submit_time_s": 12.562,
+          "result_time_s": 13.585,
+          "round_trip_ms": 1023.0,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3003,
+          "submit_time_s": 13.585,
+          "result_time_s": 14.609,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3004,
+          "submit_time_s": 14.609,
+          "result_time_s": 15.633,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3005,
+          "submit_time_s": 15.633,
+          "result_time_s": 16.641,
+          "round_trip_ms": 1007.6,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3006,
+          "submit_time_s": 16.641,
+          "result_time_s": 17.665,
+          "round_trip_ms": 1024.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3007,
+          "submit_time_s": 17.665,
+          "result_time_s": 18.673,
+          "round_trip_ms": 1007.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3008,
+          "submit_time_s": 18.673,
+          "result_time_s": 19.697,
+          "round_trip_ms": 1024.3,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3009,
+          "submit_time_s": 19.697,
+          "result_time_s": 20.705,
+          "round_trip_ms": 1007.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3010,
+          "submit_time_s": 20.705,
+          "result_time_s": 21.713,
+          "round_trip_ms": 1007.5,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3011,
+          "submit_time_s": 21.713,
+          "result_time_s": 22.737,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3012,
+          "submit_time_s": 22.737,
+          "result_time_s": 23.745,
+          "round_trip_ms": 1007.9,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3013,
+          "submit_time_s": 23.745,
+          "result_time_s": 24.769,
+          "round_trip_ms": 1024.2,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 3014,
+          "submit_time_s": 24.769,
+          "result_time_s": 25.793,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        }
+      ],
+      "total_work": 15,
+      "total_nonces": 0,
+      "duration_s": 15.31,
+      "throughput_wps": 0.98,
+      "mean_round_trip_ms": 1018.5,
+      "temp_delta_c": 0.0,
+      "cooldown_s": 0.03,
+      "error": null
+    },
+    {
+      "level": 4,
+      "name": "extended_run",
+      "description": "30 work units with 100ms spacing \u2014 extended load",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:00:48.293278+00:00",
+        "elapsed_s": 25.921,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 2.2,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.39
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:01:19.349185+00:00",
+        "elapsed_s": 56.977,
+        "temps_c": [
+          29.0,
+          31.0
+        ],
+        "vcc1_v": 3.512,
+        "vcc2_v": 1.008,
+        "vmain_v": 11.42
+      },
+      "work_entries": [
+        {
+          "index": 4000,
+          "submit_time_s": 25.922,
+          "result_time_s": 26.929,
+          "round_trip_ms": 1007.5,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4001,
+          "submit_time_s": 27.029,
+          "result_time_s": 28.049,
+          "round_trip_ms": 1019.7,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4002,
+          "submit_time_s": 28.15,
+          "result_time_s": 29.169,
+          "round_trip_ms": 1019.0,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4003,
+          "submit_time_s": 29.27,
+          "result_time_s": 30.289,
+          "round_trip_ms": 1019.6,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4004,
+          "submit_time_s": 30.39,
+          "result_time_s": 31.409,
+          "round_trip_ms": 1019.3,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4005,
+          "submit_time_s": 31.51,
+          "result_time_s": 32.529,
+          "round_trip_ms": 1019.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4006,
+          "submit_time_s": 32.629,
+          "result_time_s": 33.649,
+          "round_trip_ms": 1019.7,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4007,
+          "submit_time_s": 33.75,
+          "result_time_s": 34.769,
+          "round_trip_ms": 1019.2,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4008,
+          "submit_time_s": 34.869,
+          "result_time_s": 35.889,
+          "round_trip_ms": 1019.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4009,
+          "submit_time_s": 35.99,
+          "result_time_s": 37.009,
+          "round_trip_ms": 1019.6,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4010,
+          "submit_time_s": 37.11,
+          "result_time_s": 38.13,
+          "round_trip_ms": 1020.1,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4011,
+          "submit_time_s": 38.23,
+          "result_time_s": 39.249,
+          "round_trip_ms": 1018.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4012,
+          "submit_time_s": 39.35,
+          "result_time_s": 40.369,
+          "round_trip_ms": 1019.2,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4013,
+          "submit_time_s": 40.47,
+          "result_time_s": 41.49,
+          "round_trip_ms": 1019.9,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4014,
+          "submit_time_s": 41.59,
+          "result_time_s": 42.609,
+          "round_trip_ms": 1019.4,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4015,
+          "submit_time_s": 42.71,
+          "result_time_s": 43.729,
+          "round_trip_ms": 1019.1,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4016,
+          "submit_time_s": 43.83,
+          "result_time_s": 44.849,
+          "round_trip_ms": 1019.8,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4017,
+          "submit_time_s": 44.95,
+          "result_time_s": 45.969,
+          "round_trip_ms": 1019.0,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4018,
+          "submit_time_s": 46.07,
+          "result_time_s": 47.089,
+          "round_trip_ms": 1019.5,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4019,
+          "submit_time_s": 47.189,
+          "result_time_s": 48.193,
+          "round_trip_ms": 1003.7,
+          "status": "idle",
+          "nonces_found": 0
+        },
+        {
+          "index": 4020,
+          "submit_time_s": 48.294,
+          "result_time_s": 49.313,
+          "round_trip_ms": 1019.4,
+          "status": "idle",
+          "nonces_found": 0
+        }
+      ],
+      "total_work": 21,
+      "total_nonces": 0,
+      "duration_s": 31.02,
+      "throughput_wps": 0.68,
+      "mean_round_trip_ms": 1018.1,
+      "temp_delta_c": -2.0,
+      "cooldown_s": 0.03,
+      "error": "Unrecognised work-result response: b''"
+    },
+    {
+      "level": 5,
+      "name": "sustained_paced",
+      "description": "20 work units with 2s pauses \u2014 steady state",
+      "pre_reading": {
+        "timestamp": "2026-03-02T01:01:19.925100+00:00",
+        "elapsed_s": 57.553,
+        "temps_c": [
+          31.0,
+          30.0
+        ],
+        "vcc1_v": 3.186,
+        "vcc2_v": 1.008,
+        "vmain_v": 11.42
+      },
+      "post_reading": {
+        "timestamp": "2026-03-02T01:01:30.533400+00:00",
+        "elapsed_s": 68.162,
+        "temps_c": [
+          29.0,
+          30.0
+        ],
+        "vcc1_v": 3.526,
+        "vcc2_v": 1.011,
+        "vmain_v": 11.42
+      },
+      "work_entries": [
+        {
+          "index": 5000,
+          "submit_time_s": 57.553,
+          "result_time_s": 58.577,
+          "round_trip_ms": 1023.8,
+          "status": "idle",
+          "nonces_found": 0
+        }
+      ],
+      "total_work": 1,
+      "total_nonces": 0,
+      "duration_s": 10.58,
+      "throughput_wps": 0.09,
+      "mean_round_trip_ms": 1023.8,
+      "temp_delta_c": -2.0,
+      "cooldown_s": 0.03,
+      "error": "Unrecognised work-result response: b''"
+    }
+  ]
+}
