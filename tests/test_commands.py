@@ -9,6 +9,7 @@ from bfl_asic.protocol.commands import (
     build_nonce_range,
     build_poll,
     build_temperature,
+    build_voltage,
     build_work,
 )
 from bfl_asic.protocol.constants import DELIMITER
@@ -27,8 +28,13 @@ class TestBuildIdentify:
 
 
 class TestBuildTemperature:
+    def test_returns_zlx(self):
+        assert build_temperature() == b"ZLX"
+
+
+class TestBuildVoltage:
     def test_returns_ztx(self):
-        assert build_temperature() == b"ZTX"
+        assert build_voltage() == b"ZTX"
 
 
 class TestBuildPoll:

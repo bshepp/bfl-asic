@@ -17,7 +17,12 @@ def build_identify() -> bytes:
 
 
 def build_temperature() -> bytes:
-    """Return the 3-byte temperature query command (ZTX)."""
+    """Return the 3-byte temperature query command (ZLX)."""
+    return b"ZLX"
+
+
+def build_voltage() -> bytes:
+    """Return the 3-byte voltage query command (ZTX)."""
     return b"ZTX"
 
 

@@ -24,7 +24,8 @@ DELIMITER: bytes = b">>>>>>>>"
 CMD_IDENTIFY: bytes = b"ZGX"
 CMD_WORK: bytes = b"ZDX"
 CMD_RESULT: bytes = b"ZFX"
-CMD_TEMP: bytes = b"ZTX"
+CMD_TEMP: bytes = b"ZLX"       # SC firmware uses ZLX for temperature
+CMD_VOLTAGE: bytes = b"ZTX"    # SC firmware uses ZTX for voltages
 CMD_NONCE_RANGE: bytes = b"ZPX"
 
 # ---------------------------------------------------------------------------

@@ -97,20 +97,24 @@ class TestSimulatedDeviceIdentify:
 class TestSimulatedDeviceTemperature:
     def test_temperature_command(self):
         dev = SimulatedDevice()
-        resp = dev.process_command(b"ZTX")
-        assert resp.startswith(b"TEMP0:")
-        assert resp.endswith(b"C\n")
+        resp = dev.process_command(b"ZLX")
+        assert b"Temp1:" in resp
+        assert b"Temp2:" in resp
 
     def test_temperature_format(self):
         dev = SimulatedDevice(base_temperature=42.5)
-        resp = dev.process_command(b"ZTX")
-        assert resp == b"TEMP0:42.5C\n"
+        resp = dev.process_command(b"ZLX")
+        assert resp == b"Temp1: 42, Temp2: 42\n"
 
-    def test_temperature_one_decimal(self):
+    def test_temperature_integer(self):
         dev = SimulatedDevice(base_temperature=35.0)
+        resp = dev.process_command(b"ZLX")
+        assert b"35" in resp
+
+    def test_voltage_command(self):
+        dev = SimulatedDevice()
         resp = dev.process_command(b"ZTX")
-        # Should be formatted to 1 decimal place
-        assert b"35.0" in resp
+        assert resp == b"3300,1000,12000\n"
 
 
 class TestSimulatedDeviceWork:
@@ -375,10 +379,17 @@ class TestSimulatorTransportRoundTrips:
     def test_temperature_round_trip(self):
         t = SimulatorTransport()
         t.open()
+        t.write(b"ZLX")
+        resp = t.readline()
+        assert b"Temp1:" in resp
+        assert b"Temp2:" in resp
+
+    def test_voltage_round_trip(self):
+        t = SimulatorTransport()
+        t.open()
         t.write(b"ZTX")
         resp = t.readline()
-        assert resp.startswith(b"TEMP0:")
-        assert resp.endswith(b"C\n")
+        assert resp == b"3300,1000,12000\n"
 
     def test_work_round_trip(self):
         t = SimulatorTransport()
@@ -476,9 +487,9 @@ class TestSimulatorTransportAsync:
         t = SimulatorTransport()
         async with t:
             assert t.is_open is True
-            await t.awrite(b"ZTX")
+            await t.awrite(b"ZLX")
             resp = await t.areadline()
-            assert resp.startswith(b"TEMP0:")
+            assert b"Temp1:" in resp
         assert t.is_open is False
 
 

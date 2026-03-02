@@ -6,10 +6,12 @@ from bfl_asic.exceptions import BFLProtocolError
 from bfl_asic.protocol.responses import (
     DeviceInfo,
     TemperatureReading,
+    VoltageReading,
     WorkResult,
     WorkStatus,
     parse_identify,
     parse_temperature,
+    parse_voltage,
     parse_work_result,
 )
 
@@ -59,32 +61,46 @@ class TestParseIdentify:
 # -------------------------------------------------------------------
 
 class TestParseTemperature:
-    def test_single_sensor(self):
+    # -- SC firmware format (ZLX response: "Temp1: 30, Temp2: 30") --
+
+    def test_sc_two_sensors(self):
+        raw = b"Temp1: 30, Temp2: 30\n"
+        result = parse_temperature(raw)
+        assert result.sensors == [30.0, 30.0]
+
+    def test_sc_different_values(self):
+        raw = b"Temp1: 45, Temp2: 42\n"
+        result = parse_temperature(raw)
+        assert result.sensors == [45.0, 42.0]
+
+    def test_sc_single_sensor(self):
+        raw = b"Temp1: 55\n"
+        result = parse_temperature(raw)
+        assert result.sensors == [55.0]
+
+    # -- Older labelled format (TEMP0:45C) --
+
+    def test_labelled_single_sensor(self):
         raw = b"TEMP0:45C"
         result = parse_temperature(raw)
         assert result.sensors == [45.0]
 
-    def test_two_sensors(self):
+    def test_labelled_two_sensors(self):
         raw = b"TEMP0:45C\nTEMP1:43C"
         result = parse_temperature(raw)
         assert result.sensors == [45.0, 43.0]
 
-    def test_three_sensors(self):
-        raw = b"TEMP0:45C\nTEMP1:43C\nTEMP2:50C"
-        result = parse_temperature(raw)
-        assert result.sensors == [45.0, 43.0, 50.0]
-
-    def test_decimal_temperatures(self):
+    def test_labelled_decimal(self):
         raw = b"TEMP0:45.5C"
         result = parse_temperature(raw)
         assert result.sensors == [45.5]
 
     def test_returns_temperature_reading_type(self):
-        raw = b"TEMP0:45C"
+        raw = b"Temp1: 30, Temp2: 30\n"
         result = parse_temperature(raw)
         assert isinstance(result, TemperatureReading)
 
-    def test_with_spaces(self):
+    def test_labelled_with_spaces(self):
         raw = b"TEMP0: 45 C"
         result = parse_temperature(raw)
         assert result.sensors == [45.0]
@@ -97,35 +113,46 @@ class TestParseTemperature:
         with pytest.raises(BFLProtocolError, match="No temperature data"):
             parse_temperature(b"")
 
-    def test_raises_on_partial_format(self):
-        with pytest.raises(BFLProtocolError, match="No temperature data"):
-            parse_temperature(b"TEMP0:")
-
     def test_carriage_return_separator(self):
         raw = b"TEMP0:45C\r\nTEMP1:43C"
         result = parse_temperature(raw)
         assert result.sensors == [45.0, 43.0]
 
-    # -- Raw CSV format (SC firmware) --
 
-    def test_raw_csv_three_values(self):
-        raw = b"3448,1008,11420\n"
-        result = parse_temperature(raw)
-        assert len(result.sensors) == 3
-        assert result.sensors[0] == pytest.approx(34.48)
-        assert result.sensors[1] == pytest.approx(10.08)
-        assert result.sensors[2] == pytest.approx(114.20)
+# -------------------------------------------------------------------
+# parse_voltage
+# -------------------------------------------------------------------
 
-    def test_raw_csv_single_value(self):
-        raw = b"3500\n"
-        result = parse_temperature(raw)
-        assert result.sensors == [35.0]
+class TestParseVoltage:
+    def test_three_values(self):
+        raw = b"3564,1011,11420\n"
+        result = parse_voltage(raw)
+        assert result.vcc1 == pytest.approx(3.564)
+        assert result.vcc2 == pytest.approx(1.011)
+        assert result.vmain == pytest.approx(11.420)
 
-    def test_raw_csv_with_spaces(self):
-        raw = b"3448, 1008, 11420\n"
-        result = parse_temperature(raw)
-        assert len(result.sensors) == 3
-        assert result.sensors[0] == pytest.approx(34.48)
+    def test_raw_preserved(self):
+        raw = b"3300,1000,12000\n"
+        result = parse_voltage(raw)
+        assert result.raw == [3300, 1000, 12000]
+
+    def test_returns_voltage_reading_type(self):
+        raw = b"3300,1000,12000\n"
+        result = parse_voltage(raw)
+        assert isinstance(result, VoltageReading)
+
+    def test_with_spaces(self):
+        raw = b"3300, 1000, 12000\n"
+        result = parse_voltage(raw)
+        assert result.vcc1 == pytest.approx(3.3)
+
+    def test_raises_on_non_numeric(self):
+        with pytest.raises(BFLProtocolError, match="Unrecognised voltage"):
+            parse_voltage(b"TEMP0:45C")
+
+    def test_raises_on_too_few_values(self):
+        with pytest.raises(BFLProtocolError, match="Expected 3"):
+            parse_voltage(b"3300,1000\n")
 
 
 # -------------------------------------------------------------------

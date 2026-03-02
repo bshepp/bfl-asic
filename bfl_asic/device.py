@@ -15,16 +15,19 @@ from bfl_asic.protocol.commands import (
     build_identify,
     build_poll,
     build_temperature,
+    build_voltage,
     build_work,
 )
 from bfl_asic.protocol.constants import POLL_INTERVAL, WORK_TIMEOUT
 from bfl_asic.protocol.responses import (
     DeviceInfo,
     TemperatureReading,
+    VoltageReading,
     WorkResult,
     WorkStatus,
     parse_identify,
     parse_temperature,
+    parse_voltage,
     parse_work_result,
 )
 from bfl_asic.protocol.work import build_synthetic_work
@@ -44,10 +47,19 @@ class BFLDevice:
         return parse_identify(raw)
 
     def get_temperature(self) -> TemperatureReading:
-        """Query device temperature (ZTX command)."""
+        """Query device temperature (ZLX command)."""
         self._transport.write(build_temperature())
         raw = self._transport.readline()
         return parse_temperature(raw)
+
+    def get_voltage(self) -> VoltageReading:
+        """Query device voltages (ZTX command).
+
+        Returns VCC1, VCC2, and VMAIN in volts.
+        """
+        self._transport.write(build_voltage())
+        raw = self._transport.readline()
+        return parse_voltage(raw)
 
     def submit_work(self, midstate: bytes, tail: bytes) -> None:
         """Submit a work unit to the device (ZDX command).

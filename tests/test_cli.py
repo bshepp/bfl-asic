@@ -48,9 +48,9 @@ class TestTemperature:
         # The degree symbol may render differently; check for 'C'
         assert "C" in result.output
 
-    def test_temperature_shows_sensor(self, runner: CliRunner) -> None:
+    def test_temperature_shows_chip(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["--simulate", "temperature"])
-        assert "Sensor 0" in result.output
+        assert "Chip 1" in result.output
 
 
 # ======================================================================

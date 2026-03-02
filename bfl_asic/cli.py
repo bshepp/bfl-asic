@@ -78,14 +78,23 @@ def identify(ctx: click.Context) -> None:
 @main.command()
 @click.pass_context
 def temperature(ctx: click.Context) -> None:
-    """Query device temperature."""
+    """Query device temperature and voltages."""
     transport = get_transport(
         ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
     )
     with BFLDevice(transport) as device:
         reading = device.get_temperature()
+        click.echo("Temperature:")
         for idx, temp in enumerate(reading.sensors):
-            click.echo(f"Sensor {idx}: {temp:.1f}\u00b0C")
+            click.echo(f"  Chip {idx + 1}: {temp:.1f}\u00b0C")
+        try:
+            volts = device.get_voltage()
+            click.echo("Voltages:")
+            click.echo(f"  VCC1:  {volts.vcc1:.3f}V")
+            click.echo(f"  VCC2:  {volts.vcc2:.3f}V")
+            click.echo(f"  VMAIN: {volts.vmain:.3f}V")
+        except Exception:
+            pass  # Simulator or older firmware may not support ZTX
 
 
 # ======================================================================
@@ -112,10 +121,21 @@ def probe(ctx: click.Context) -> None:
 
         # Temperature
         reading = device.get_temperature()
-        click.echo("[ZTX] Temperature:")
+        click.echo("[ZLX] Temperature:")
         for idx, temp in enumerate(reading.sensors):
-            click.echo(f"  Sensor {idx}: {temp:.1f}\u00b0C")
+            click.echo(f"  Chip {idx + 1}: {temp:.1f}\u00b0C")
         click.echo()
+
+        # Voltages
+        try:
+            volts = device.get_voltage()
+            click.echo("[ZTX] Voltages:")
+            click.echo(f"  VCC1:  {volts.vcc1:.3f}V")
+            click.echo(f"  VCC2:  {volts.vcc2:.3f}V")
+            click.echo(f"  VMAIN: {volts.vmain:.3f}V")
+            click.echo()
+        except Exception:
+            pass  # Simulator or older firmware may not support ZTX
 
         # Poll (no work submitted -- should be IDLE)
         result = device.poll_result()

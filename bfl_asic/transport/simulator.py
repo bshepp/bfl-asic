@@ -95,8 +95,10 @@ class SimulatedDevice:
         """Route *data* to the appropriate handler."""
         if data.startswith(b"ZGX"):
             return self._handle_identify()
-        if data.startswith(b"ZTX"):
+        if data.startswith(b"ZLX"):
             return self._handle_temperature()
+        if data.startswith(b"ZTX"):
+            return self._handle_voltage()
         if data.startswith(b"ZDX") or data.startswith(DELIMITER):
             return self._handle_work(data)
         if data.startswith(b"ZFX"):
@@ -111,7 +113,11 @@ class SimulatedDevice:
         return f"{self.device_info}\n".encode()
 
     def _handle_temperature(self) -> bytes:
-        return f"TEMP0:{self.temperature:.1f}C\n".encode()
+        t = int(self.temperature)
+        return f"Temp1: {t}, Temp2: {t}\n".encode()
+
+    def _handle_voltage(self) -> bytes:
+        return b"3300,1000,12000\n"
 
     def _handle_work(self, data: bytes) -> bytes:
         if self.state is DeviceState.OVERHEATED:

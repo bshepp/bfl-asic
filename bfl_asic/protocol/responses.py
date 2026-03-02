@@ -60,6 +60,30 @@ class TemperatureReading:
 
 
 @dataclass
+class VoltageReading:
+    """On-board voltage readings from ZTX command.
+
+    SC firmware returns three voltages as millivolt integers.
+
+    Attributes
+    ----------
+    vcc1:
+        Core voltage in volts (typically ~3.3V).
+    vcc2:
+        Secondary voltage in volts (typically ~1.0V).
+    vmain:
+        Main supply voltage in volts (typically ~12V).
+    raw:
+        Original raw millivolt integers for debugging.
+    """
+
+    vcc1: float
+    vcc2: float
+    vmain: float
+    raw: list[int]
+
+
+@dataclass
 class WorkResult:
     """Parsed result of a work-poll (ZFX) response.
 
@@ -80,7 +104,8 @@ class WorkResult:
 # Parsers
 # -------------------------------------------------------------------
 
-_TEMP_RE = re.compile(r"TEMP\d+:\s*([\d.]+)\s*C", re.IGNORECASE)
+_TEMP_LABELLED_RE = re.compile(r"TEMP\d+:\s*([\d.]+)\s*C", re.IGNORECASE)
+_TEMP_SC_RE = re.compile(r"Temp\d+:\s*(\d+)", re.IGNORECASE)
 _RAW_CSV_RE = re.compile(r"^[\d,\s]+$")
 
 
@@ -101,13 +126,12 @@ def parse_identify(raw: bytes) -> DeviceInfo:
 
 
 def parse_temperature(raw: bytes) -> TemperatureReading:
-    """Parse a temperature (ZTX) response.
+    """Parse a temperature (ZLX) response.
 
     Handles two firmware formats:
 
-    1. Labelled: ``TEMP0:45C`` or ``TEMP0:45C\\nTEMP1:43C``
-    2. Raw CSV (SC firmware): ``3448,1008,11420`` — comma-separated ADC
-       values where the first value ÷ 100 gives chip temperature in °C.
+    1. SC firmware: ``Temp1: 30, Temp2: 30`` — integer °C values.
+    2. Older labelled: ``TEMP0:45C`` or ``TEMP0:45C\\nTEMP1:43C``
 
     Parameters
     ----------
@@ -121,21 +145,56 @@ def parse_temperature(raw: bytes) -> TemperatureReading:
     """
     text = raw.decode("ascii", errors="replace")
 
-    # Try labelled format first (e.g. "TEMP0:45C")
-    matches = _TEMP_RE.findall(text)
+    # Try labelled format first — more specific (has trailing "C")
+    matches = _TEMP_LABELLED_RE.findall(text)
     if matches:
         return TemperatureReading(sensors=[float(m) for m in matches])
 
-    # Try raw CSV format (SC firmware: "3448,1008,11420")
-    stripped = text.strip()
-    if _RAW_CSV_RE.match(stripped):
-        values = [v.strip() for v in stripped.split(",") if v.strip()]
-        if values:
-            sensors = [int(v) / 100.0 for v in values]
-            return TemperatureReading(sensors=sensors)
+    # Try SC format (e.g. "Temp1: 30, Temp2: 30") — integer values
+    matches = _TEMP_SC_RE.findall(text)
+    if matches:
+        return TemperatureReading(sensors=[float(m) for m in matches])
 
     raise BFLProtocolError(
         f"No temperature data found in response: {text!r}"
+    )
+
+
+def parse_voltage(raw: bytes) -> VoltageReading:
+    """Parse a voltage (ZTX) response.
+
+    SC firmware returns three comma-separated millivolt integers::
+
+        3564,1011,11420
+
+    These represent VCC1, VCC2, and VMAIN respectively.
+
+    Parameters
+    ----------
+    raw:
+        Raw bytes received from the device.
+
+    Raises
+    ------
+    BFLProtocolError
+        If the response cannot be parsed as voltage data.
+    """
+    text = raw.decode("ascii", errors="replace").strip()
+    if not _RAW_CSV_RE.match(text):
+        raise BFLProtocolError(
+            f"Unrecognised voltage response: {text!r}"
+        )
+    values = [v.strip() for v in text.split(",") if v.strip()]
+    if len(values) < 3:
+        raise BFLProtocolError(
+            f"Expected 3 voltage values, got {len(values)}: {text!r}"
+        )
+    raw_mv = [int(v) for v in values[:3]]
+    return VoltageReading(
+        vcc1=raw_mv[0] / 1000.0,
+        vcc2=raw_mv[1] / 1000.0,
+        vmain=raw_mv[2] / 1000.0,
+        raw=raw_mv,
     )
 
 
