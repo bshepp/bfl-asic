@@ -106,6 +106,27 @@ class TestParseTemperature:
         result = parse_temperature(raw)
         assert result.sensors == [45.0, 43.0]
 
+    # -- Raw CSV format (SC firmware) --
+
+    def test_raw_csv_three_values(self):
+        raw = b"3448,1008,11420\n"
+        result = parse_temperature(raw)
+        assert len(result.sensors) == 3
+        assert result.sensors[0] == pytest.approx(34.48)
+        assert result.sensors[1] == pytest.approx(10.08)
+        assert result.sensors[2] == pytest.approx(114.20)
+
+    def test_raw_csv_single_value(self):
+        raw = b"3500\n"
+        result = parse_temperature(raw)
+        assert result.sensors == [35.0]
+
+    def test_raw_csv_with_spaces(self):
+        raw = b"3448, 1008, 11420\n"
+        result = parse_temperature(raw)
+        assert len(result.sensors) == 3
+        assert result.sensors[0] == pytest.approx(34.48)
+
 
 # -------------------------------------------------------------------
 # parse_work_result

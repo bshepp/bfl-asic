@@ -81,6 +81,7 @@ class WorkResult:
 # -------------------------------------------------------------------
 
 _TEMP_RE = re.compile(r"TEMP\d+:\s*([\d.]+)\s*C", re.IGNORECASE)
+_RAW_CSV_RE = re.compile(r"^[\d,\s]+$")
 
 
 def parse_identify(raw: bytes) -> DeviceInfo:
@@ -102,10 +103,11 @@ def parse_identify(raw: bytes) -> DeviceInfo:
 def parse_temperature(raw: bytes) -> TemperatureReading:
     """Parse a temperature (ZTX) response.
 
-    Expected formats::
+    Handles two firmware formats:
 
-        TEMP0:45C
-        TEMP0:45C\\nTEMP1:43C
+    1. Labelled: ``TEMP0:45C`` or ``TEMP0:45C\\nTEMP1:43C``
+    2. Raw CSV (SC firmware): ``3448,1008,11420`` — comma-separated ADC
+       values where the first value ÷ 100 gives chip temperature in °C.
 
     Parameters
     ----------
@@ -118,12 +120,23 @@ def parse_temperature(raw: bytes) -> TemperatureReading:
         If the response contains no recognisable temperature data.
     """
     text = raw.decode("ascii", errors="replace")
+
+    # Try labelled format first (e.g. "TEMP0:45C")
     matches = _TEMP_RE.findall(text)
-    if not matches:
-        raise BFLProtocolError(
-            f"No temperature data found in response: {text!r}"
-        )
-    return TemperatureReading(sensors=[float(m) for m in matches])
+    if matches:
+        return TemperatureReading(sensors=[float(m) for m in matches])
+
+    # Try raw CSV format (SC firmware: "3448,1008,11420")
+    stripped = text.strip()
+    if _RAW_CSV_RE.match(stripped):
+        values = [v.strip() for v in stripped.split(",") if v.strip()]
+        if values:
+            sensors = [int(v) / 100.0 for v in values]
+            return TemperatureReading(sensors=sensors)
+
+    raise BFLProtocolError(
+        f"No temperature data found in response: {text!r}"
+    )
 
 
 def parse_work_result(raw: bytes) -> WorkResult:
