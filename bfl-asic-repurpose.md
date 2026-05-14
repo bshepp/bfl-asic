@@ -103,6 +103,8 @@ This means we can capture roughly **1 in 500** hashes at full speed over USB 2.0
 
 ### Application 1: Hardware Random Number Generator (HRNG)
 
+> **Status (2026-05-13):** validation suite built (`bfl_asic/randomness/` — NIST SP 800-22 battery, exposed as `bfl-asic randomness run`). The harvest side runs against `SoftwareHashEngine` today; the same battery will plug into an ASIC-backed `HashSource` once one exists.
+
 #### Concept
 Use SHA-256 hash outputs as a cryptographically strong entropy source. SHA-256 output is statistically indistinguishable from true randomness assuming the algorithm's properties hold — which our exploration work (Application 2) continuously validates.
 
@@ -190,6 +192,8 @@ The HRNG output should pass all of:
 ---
 
 ### Application 2: SHA-256 Probability Landscape Exploration
+
+> **Status (2026-02-25):** implemented as `bfl_asic/stats/` — 7 numpy-vectorised accumulators (bit frequency, avalanche, bit-pair correlation, near-collision, byte distribution, Shannon entropy, FFT spectral), `StatsPipeline` orchestrator, matplotlib dashboard. CLI: `bfl-asic stats run/report/animate-convergence`.
 
 #### Concept
 Use the ASIC as a high-throughput empirical observatory for studying the statistical properties of SHA-256 output space. At billions of samples per second, we can build datasets that would take software implementations weeks or months to generate.
@@ -431,6 +435,8 @@ Use the ASIC's native proof-of-work capability for non-cryptocurrency applicatio
 ---
 
 ### Application 8: Iterated Hash Dynamics Research
+
+> **Status (2026-02-26):** implemented as `bfl_asic/dynamics/` — orbit analysis with sampled trajectories, Floyd's and Brent's cycle detection (both O(1) memory), multi-seed convergence analysis, matplotlib plots. CLI: `bfl-asic dynamics run/plot`.
 
 #### Concept
 Feeding SHA-256 output back as input creates a discrete deterministic dynamical system:
