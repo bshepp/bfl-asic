@@ -522,3 +522,86 @@ def dynamics_plot(results_path: str) -> None:
     fig = plot_tail_cycle_distribution(result.orbits, save_path=dist_path)
     plt.close(fig)
     click.echo(f"  Tail/cycle plot saved to: {dist_path}")
+
+
+# ======================================================================
+# randomness
+# ======================================================================
+
+
+@main.group()
+def randomness() -> None:
+    """NIST SP 800-22 randomness test battery."""
+
+
+@randomness.command(name="run")
+@click.option(
+    "--hashes", default=1000, type=int,
+    help="Number of SHA-256d hashes to harvest (256 bits each).",
+)
+@click.option(
+    "--alpha", default=0.01, type=float,
+    help="Significance level; tests pass when p_value >= alpha.",
+)
+@click.option(
+    "-o", "--output", default=None, type=click.Path(),
+    help="Save snapshot to JSON file.",
+)
+def randomness_run(hashes: int, alpha: float, output: str | None) -> None:
+    """Harvest hashes and run the full NIST SP 800-22 battery."""
+    from bfl_asic.randomness.battery import RandomnessBattery
+
+    click.echo(f"Running randomness battery ({hashes:,} hashes, alpha={alpha})...")
+    battery = RandomnessBattery(alpha=alpha)
+    snapshot = battery.run(hash_count=hashes)
+
+    click.echo("")
+    click.echo("=== Results ===")
+    click.echo(f"  Engine:    {snapshot.engine_name}")
+    click.echo(f"  Hashes:    {snapshot.sample_count:,}")
+    click.echo(f"  Bits:      {snapshot.bit_count:,}")
+    click.echo(f"  Duration:  {snapshot.duration_seconds:.2f}s")
+    click.echo("")
+    click.echo(f"  {'Test':<28} {'p-value':>12}   Verdict")
+    click.echo(f"  {'-' * 28} {'-' * 12}   -------")
+    for r in snapshot.results:
+        verdict = "PASS" if r["passed"] else "FAIL"
+        click.echo(f"  {r['name']:<28} {r['p_value']:>12.6f}   {verdict}")
+    click.echo("")
+    click.echo(
+        f"  Summary: {snapshot.pass_count} passed, {snapshot.fail_count} failed"
+    )
+
+    if output is not None:
+        snapshot.save(Path(output))
+        click.echo(f"  Snapshot saved to: {output}")
+
+
+@randomness.command(name="report")
+@click.argument("snapshot_path", type=click.Path(exists=True))
+def randomness_report(snapshot_path: str) -> None:
+    """Load a randomness snapshot JSON file and print a formatted summary."""
+    from bfl_asic.randomness.snapshot import RandomnessSnapshot
+
+    try:
+        snapshot = RandomnessSnapshot.load(Path(snapshot_path))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        raise click.ClickException(f"Failed to load snapshot: {exc}")
+
+    click.echo("=== Randomness Report ===")
+    click.echo(f"  Timestamp:  {snapshot.timestamp}")
+    click.echo(f"  Engine:     {snapshot.engine_name}")
+    click.echo(f"  Hashes:     {snapshot.sample_count:,}")
+    click.echo(f"  Bits:       {snapshot.bit_count:,}")
+    click.echo(f"  Duration:   {snapshot.duration_seconds:.2f}s")
+    click.echo(f"  Alpha:      {snapshot.alpha}")
+    click.echo("")
+    click.echo(f"  {'Test':<28} {'p-value':>12}   Verdict")
+    click.echo(f"  {'-' * 28} {'-' * 12}   -------")
+    for r in snapshot.results:
+        verdict = "PASS" if r["passed"] else "FAIL"
+        click.echo(f"  {r['name']:<28} {r['p_value']:>12.6f}   {verdict}")
+    click.echo("")
+    click.echo(
+        f"  Summary: {snapshot.pass_count} passed, {snapshot.fail_count} failed"
+    )
