@@ -41,9 +41,11 @@ def unique_output_path(path: Path) -> Path:
 
     Used by every CLI command that writes a file so that successive runs never
     silently overwrite previous outputs.  Collisions in the same second are
-    resolved by appending an incrementing counter.
+    resolved by appending an incrementing counter.  The parent directory is
+    created if it does not already exist.
     """
     path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
         return path
     stem = path.stem
@@ -56,6 +58,32 @@ def unique_output_path(path: Path) -> Path:
         candidate = parent / f"{stem}_{ts}_{counter}{suffix}"
         counter += 1
     return candidate
+
+
+def _output_root() -> Path:
+    """Root directory for default outputs.  Override via ``$BFL_ASIC_OUTPUT_DIR``."""
+    import os
+    return Path(os.environ.get("BFL_ASIC_OUTPUT_DIR", "runs"))
+
+
+def default_run_dir(subgroup: str) -> Path:
+    """Per-run timestamped directory: ``runs/<subgroup>/YYYYMMDD-HHMMSS``.
+
+    Used when a command writes multiple related files (e.g. snapshot + plot).
+    The directory is not created here -- :func:`unique_output_path` creates
+    the parent of each file it returns.
+    """
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    return _output_root() / subgroup / ts
+
+
+def default_output_file(subgroup: str, name: str, suffix: str) -> Path:
+    """Per-file default path: ``runs/<subgroup>/<name>-YYYYMMDD-HHMMSS<suffix>``.
+
+    Used when a command writes a single standalone artefact.
+    """
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    return _output_root() / subgroup / f"{name}-{ts}{suffix}"
 
 
 @click.group()
@@ -328,9 +356,19 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
     click.echo(f"  Mean Hamming:      {snapshot.avalanche.get('mean', 'N/A')}")
     click.echo(f"  Shannon entropy:   {snapshot.entropy.get('shannon_entropy', 'N/A')}")
 
+    # Resolve output directory.  Explicit -o is honoured verbatim; otherwise
+    # we land in runs/stats/<timestamp>/ when a save is requested.
+    run_dir: Path | None = None
+    if output is None and plot:
+        run_dir = default_run_dir("stats")
+
     # Save snapshot
     if output is not None:
         snap_path = unique_output_path(Path(output))
+        snapshot.save(snap_path)
+        click.echo(f"  Snapshot saved to: {snap_path}")
+    elif run_dir is not None:
+        snap_path = unique_output_path(run_dir / "snapshot.json")
         snapshot.save(snap_path)
         click.echo(f"  Snapshot saved to: {snap_path}")
 
@@ -342,7 +380,7 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
         if output is not None:
             png_path = Path(output).with_suffix(".png")
         else:
-            png_path = Path("dashboard.png")
+            png_path = run_dir / "dashboard.png"
         png_path = unique_output_path(png_path)
         fig = plot_dashboard(snapshot, save_path=png_path)
         plt.close(fig)
@@ -355,8 +393,9 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
 @click.option("--frames", default=60, type=int,
               help="Approximate number of animation frames (log-spaced).")
 @click.option("--fps", default=10, type=int, help="Frames per second in the GIF.")
-@click.option("-o", "--output", default="convergence.gif",
-              type=click.Path(), help="Output GIF path.")
+@click.option("-o", "--output", default=None,
+              type=click.Path(),
+              help="Output GIF path. Defaults to runs/animations/convergence-<ts>.gif.")
 def stats_animate_convergence(samples, frames, fps, output) -> None:
     """Animate per-bit frequency deviation converging to zero as N grows.
 
@@ -371,7 +410,11 @@ def stats_animate_convergence(samples, frames, fps, output) -> None:
         f"Building convergence animation ({samples:,} samples, "
         f"{frames} frames)..."
     )
-    out_path = unique_output_path(Path(output))
+    if output is None:
+        out_path = default_output_file("animations", "convergence", ".gif")
+    else:
+        out_path = Path(output)
+    out_path = unique_output_path(out_path)
     fig, _anim = animate_bit_frequency_convergence(
         total_samples=samples,
         n_frames=frames,

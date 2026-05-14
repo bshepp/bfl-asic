@@ -95,12 +95,22 @@ class TestStatsRun:
         assert png_path.exists()
         assert png_path.stat().st_size > 0
 
-    def test_run_plot_default_path(self, runner: CliRunner, tmp_path: Path) -> None:
-        """--plot without -o saves to dashboard.png in cwd."""
+    def test_run_plot_default_path(
+        self, runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--plot without -o saves a dashboard PNG under runs/stats/<timestamp>/."""
+        monkeypatch.setenv("BFL_ASIC_OUTPUT_DIR", str(tmp_path / "runs"))
         with runner.isolated_filesystem(temp_dir=tmp_path):
             result = runner.invoke(main, ["stats", "run", "--samples", "100", "--plot"])
             assert result.exit_code == 0
-            assert Path("dashboard.png").exists()
+            stats_dir = tmp_path / "runs" / "stats"
+            assert stats_dir.exists()
+            # exactly one timestamped subdir with dashboard.png inside
+            run_dirs = list(stats_dir.iterdir())
+            assert len(run_dirs) == 1
+            png = run_dirs[0] / "dashboard.png"
+            assert png.exists()
+            assert png.stat().st_size > 0
 
     def test_run_report_interval(self, runner: CliRunner) -> None:
         """Custom --report-interval does not break the run."""

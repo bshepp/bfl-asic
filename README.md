@@ -57,6 +57,22 @@ bfl-asic stats run --samples 100000 -o snapshot.json --plot
 bfl-asic stats report snapshot.json
 ```
 
+### Where outputs go
+
+When you do not pass `-o`, results land under a `runs/` folder in the
+current directory, organised by command:
+
+```
+runs/
+  stats/<timestamp>/snapshot.json + dashboard.png   (stats run --plot)
+  animations/convergence-<timestamp>.gif            (stats animate-convergence)
+```
+
+Explicit `-o paths/file.ext` is always honoured verbatim.  Two writes to
+the same path never overwrite each other -- the second one is suffixed with a
+timestamp.  Override the output root with the `BFL_ASIC_OUTPUT_DIR`
+environment variable.
+
 ### Iterated hash dynamics
 
 ```bash

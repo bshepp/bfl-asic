@@ -6,3 +6,6 @@ build/
 .eggs/
 .pytest_cache/
 .claude/
+
+# Default CLI output root (configurable via $BFL_ASIC_OUTPUT_DIR)
+runs/
