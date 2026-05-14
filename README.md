@@ -55,7 +55,37 @@ bfl-asic stats run --samples 100000 -o snapshot.json --plot
 
 # View saved results
 bfl-asic stats report snapshot.json
+
+# Animated visualisation of per-bit bias shrinking as N grows
+# (great for an intuitive feel for the law of large numbers)
+bfl-asic stats animate-convergence --samples 100000 --frames 60
 ```
+
+### Iterated hash dynamics
+
+```bash
+# Run orbit/convergence analysis
+bfl-asic dynamics run --seeds 5 --max-iterations 50000 -o dynamics.json
+
+# Generate plots from saved results
+bfl-asic dynamics plot dynamics.json
+```
+
+### Randomness validation (NIST SP 800-22)
+
+```bash
+# Harvest hashes and run the NIST randomness battery
+bfl-asic randomness run --hashes 1000 -o randomness.json
+
+# View saved results
+bfl-asic randomness report randomness.json
+```
+
+Six tests are included: frequency (monobit), block frequency, runs,
+longest run of ones in a block, DFT spectral, and cumulative sums
+(forward + reverse).  The battery consumes any `HashSource`, so an
+ASIC-backed source plugs in unchanged once the firmware 42-work-limit
+is worked around.
 
 ### Where outputs go
 
@@ -72,16 +102,6 @@ Explicit `-o paths/file.ext` is always honoured verbatim.  Two writes to
 the same path never overwrite each other -- the second one is suffixed with a
 timestamp.  Override the output root with the `BFL_ASIC_OUTPUT_DIR`
 environment variable.
-
-### Iterated hash dynamics
-
-```bash
-# Run orbit/convergence analysis
-bfl-asic dynamics run --seeds 5 --max-iterations 50000 -o dynamics.json
-
-# Generate plots from saved results
-bfl-asic dynamics plot dynamics.json
-```
 
 ## Architecture
 
@@ -109,10 +129,14 @@ bfl_asic/
     rho.py         # Floyd's and Brent's cycle detection (O(1) memory)
     convergence.py # Multi-seed convergence analysis
     visualization.py # Orbit, convergence, and distribution plots
+  randomness/      # NIST SP 800-22 randomness test battery
+    tests.py       # Pure-function tests over uint8 bit arrays
+    battery.py     # Orchestrator over any HashSource
+    snapshot.py    # JSON-serializable results
   device.py        # BFLDevice — sync high-level API
   async_device.py  # AsyncBFLDevice — async API with stream iterators
   cli.py           # Click CLI: identify, temperature, probe, discover,
-                   #   benchmark, hash, stats, dynamics
+                   #   benchmark, hash, stats, dynamics, randomness
   exceptions.py    # BFLError hierarchy
 ```
 
@@ -121,7 +145,7 @@ bfl_asic/
 - **Protocol** is pure Python — no I/O, no state, fully testable
 - **Transport** abstracts serial vs simulator vs future backends
 - **Device** combines transport + protocol into a clean API
-- **Applications** (stats, dynamics) are independent of the device layer
+- **Applications** (stats, dynamics, randomness) are independent of the device layer
 
 ## Protocol Reference
 
@@ -142,7 +166,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-597 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, and visualization.
+671 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization.
 
 ## Python API
 
@@ -194,6 +218,19 @@ def toy_hash(v: bytes) -> bytes:
 cycle = brent_detect(b'\x00' * 32, max_steps=1_000_000, hash_fn=toy_hash)
 if cycle:
     print(f"Cycle length: {cycle.cycle_length}, Tail: {cycle.tail_length}")
+```
+
+```python
+# NIST SP 800-22 randomness validation
+from bfl_asic.randomness import RandomnessBattery
+from bfl_asic.stats.engine import SoftwareHashEngine
+
+battery = RandomnessBattery(engine=SoftwareHashEngine())
+snapshot = battery.run(hash_count=1000)  # 256,000 bits
+print(f"Passed: {snapshot.pass_count}/{len(snapshot.results)}")
+for r in snapshot.results:
+    print(f"  {r['name']:<28} p={r['p_value']:.4f}  "
+          f"{'PASS' if r['passed'] else 'FAIL'}")
 ```
 
 ## License

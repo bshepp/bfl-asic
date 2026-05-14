@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Communication layer and analysis tools for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner. Provides protocol encoding/decoding, serial transport, device simulation, statistical analysis of hash output, and iterated-hash dynamics research.
+Communication layer and analysis tools for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner. Provides protocol encoding/decoding, serial transport, device simulation, statistical analysis of hash output, iterated-hash dynamics research, and NIST SP 800-22 randomness validation.
 
 ## Common Commands
 
@@ -12,7 +12,7 @@ Communication layer and analysis tools for the Butterfly Labs BF0005G Jalapeno S
 # Install (editable, with dev deps)
 pip install -e ".[dev]"
 
-# Run all tests (~597 tests, ~15s, no hardware required)
+# Run all tests (~671 tests, ~20s, no hardware required)
 pytest
 
 # Run a single test file
@@ -38,9 +38,10 @@ Four-layer design with strict separation of concerns:
 **Device layer** (`bfl_asic/device.py`, `async_device.py`) — High-level API. `BFLDevice` (sync) and `AsyncBFLDevice` (async with stream iterators). Both are context managers that own transport lifecycle.
 
 **Application layer** (independent subsystems):
-- `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization
-- `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis
-- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`stats run`, `stats report`, `dynamics run`, `dynamics plot`)
+- `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization (including an animated bit-frequency convergence GIF for teaching the law of large numbers).
+- `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
+- `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
+- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`).
 
 ## Key Conventions
 
@@ -48,6 +49,7 @@ Four-layer design with strict separation of concerns:
 - **Protocol commands**: ASCII 3-byte codes. Work packets are 60 bytes (8-byte delimiter + 32-byte midstate + 12-byte tail + 8-byte delimiter). Responses delimited by `>>>>>>>>` (8 × 0x3E).
 - **pytest-asyncio**: Configured with `asyncio_mode = "auto"` — async test functions are auto-detected.
 - **Matplotlib**: Uses `Agg` backend (headless) for all visualization to avoid display dependencies.
+- **CLI outputs**: Default writes go under `runs/<command>/<timestamp>/` (or a single timestamped filename for standalone artefacts). Explicit `-o` is honoured verbatim. The no-overwrite policy applies to every write path: collisions get a timestamp suffix. Root is configurable via `$BFL_ASIC_OUTPUT_DIR`. The `runs/` folder is gitignored.
 - **Python ≥ 3.10** required.
 
 ## Hardware Notes

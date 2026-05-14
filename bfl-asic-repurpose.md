@@ -8,18 +8,21 @@ This document serves as a seed specification for repurposing a Butterfly Labs (B
 
 The device is essentially a dedicated hardware engine capable of computing billions of SHA-256 double-hashes per second. By replacing the stock mining firmware/controller with a custom interface layer, we unlock the full utility of this capability.
 
-### Hardware Inventory (TODO: Complete After Teardown)
+### Hardware Inventory (completed 2026-03-01)
 
 | Component | Details | Status |
 |---|---|---|
-| **ASIC Model** | TBD — identify after opening | Needs inspection |
-| **Controller Board** | Likely Raspberry Pi or custom SBC | Needs inspection |
-| **USB Interface** | Mini or Micro USB, serial protocol | Needs testing |
-| **Power Supply** | 12V DC, wattage TBD by model | Needs measurement |
-| **Cooling** | Fans + heatsinks | Assess condition |
-| **Enclosure** | Metal chassis | Document dimensions |
+| **ASIC Model** | BitForce SHA256 SC 1.0 (Single Chip Jalapeno BF0005G, ~5 GH/s) | Identified via `ZGX` |
+| **Controller Board** | FTDI USB-serial bridge (VID `0x0403`, PID `0x6014`) | Confirmed |
+| **USB Interface** | USB serial, 115200 8N1 | Tested on COM3 |
+| **Power Supply** | 13V DC adapter (VMAIN rail reads 11.4V at device) | Measured via `ZTX` |
+| **Cooling** | Stock fan + heatsink; idle ~30°C ambient +9°C | Adequate at USB-limited 1 wps |
+| **Enclosure** | Metal chassis (original BFL retail) | Intact |
 
-**Action:** Photograph all internal components. Document PCB markings, chip IDs, and connector pinouts. Identify the exact ASIC generation (BitFORCE SC, Jalapeno, Single, etc.) as this determines the communication protocol and hash rate.
+**Characterised behaviour** (see DEVLOG.md 2026-03-02 entry for full data):
+- USB serial round-trip caps throughput at ~1 work unit/sec — the ASIC's 5 GH/s rate sits idle most of the time.
+- The SC firmware has a hard 42-work-submission limit per power cycle. Only a power cycle clears it.
+- Idle voltages: VCC1 ≈ 3.564 V (nominal 3.3), VCC2 ≈ 1.011 V (nominal 1.0), VMAIN ≈ 11.42 V. VCC1 shows a ~1.2 V dip immediately after ADC queries (suspected multiplexer settling).
 
 ---
 
@@ -519,5 +522,5 @@ pip install pillow           # Image generation for hash space maps
 ---
 
 *Document created: 2026-02-25*
-*Status: Seed specification — awaiting hardware teardown and device enumeration*
-*Next action: Open the device, photograph internals, identify ASIC and controller*
+*Status: Seed specification — implementation in progress (see DEVLOG.md for session log).*
+*Implemented so far: Apps 1 (validation), 2, 8.  Apps 3, 4, 5, 6, 7, 9 unbuilt.  Hardware characterisation complete; firmware 42-work-submission limit is the primary blocker for sustained-hashing applications.*

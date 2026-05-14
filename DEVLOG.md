@@ -257,32 +257,84 @@ Raw JSON logs saved in `scripts/`:
 
 ---
 
+---
+
+## 2026-05-13 — Randomness Battery, Convergence Animation, Output Organisation
+
+### Phase 3: NIST SP 800-22 Randomness Battery (App 1, validation half)
+
+Built `bfl_asic/randomness/` parallel to the stats and dynamics subsystems. The new module consumes any `HashSource` from `stats.engine`, so it slots in unchanged once an ASIC-backed source replaces `SoftwareHashEngine`.
+
+Six tests implemented as pure numpy functions over `uint8` bit arrays:
+
+- **Frequency (monobit)** — SP 800-22 §2.1
+- **Block frequency** — §2.2
+- **Runs** — §2.3 (conditional on monobit, returns skipped result if π too far from 0.5)
+- **Longest run of ones in block** — §2.4 (parameter table selects block size by *n*)
+- **DFT spectral** — §2.6 (FFT magnitude vs 95% threshold)
+- **Cumulative sums** — §2.13, both forward and reverse modes
+
+Reference p-values from the worked examples in SP 800-22 Rev 1a Section 2 are exercised as regression anchors (`p ≈ 0.527089` for the §2.1.8 monobit case, `p ≈ 0.801252` for the §2.2.8 block-frequency case, `p ≈ 0.147232` for §2.3.8 runs).
+
+Plus a `RandomnessBattery` orchestrator that harvests *N* hashes from any engine and runs every enabled test, a `RandomnessSnapshot` for JSON serialisation, and `bfl-asic randomness run/report` CLI commands mirroring the stats group. **57 new tests, 654 total.**
+
+### Phase 4: Bit-Frequency Convergence Animation (learning aid)
+
+Added `animate_bit_frequency_convergence()` in `stats/visualization.py`. Runs a hash engine to a chosen sample count, capturing the 256-bit deviation vector `count/N - 0.5` at log-spaced checkpoints. Produces a two-panel GIF:
+
+- **Top** — 16×16 heatmap of the current bias with a fixed colour scale (so shrinkage is visible).
+- **Bottom** — log-log plot of `max|bias|` and `mean|bias|` against the theoretical `0.5/√N` envelope, with a cursor tracking the current frame.
+
+Demonstrates the law of large numbers in action: SHA-256 output is *never* exactly uniform at finite *N*, but the residual deviation tracks `1/√N` exactly. If the red line ever flattened out instead of falling, you'd have found a flaw in SHA-256.
+
+Exposed via `bfl-asic stats animate-convergence --samples N --frames F`. **5 new tests, 659 total.**
+
+### Phase 5: Output Organisation
+
+CLI outputs were dumping into the working directory and could overwrite previous runs. Added two mechanisms in `bfl_asic/cli.py`:
+
+1. **`unique_output_path()`** — every write path checks for collisions; existing files get a `_YYYYMMDD-HHMMSS` suffix on the new write. Same-second collisions get an additional incrementing counter. Parent directories are auto-created.
+2. **Default folder layout** — when `-o` is omitted, commands that auto-generate artefacts land under:
+   - `runs/stats/<ts>/{snapshot.json,dashboard.png}` (`stats run --plot`)
+   - `runs/animations/convergence-<ts>.gif` (`stats animate-convergence`)
+   - Explicit `-o` is honoured verbatim with collision-avoidance.
+
+Configurable via `$BFL_ASIC_OUTPUT_DIR`. Added `runs/` to `.gitignore`. **12 new tests, 671 total.**
+
+### Working Tree State
+
+`scripts/diagnose_work.py` (previously untracked) committed as a documented diagnostic tool — uses the Bitcoin genesis block (known winning nonce 2083236893) plus synthetic trivial work to exercise the work-acceptance path with aggressive polling. Complements `characterize.py`.
+
+---
+
 ## Project Metrics
 
 | Metric | Value |
 |--------|-------|
-| Source lines | 4,285 |
-| Test lines | 5,127 |
-| Test count | 597 |
-| Source files | 27 |
-| Test files | 22 |
-| Test:source ratio | 1.20x |
+| Source lines | 5,142 |
+| Test lines | 5,919 |
+| Test count | 671 |
+| Source files | 31 |
+| Test files | 26 |
+| Test:source ratio | 1.15x |
 
 ## Roadmap
 
 Remaining applications from the seed document not yet implemented:
 
-- **App 1:** Entropy harvesting / hardware RNG (API exists, needs NIST test suite)
+- ~~**App 1:** Entropy harvesting / hardware RNG~~ — **partial:** software-source validation now in place via `bfl_asic/randomness/`. ASIC-backed source still needed for true hardware RNG.
 - **App 3:** Proof-of-work token minting
 - **App 4:** Hash-based data authentication
 - **App 5:** Brute-force preimage search
-- **App 6:** Educational SHA-256 explorer
+- **App 6:** Educational SHA-256 explorer (the convergence animation is a small step toward this)
 - **App 7:** Commitment schemes
 - **App 9:** Research test harness
 
 Next priorities to consider:
-- ASIC-accelerated hash source (swap `SoftwareHashEngine` for device-backed `HashSource`)
+- ASIC-accelerated hash source (swap `SoftwareHashEngine` for device-backed `HashSource` — the randomness battery is already wired to accept it)
 - Direct ASIC bus tapping for full hash throughput (bypasses USB bottleneck)
 - Firmware work limit workaround (USB power relay for automated power cycling, or direct FPGA/ASIC reset via GPIO)
 - VCC1 ADC settling time investigation (add configurable delay between ADC reads)
 - Work result polling strategy (test faster polling to catch BUSY→NO-NONCE transition)
+- Avalanche side-by-side visualiser — show two near-identical inputs producing wildly different outputs (paired pedagogy with the convergence animation)
+- Round-by-round SHA-256 internals viewer — instrument the pure-Python compression in `protocol/work.py` to expose the 8 working variables across all 64 rounds
