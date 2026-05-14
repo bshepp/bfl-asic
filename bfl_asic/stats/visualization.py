@@ -347,3 +347,146 @@ def plot_dashboard(
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     _save_if_requested(fig, save_path)
     return fig
+
+
+# -------------------------------------------------------------------
+# Animated visualizations
+# -------------------------------------------------------------------
+
+def animate_bit_frequency_convergence(
+    engine=None,
+    total_samples: int = 100_000,
+    n_frames: int = 60,
+    save_path: Path | None = None,
+    fps: int = 10,
+    heatmap_vmax: float = 0.15,
+):
+    """Animate per-bit frequency deviation shrinking as the sample count grows.
+
+    Runs the hash *engine* for ``total_samples`` samples, capturing the 256-bit
+    bias vector ``count/N - 0.5`` at log-spaced checkpoints.  Produces a
+    two-panel animation:
+
+    * **Top** -- 16x16 heatmap of the current bias, with a fixed colour scale
+      (``+/- heatmap_vmax``) so the visible noise visibly fades as N grows.
+    * **Bottom** -- log-log plot of ``max|bias|`` and ``mean|bias|`` over N,
+      with a dashed ``0.5/sqrt(N)`` reference (the per-bit standard deviation
+      of a fair coin).  A red marker tracks the current frame.
+
+    Parameters
+    ----------
+    engine:
+        Any :class:`~bfl_asic.stats.engine.HashSource`.  Defaults to
+        :class:`~bfl_asic.stats.engine.SoftwareHashEngine`.
+    total_samples:
+        Final sample count.
+    n_frames:
+        Approximate number of frames.  Checkpoints are log-spaced between 100
+        and *total_samples*; duplicates after integer rounding are removed.
+    save_path:
+        If given, saves the animation as a GIF via ``PillowWriter``.
+    fps:
+        Frames per second in the saved animation.
+    heatmap_vmax:
+        Fixed symmetric colour range for the heatmap.  Default 0.15 matches the
+        ~3 sigma range expected at N = 100.
+
+    Returns
+    -------
+    tuple
+        ``(figure, animation)``.  The caller is responsible for ``plt.close``.
+    """
+    from matplotlib.animation import FuncAnimation, PillowWriter
+
+    from bfl_asic.stats.accumulators import BitFrequencyAccumulator
+    from bfl_asic.stats.engine import SoftwareHashEngine
+
+    if engine is None:
+        engine = SoftwareHashEngine()
+    if total_samples < 10:
+        raise ValueError("total_samples must be >= 10")
+    if n_frames < 2:
+        raise ValueError("n_frames must be >= 2")
+
+    min_n = min(100, max(2, total_samples // 10))
+    checkpoints = np.unique(
+        np.logspace(
+            np.log10(min_n), np.log10(total_samples), n_frames,
+        ).astype(np.int64)
+    )
+    # Guarantee the final checkpoint lands at total_samples
+    if checkpoints[-1] != total_samples:
+        checkpoints = np.append(checkpoints, total_samples)
+
+    accumulator = BitFrequencyAccumulator()
+    snapshots: list[tuple[int, np.ndarray]] = []
+    next_idx = 0
+    for i, (inp, out) in enumerate(engine.hashes(count=total_samples)):
+        accumulator.ingest(inp, out)
+        n = i + 1
+        if next_idx < len(checkpoints) and n >= int(checkpoints[next_idx]):
+            freqs = np.array(accumulator.report()["bit_frequencies"])
+            snapshots.append((n, freqs - 0.5))
+            next_idx += 1
+
+    if not snapshots:
+        raise RuntimeError("no snapshots captured -- check total_samples / n_frames")
+
+    fig = plt.figure(figsize=(9, 9))
+    gs = fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.32)
+    ax_heat = fig.add_subplot(gs[0])
+    ax_line = fig.add_subplot(gs[1])
+
+    # Heatmap setup -- fixed scale so shrinkage is visible
+    initial_grid = snapshots[0][1].reshape(16, 16)
+    im = ax_heat.imshow(
+        initial_grid,
+        cmap="RdBu_r",
+        vmin=-heatmap_vmax,
+        vmax=heatmap_vmax,
+        aspect="equal",
+        interpolation="nearest",
+    )
+    fig.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04,
+                 label="Frequency deviation from 0.5")
+    ax_heat.set_xlabel("Bit position (column)")
+    ax_heat.set_ylabel("Bit position (row)")
+    heat_title = ax_heat.set_title("")
+
+    # Line panel: max/mean |bias| with theoretical 0.5/sqrt(N) envelope
+    ns = np.array([s[0] for s in snapshots], dtype=np.float64)
+    max_bias = np.array([np.abs(s[1]).max() for s in snapshots])
+    mean_bias = np.array([np.abs(s[1]).mean() for s in snapshots])
+    sigma = 0.5 / np.sqrt(ns)
+
+    ax_line.plot(ns, max_bias, "r-", lw=2.0, label="max |bias|")
+    ax_line.plot(ns, mean_bias, "b-", lw=2.0, label="mean |bias|")
+    ax_line.plot(ns, sigma, "k--", lw=1.0, alpha=0.6,
+                 label=r"$0.5/\sqrt{N}$  (single-bit $\sigma$)")
+    ax_line.set_xscale("log")
+    ax_line.set_yscale("log")
+    ax_line.set_xlabel("Samples (N)")
+    ax_line.set_ylabel("|bias|")
+    ax_line.legend(loc="upper right", fontsize=8)
+    ax_line.grid(True, which="both", alpha=0.3)
+    cursor, = ax_line.plot([], [], "ro", markersize=10, zorder=10)
+
+    def _update(frame_idx: int):
+        n, bias = snapshots[frame_idx]
+        im.set_data(bias.reshape(16, 16))
+        heat_title.set_text(
+            f"Bit Frequency Deviation @ N = {n:,}  "
+            f"(max |bias| = {max_bias[frame_idx]:.4f})"
+        )
+        cursor.set_data([n], [max_bias[frame_idx]])
+        return [im, heat_title, cursor]
+
+    anim = FuncAnimation(
+        fig, _update, frames=len(snapshots),
+        interval=max(1, 1000 // fps), blit=False, repeat=True,
+    )
+
+    if save_path is not None:
+        anim.save(str(save_path), writer=PillowWriter(fps=fps))
+
+    return fig, anim

@@ -325,6 +325,38 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
         click.echo(f"  Dashboard saved to: {png_path}")
 
 
+@stats.command(name="animate-convergence")
+@click.option("--samples", default=100_000, type=int,
+              help="Total hashes to feed through the accumulator.")
+@click.option("--frames", default=60, type=int,
+              help="Approximate number of animation frames (log-spaced).")
+@click.option("--fps", default=10, type=int, help="Frames per second in the GIF.")
+@click.option("-o", "--output", default="convergence.gif",
+              type=click.Path(), help="Output GIF path.")
+def stats_animate_convergence(samples, frames, fps, output) -> None:
+    """Animate per-bit frequency deviation converging to zero as N grows.
+
+    A learning aid: the 16x16 heatmap fades from speckled to flat-white while
+    the bottom line plot shows max/mean |bias| tracking the theoretical
+    0.5/sqrt(N) envelope.
+    """
+    import matplotlib.pyplot as plt
+    from bfl_asic.stats.visualization import animate_bit_frequency_convergence
+
+    click.echo(
+        f"Building convergence animation ({samples:,} samples, "
+        f"{frames} frames)..."
+    )
+    fig, _anim = animate_bit_frequency_convergence(
+        total_samples=samples,
+        n_frames=frames,
+        fps=fps,
+        save_path=Path(output),
+    )
+    plt.close(fig)
+    click.echo(f"  Animation saved to: {output}")
+
+
 @stats.command(name="report")
 @click.argument("snapshot_path", type=click.Path(exists=True))
 def stats_report(snapshot_path: str) -> None:
