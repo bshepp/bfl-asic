@@ -233,6 +233,13 @@ for r in snapshot.results:
           f"{'PASS' if r['passed'] else 'FAIL'}")
 ```
 
+## Learning
+
+If you're using this toolkit to learn SHA-256 and cryptography from
+first principles, see **[LEARNING.md](LEARNING.md)** for a six-week
+study path that pairs each subsystem with free Coursera and YouTube
+lecture material.
+
 ## License
 
 Unlicensed / private project.
