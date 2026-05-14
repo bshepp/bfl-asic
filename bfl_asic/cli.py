@@ -36,6 +36,28 @@ def get_transport(port: str | None, simulate: bool, baudrate: int):
         return SerialTransport(port=port, baudrate=baudrate)
 
 
+def unique_output_path(path: Path) -> Path:
+    """Return *path* unchanged if free, else append a timestamp before the suffix.
+
+    Used by every CLI command that writes a file so that successive runs never
+    silently overwrite previous outputs.  Collisions in the same second are
+    resolved by appending an incrementing counter.
+    """
+    path = Path(path)
+    if not path.exists():
+        return path
+    stem = path.stem
+    suffix = path.suffix
+    parent = path.parent if str(path.parent) else Path(".")
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    candidate = parent / f"{stem}_{ts}{suffix}"
+    counter = 1
+    while candidate.exists():
+        candidate = parent / f"{stem}_{ts}_{counter}{suffix}"
+        counter += 1
+    return candidate
+
+
 @click.group()
 @click.option("--port", "-p", default=None, help="Serial port (e.g. /dev/ttyUSB0, COM3)")
 @click.option(
@@ -308,8 +330,9 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
 
     # Save snapshot
     if output is not None:
-        snapshot.save(Path(output))
-        click.echo(f"  Snapshot saved to: {output}")
+        snap_path = unique_output_path(Path(output))
+        snapshot.save(snap_path)
+        click.echo(f"  Snapshot saved to: {snap_path}")
 
     # Generate dashboard plot
     if plot:
@@ -320,6 +343,7 @@ def stats_run(samples, duration, report_interval, output, plot) -> None:
             png_path = Path(output).with_suffix(".png")
         else:
             png_path = Path("dashboard.png")
+        png_path = unique_output_path(png_path)
         fig = plot_dashboard(snapshot, save_path=png_path)
         plt.close(fig)
         click.echo(f"  Dashboard saved to: {png_path}")
@@ -347,14 +371,15 @@ def stats_animate_convergence(samples, frames, fps, output) -> None:
         f"Building convergence animation ({samples:,} samples, "
         f"{frames} frames)..."
     )
+    out_path = unique_output_path(Path(output))
     fig, _anim = animate_bit_frequency_convergence(
         total_samples=samples,
         n_frames=frames,
         fps=fps,
-        save_path=Path(output),
+        save_path=out_path,
     )
     plt.close(fig)
-    click.echo(f"  Animation saved to: {output}")
+    click.echo(f"  Animation saved to: {out_path}")
 
 
 @stats.command(name="report")
@@ -512,8 +537,9 @@ def dynamics_run(seeds: int, max_iterations: int, output: str | None) -> None:
     # Save results
     if output is not None:
         data = _convergence_to_dict(result)
-        Path(output).write_text(json.dumps(data, indent=2))
-        click.echo(f"  Results saved to: {output}")
+        out_path = unique_output_path(Path(output))
+        out_path.write_text(json.dumps(data, indent=2))
+        click.echo(f"  Results saved to: {out_path}")
 
 
 @dynamics.command(name="plot")
@@ -538,19 +564,19 @@ def dynamics_plot(results_path: str) -> None:
 
     # Plot individual orbits
     for idx, orbit in enumerate(result.orbits):
-        png_path = Path(f"{base}_orbit_{idx}.png")
+        png_path = unique_output_path(Path(f"{base}_orbit_{idx}.png"))
         fig = plot_orbit_hamming(orbit, save_path=png_path)
         plt.close(fig)
         click.echo(f"  Orbit {idx} plot saved to: {png_path}")
 
     # Convergence plot
-    conv_path = Path(f"{base}_convergence.png")
+    conv_path = unique_output_path(Path(f"{base}_convergence.png"))
     fig = plot_convergence(result, save_path=conv_path)
     plt.close(fig)
     click.echo(f"  Convergence plot saved to: {conv_path}")
 
     # Tail/cycle distribution
-    dist_path = Path(f"{base}_tail_cycle.png")
+    dist_path = unique_output_path(Path(f"{base}_tail_cycle.png"))
     fig = plot_tail_cycle_distribution(result.orbits, save_path=dist_path)
     plt.close(fig)
     click.echo(f"  Tail/cycle plot saved to: {dist_path}")
@@ -605,8 +631,9 @@ def randomness_run(hashes: int, alpha: float, output: str | None) -> None:
     )
 
     if output is not None:
-        snapshot.save(Path(output))
-        click.echo(f"  Snapshot saved to: {output}")
+        out_path = unique_output_path(Path(output))
+        snapshot.save(out_path)
+        click.echo(f"  Snapshot saved to: {out_path}")
 
 
 @randomness.command(name="report")
