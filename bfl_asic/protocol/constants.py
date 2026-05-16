@@ -54,8 +54,10 @@ CMD_QRESULTS: bytes = b"ZOX"    # query/drain results (frees queue slots)
 CMD_QFLUSH: bytes = b"ZQX"      # flush the queue
 CMD_DETAILS: bytes = b"ZCX"     # device details (incl. JOBS IN QUEUE)
 
-CMD_FAN_AUTO: bytes = b"Z9X"
-CMD_FAN_LEVELS: tuple[bytes, ...] = (b"Z0X", b"Z1X", b"Z2X", b"Z3X", b"Z4X")
+CMD_FAN_AUTO: bytes = b"Z9X"    # return fan to firmware auto-management
+CMD_FAN_LEVELS: tuple[bytes, ...] = (
+    b"Z0X", b"Z1X", b"Z2X", b"Z3X", b"Z4X",  # fixed levels: 0=min .. 4=max
+)
 
 EOB: int = 0xAA          # end-of-block marker in a queued job
 SIGNATURE: int = 0xC1    # job-pack signature byte
@@ -64,5 +66,5 @@ QUE_MAX_RESULTS: int = 8           # max results returned per ZOX read
 QJOB_PAYLOAD_SIZE: int = 45        # midstate(32)+blockdata(12)+EOB(1)
 
 RESP_SUCCESS: bytes = b"SUCCESS"
-RESP_COUNT: bytes = b"COUNT:"
-RESP_ERR: bytes = b"ERR:"
+RESP_COUNT: bytes = b"COUNT:"   # PREFIX — full response is b"COUNT:<n>"
+RESP_ERR: bytes = b"ERR:"       # PREFIX — full response is b"ERR:<msg>"

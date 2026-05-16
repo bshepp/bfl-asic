@@ -12,7 +12,9 @@ def test_new_constants_present_and_additive():
     assert C.CMD_DETAILS == b"ZCX"
     assert C.CMD_FAN_AUTO == b"Z9X"
     assert C.CMD_FAN_LEVELS == (b"Z0X", b"Z1X", b"Z2X", b"Z3X", b"Z4X")
-    assert C.EOB == 0xAA and C.SIGNATURE == 0xC1 and C.EOW == 0xFE
+    assert C.EOB == 0xAA
+    assert C.SIGNATURE == 0xC1
+    assert C.EOW == 0xFE
     assert C.QUE_MAX_RESULTS == 8
     assert C.QJOB_PAYLOAD_SIZE == 45  # midstate(32)+blockdata(12)+EOB(1)
     # existing tokens untouched
