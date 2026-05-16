@@ -6,6 +6,8 @@
 #   "scipy",
 #   "matplotlib",
 #   "click",
+#   "pyserial",
+#   "pyserial-asyncio",
 #   "torch",
 # ]
 # [tool.uv.sources]
