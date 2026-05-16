@@ -58,3 +58,70 @@ def build_queue_flush() -> bytes:
 def build_details() -> bytes:
     """`ZCX` — request device details (incl. JOBS IN QUEUE)."""
     return CMD_DETAILS
+
+
+@dataclass
+class QueuedResult:
+    """One completed job's result from a `ZOX` drain."""
+
+    uid: str
+    nonces: list[int] = field(default_factory=list)
+    raw: bytes = b""
+
+
+@dataclass
+class DeviceDetails:
+    """Parsed `ZCX` details."""
+
+    fields: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def jobs_in_queue(self) -> int:
+        v = self.fields.get("JOBS IN QUEUE", "0").strip()
+        try:
+            return int(v)
+        except ValueError:
+            return 0
+
+
+def _result_lines(raw: bytes) -> list[str]:
+    text = raw.decode("ascii", errors="replace")
+    out: list[str] = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s in ("OK", "SUCCESS") or s.startswith("COUNT:"):
+            continue
+        out.append(s)
+    return out
+
+
+def parse_queue_results(raw: bytes, version: str = "v1") -> list[QueuedResult]:
+    """Parse a `ZOX` result block.
+
+    V1 fields: ``UID, CC, NONCECOUNT, nonce, ...``
+    V2 fields: ``UID, CC, CHIP, NONCECOUNT, nonce, ...``
+    Firmware "SC 1.0" is V1 (driver-bflsc.c drv_ver()).
+    """
+    nonce_start = 3 if version == "v1" else 4
+    results: list[QueuedResult] = []
+    for line in _result_lines(raw):
+        parts = [p.strip() for p in line.split(",") if p.strip() != ""]
+        if len(parts) < nonce_start:
+            continue
+        uid = parts[0]
+        nonces = [int(p, 16) for p in parts[nonce_start:]]
+        results.append(QueuedResult(uid=uid, nonces=nonces,
+                                     raw=line.encode("ascii")))
+    return results
+
+
+def parse_details(raw: bytes) -> DeviceDetails:
+    text = raw.decode("ascii", errors="replace")
+    fields: dict[str, str] = {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s in ("OK", "SUCCESS") or ":" not in s:
+            continue
+        key, _, val = s.partition(":")
+        fields[key.strip()] = val.strip()
+    return DeviceDetails(fields=fields)

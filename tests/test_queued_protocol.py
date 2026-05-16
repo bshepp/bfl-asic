@@ -77,3 +77,41 @@ def test_build_queue_job_rejects_non_bytes():
     # len("x"*32)==32 passes the length guard; bytes+str then raises.
     with pytest.raises((TypeError, ValueError)):
         build_queue_job("x" * 32, bytes(12))
+
+
+from bfl_asic.protocol.queued import (
+    parse_queue_results, parse_details, QueuedResult, DeviceDetails,
+)
+
+# V1 block: COUNT line, then "<uid>,<cc>,<noncecount>,<nonce>,..."
+V1_BLOCK = b"COUNT:1\n0a1b2c3d,0,2,12345678,9abcdef0\nOK\n"
+
+
+def test_parse_queue_results_v1():
+    res = parse_queue_results(V1_BLOCK)  # default version="v1"
+    assert isinstance(res, list) and len(res) == 1
+    r = res[0]
+    assert isinstance(r, QueuedResult)
+    assert r.uid == "0a1b2c3d"
+    assert r.nonces == [0x12345678, 0x9ABCDEF0]
+
+
+def test_parse_queue_results_empty():
+    assert parse_queue_results(b"COUNT:0\nOK\n") == []
+
+
+def test_parse_queue_results_v2_chip_field():
+    block = b"COUNT:1\nfeedface,0,7,1,deadbeef\nOK\n"
+    res = parse_queue_results(block, version="v2")
+    assert res[0].uid == "feedface"
+    assert res[0].nonces == [0xDEADBEEF]
+
+
+def test_parse_details_jobs_in_queue():
+    blob = (b"FIRMWARE: 1.0.0\nENGINES: 1\nJOBS IN QUEUE: 5\n"
+            b"CHIP PARALLELIZATION: NO\nOK\n")
+    d = parse_details(blob)
+    assert isinstance(d, DeviceDetails)
+    assert d.jobs_in_queue == 5
+    assert d.fields["FIRMWARE"] == "1.0.0"
+    assert d.fields["ENGINES"] == "1"
