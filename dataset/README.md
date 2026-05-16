@@ -58,7 +58,7 @@ positive into a correct negative.
 ## Dataset Description
 
 This dataset is the distilled, **verified evidence** from a learnability
-instrument built on top of the [`bfl-asic`](#reproduction) toolkit (a
+instrument built on top of the [`bfl-asic`](https://github.com/bshepp/bfl-asic) toolkit (a
 codebase for a Butterfly Labs BF0005G "Jalapeno" SHA-256 mining ASIC,
 which also contains a numpy-vectorized, `hashlib`-anchored round-reduced
 SHA-256 and a controls-gated train/eval harness).
@@ -266,14 +266,19 @@ are hosted. The results above were produced by the `bfl-asic` toolkit's
 TinyCNN/linear-probe distinguishers, a controls-gated harness), run on
 Hugging Face Jobs (`cpu-xl`, ~16 CPU-hours total).
 
+**Source code:** [github.com/bshepp/bfl-asic](https://github.com/bshepp/bfl-asic) (MIT) — the `bfl_asic/ml/` subsystem and `dataset/build_dataset.py`.
+
 ```bash
-pip install "bfl-asic[ml]"          # PyTorch is isolated behind [ml]
+git clone https://github.com/bshepp/bfl-asic
+cd bfl-asic
+pip install -e ".[ml]"              # PyTorch is isolated behind [ml]
 
 # Regenerate the spine (one seed, scaled down for a laptop):
 bfl-asic ml run sweep --seed 0 --n 20000 --epochs 10
 bfl-asic ml report runs/ml/<timestamp>/sweep_seed0.json
 
-# Rebuild these exact Parquet tables from the synced run JSON:
+# Rebuild these exact Parquet tables from the shipped source JSON
+# (dataset/source/ travels with the repo — no external data needed):
 python dataset/build_dataset.py     # deps: pandas, pyarrow
 ```
 
@@ -310,10 +315,11 @@ honest record of the false positive that the control corrected.
   author = {Sheppard, B.},
   year   = {2026},
   publisher = {Hugging Face},
-  url = {https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability}
+  url = {https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability},
+  note = {Code: https://github.com/bshepp/bfl-asic}
 }
 ```
 
 ## License
 
-MIT.
+MIT — see the [`bfl-asic` repository](https://github.com/bshepp/bfl-asic/blob/master/LICENSE).
