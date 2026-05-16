@@ -4,7 +4,7 @@
 - **Status:** Approved (brainstorming complete; pending written-spec review)
 - **Author:** Brian Sheppard + Claude
 - **Scope:** One new additive subsystem — SC queued-work protocol + sustained session + honest `NonceSource` + **manual fan control** — plus append-only edits to `protocol/constants.py`, `transport/simulator.py`, and additive new methods/CLI/scripts. No existing pipeline, command, or the naive work path is modified.
-- **Reference:** cgminer `driver-bflsc.h` / `driver-bflsc.c` at `F:\experimental-projects\cgminer-ref\` (GPLv3 — protocol facts only, **no code vendored or copied**; clean reimplementation).
+- **Reference:** cgminer `driver-bflsc.h` / `driver-bflsc.c` from a local checkout (GPLv3 — protocol facts only, **no code vendored or copied**; clean reimplementation).
 
 ---
 

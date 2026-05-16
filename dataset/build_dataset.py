@@ -3,8 +3,11 @@
 
 Mirrors the convention of the author's other HF dataset
 (`bshepp/pairwise-poisson-algebras`): a deterministic script that reads
-the raw result JSON and emits one Parquet table per config, sitting next
-to the dataset card (README.md) in this directory.
+the curated result JSON shipped in `source/` and emits one Parquet
+table per config, sitting next to the dataset card (README.md) in this
+directory. The `source/` JSON is the exact, verified output of the HF
+runs that produced the published numbers — it travels with the repo so
+this script runs on a fresh clone with no external data.
 
 Only *verified* results go in (controls passed, or — for the dynamics
 negative — the permuted-label control actively fired). The synthetic
@@ -24,7 +27,7 @@ from pathlib import Path
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-HF = SCRIPT_DIR.parent / "hf_results"
+HF = SCRIPT_DIR / "source"  # curated run JSON shipped with the repo
 _Z = 1.959963984540054  # 97.5th pct of N(0,1); matches the harness
 
 

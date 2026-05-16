@@ -291,4 +291,6 @@ lecture material.
 
 ## License
 
-Unlicensed / private project.
+MIT — see [LICENSE](LICENSE). The published results dataset
+([huggingface.co/datasets/bshepp/round-reduced-sha256-learnability](https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability))
+is MIT as well.

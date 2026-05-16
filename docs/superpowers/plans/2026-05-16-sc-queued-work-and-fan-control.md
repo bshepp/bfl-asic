@@ -4,7 +4,7 @@
 
 **Goal:** Add an additive, opt-in BFL "SC" queued-work device path (no more 42-submission stall) plus an honest `NonceSource` and manual fan control with thermal-safety guards — without touching the naive work path or any existing command.
 
-**Architecture:** New pure `protocol/queued.py` + `protocol/fan.py`; append-only `protocol/constants.py`; additive simulator branches (job queue, opt-in naive-42 wall, fan state, `ZCX` details); a new `QueuedWorkSession` and additive `set_fan_*` methods on `BFLDevice`; a `NonceSource` ABC sibling to `HashSource`; an additive `fan` CLI command; an opt-in hardware proof script. cgminer at `F:\experimental-projects\cgminer-ref\` is the byte-level reference (GPLv3 — facts only, never copied).
+**Architecture:** New pure `protocol/queued.py` + `protocol/fan.py`; append-only `protocol/constants.py`; additive simulator branches (job queue, opt-in naive-42 wall, fan state, `ZCX` details); a new `QueuedWorkSession` and additive `set_fan_*` methods on `BFLDevice`; a `NonceSource` ABC sibling to `HashSource`; an additive `fan` CLI command; an opt-in hardware proof script. cgminer in a local checkout is the byte-level reference (GPLv3 — facts only, never copied).
 
 **Tech Stack:** Python ≥3.10, stdlib + existing deps; pytest. No new dependencies.
 
@@ -260,7 +260,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 **Files:** Modify `bfl_asic/protocol/queued.py`; Test `tests/test_queued_protocol.py`
 
-> Reference confirmation step (the implementer MUST do this): open `F:\experimental-projects\cgminer-ref\driver-bflsc.c`, find the QRES/result parsing and `getinfo()`/details parsing. Confirm (a) the result block begins with a `COUNT:` line, (b) per-result fields are comma-separated, (c) V1 field order is `UID, CC, NONCECOUNT, nonce, nonce, ...` (header: `QUE_UID=0, QUE_CC=1, QUE_NONCECOUNT_V1=2, QUE_FLD_MIN_V1=3`), V2 inserts `CHIP` at index 2 (`QUE_NONCECOUNT_V2=3, QUE_FLD_MIN_V2=4`), (d) details lines are `KEY : VALUE`. Transcribe one real V1 result block and one details block from comments/log strings in the .c as the verbatim fixtures used below; if the .c shows the separator is not a comma, adjust the parser and fixtures together to match what the .c actually does (do not guess — match the reference).
+> Reference confirmation step (the implementer MUST do this): open `driver-bflsc.c` in a local cgminer checkout, find the QRES/result parsing and `getinfo()`/details parsing. Confirm (a) the result block begins with a `COUNT:` line, (b) per-result fields are comma-separated, (c) V1 field order is `UID, CC, NONCECOUNT, nonce, nonce, ...` (header: `QUE_UID=0, QUE_CC=1, QUE_NONCECOUNT_V1=2, QUE_FLD_MIN_V1=3`), V2 inserts `CHIP` at index 2 (`QUE_NONCECOUNT_V2=3, QUE_FLD_MIN_V2=4`), (d) details lines are `KEY : VALUE`. Transcribe one real V1 result block and one details block from comments/log strings in the .c as the verbatim fixtures used below; if the .c shows the separator is not a comma, adjust the parser and fixtures together to match what the .c actually does (do not guess — match the reference).
 
 - [ ] **Step 1: Add failing tests** (append to `tests/test_queued_protocol.py`):
 

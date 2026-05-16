@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-05-16T11:54:28.796744+00:00",
+  "experiment": "indistinguishability",
+  "feature": "per-hash",
+  "model": "tiny_cnn",
+  "points": [
+    {
+      "rounds": 64,
+      "accuracy": 0.5007625,
+      "advantage": 0.0015249999999999986,
+      "auc": null,
+      "accuracy_ci": [
+        0.49830942764154007,
+        0.5032155447256841
+      ],
+      "min_detectable_advantage": 0.004899909961350135
+    }
+  ],
+  "controls": {
+    "positive_accuracy": 1.0,
+    "positive_ok": true,
+    "negative_ci": [
+      0.49830942764154007,
+      0.5032155447256841
+    ],
+    "negative_ok": true
+  },
+  "bounded_null": {}
+}

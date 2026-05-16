@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-05-16T11:15:57.238584+00:00",
+  "experiment": "full_structure_seed2",
+  "feature": "per-hash",
+  "model": "multi",
+  "points": [
+    {
+      "rounds": 64,
+      "accuracy": 0.499225,
+      "advantage": -0.0015500000000000513,
+      "auc": null,
+      "accuracy_ci": [
+        0.4967719555949829,
+        0.5016780724907892
+      ],
+      "min_detectable_advantage": 0.004899909961350135,
+      "model": "tiny_cnn"
+    },
+    {
+      "rounds": 64,
+      "accuracy": 0.50099375,
+      "advantage": 0.001987500000000031,
+      "auc": null,
+      "accuracy_ci": [
+        0.4985406754413102,
+        0.5034467885454819
+      ],
+      "min_detectable_advantage": 0.004899909961350135,
+      "model": "linear_probe"
+    }
+  ],
+  "controls": {
+    "positive_accuracy": 1.0,
+    "positive_ok": true,
+    "negative_ci": [
+      0.4966282093927081,
+      0.5015343239025218
+    ],
+    "negative_ok": true
+  },
+  "bounded_null": {
+    "best_model": "linear_probe",
+    "accuracy": 0.50099375,
+    "accuracy_ci": [
+      0.4985406754413102,
+      0.5034467885454819
+    ],
+    "advantage": 0.001987500000000031,
+    "min_detectable_advantage": 0.004899909961350135,
+    "controls_ok": true,
+    "conclusion": "no structure detected above the detection floor"
+  }
+}

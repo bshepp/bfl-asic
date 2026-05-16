@@ -1,0 +1,80 @@
+{
+  "config": {
+    "seed": 0,
+    "n": 20000,
+    "epochs": 25,
+    "trunc_widths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "n_bins": 4
+  },
+  "elapsed_s": 2124.1,
+  "points": [
+    {
+      "rounds": 1,
+      "accuracy": 0.3535,
+      "advantage": 0.10349999999999998,
+      "auc": null,
+      "accuracy_ci": [
+        0.33867165024339485,
+        0.3685426437655393
+      ],
+      "min_detectable_advantage": 0.013418956077878678,
+      "chance": 0.25
+    },
+    {
+      "rounds": 2,
+      "accuracy": 0.249,
+      "advantage": -0.0010000000000000009,
+      "auc": null,
+      "accuracy_ci": [
+        0.23566118455531623,
+        0.26270639218531416
+      ],
+      "min_detectable_advantage": 0.013418956077878678,
+      "chance": 0.25
+    },
+    {
+      "rounds": 3,
+      "accuracy": 0.249,
+      "advantage": -0.0010000000000000009,
+      "auc": null,
+      "accuracy_ci": [
+        0.23566118455531623,
+        0.26270639218531416
+      ],
+      "min_detectable_advantage": 0.013418956077878678,
+      "chance": 0.25
+    },
+    {
+      "rounds": 4,
+      "accuracy": 0.24275,
+      "advantage": -0.0072500000000000064,
+      "auc": null,
+      "accuracy_ci": [
+        0.22953001188344008,
+        0.25634675686691016
+      ],
+      "min_detectable_advantage": 0.013418956077878678,
+      "chance": 0.25
+    }
+  ],
+  "controls": {
+    "positive_accuracy": 0.3535,
+    "positive_ci": [
+      0.33867165024339485,
+      0.3685426437655393
+    ],
+    "positive_ok": true,
+    "permuted_label_accuracy": 0.3535,
+    "permuted_label_ci": [
+      0.33867165024339485,
+      0.3685426437655393
+    ],
+    "negative_ok": false,
+    "note": "knob=truncation width (bytes); chance=1/n_bins; advantage=accuracy-chance; positive_ok = CI lower bound > chance; negative_ok = permuted-label model CI lower bound <= chance (no setup/dataset artifact)."
+  }
+}

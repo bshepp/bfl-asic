@@ -13,3 +13,15 @@ runs/
 # HF Jobs local staging and results (never commit these)
 hf_payload/
 hf_results/
+
+# Ad-hoc local artifacts dropped at repo root (use runs/ or -o instead)
+/convergence.gif
+/dyn.json
+/dyn_convergence.png
+/dyn_tail_cycle.png
+/dyn_orbit_*.png
+/stats.json
+/stats.png
+
+# Pasted external review notes — not for publication
+/docs/tier_b_concerns_and_tier_c_proposal.md

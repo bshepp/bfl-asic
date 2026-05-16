@@ -1,0 +1,150 @@
+{
+  "timestamp": "2026-05-16T08:16:58.741310+00:00",
+  "experiment": "sweep_seed1",
+  "feature": "per-hash",
+  "model": "tiny_cnn",
+  "points": [
+    {
+      "rounds": 1,
+      "accuracy": 0.999925,
+      "advantage": 0.9998499999999999,
+      "auc": null,
+      "accuracy_ci": [
+        0.9997808339737771,
+        0.9999845329298606
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 2,
+      "accuracy": 0.99995,
+      "advantage": 0.9999,
+      "auc": null,
+      "accuracy_ci": [
+        0.9998193946037771,
+        0.9999939447106779
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 3,
+      "accuracy": 0.999975,
+      "advantage": 0.9999499999999999,
+      "auc": null,
+      "accuracy_ci": [
+        0.9998607168748304,
+        0.9999993670550007
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 4,
+      "accuracy": 0.498775,
+      "advantage": -0.002449999999999952,
+      "auc": null,
+      "accuracy_ci": [
+        0.49386284284674964,
+        0.5036873350225266
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 6,
+      "accuracy": 0.50565,
+      "advantage": 0.011300000000000088,
+      "auc": null,
+      "accuracy_ci": [
+        0.500737641843862,
+        0.5105615377793082
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 8,
+      "accuracy": 0.49815,
+      "advantage": -0.0037000000000000366,
+      "auc": null,
+      "accuracy_ci": [
+        0.4932379070545073,
+        0.5030623615644031
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 12,
+      "accuracy": 0.495,
+      "advantage": -0.010000000000000009,
+      "auc": null,
+      "accuracy_ci": [
+        0.49008834719199657,
+        0.49991237880516426
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 16,
+      "accuracy": 0.49775,
+      "advantage": -0.0044999999999999485,
+      "auc": null,
+      "accuracy_ci": [
+        0.4928379521652245,
+        0.502662374533454
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 24,
+      "accuracy": 0.5028,
+      "advantage": 0.005600000000000049,
+      "auc": null,
+      "accuracy_ci": [
+        0.4978876127543479,
+        0.5077119806872891
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 32,
+      "accuracy": 0.497825,
+      "advantage": -0.004349999999999965,
+      "auc": null,
+      "accuracy_ci": [
+        0.49291294346810305,
+        0.5027373723406188
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 48,
+      "accuracy": 0.49795,
+      "advantage": -0.0040999999999999925,
+      "auc": null,
+      "accuracy_ci": [
+        0.4930379292178877,
+        0.5028623684409066
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    },
+    {
+      "rounds": 64,
+      "accuracy": 0.4992,
+      "advantage": -0.0016000000000000458,
+      "auc": null,
+      "accuracy_ci": [
+        0.4942878035584158,
+        0.504112312601111
+      ],
+      "min_detectable_advantage": 0.00979981992270027
+    }
+  ],
+  "controls": {
+    "positive_accuracy": 0.99995,
+    "positive_ok": true,
+    "negative_ci": [
+      0.4927629609725905,
+      0.5025873766160448
+    ],
+    "negative_ok": true
+  },
+  "bounded_null": {}
+}
