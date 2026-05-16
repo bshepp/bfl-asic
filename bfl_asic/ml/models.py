@@ -37,7 +37,7 @@ class LinearProbe(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(256, 2)
+        self.linear = nn.Linear(256, 2)  # 256 == 16 * 16 flattened
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.linear(self.flatten(x))
