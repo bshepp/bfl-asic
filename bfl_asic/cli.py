@@ -938,20 +938,26 @@ def fan_cmd(ctx: click.Context, setting: str) -> None:
     management until you run 'fan auto' again. A low level during
     hashing can physically damage the ASIC.
     """
+    from bfl_asic.exceptions import BFLError
+
+    def _echo_temp(device, when: str) -> None:
+        try:
+            reading = device.get_temperature()
+        except BFLError:
+            return  # simulator / older firmware may not support ZLX
+        for idx, t in enumerate(reading.sensors):
+            click.echo(f"  temp {when}: Chip {idx + 1}: {t:.1f}°C")
+
     transport = get_transport(
         ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
     )
     with BFLDevice(transport) as device:
         if setting == "auto":
-            ok = device.set_fan_auto()
-            click.echo(
-                f"Fan set to auto (firmware-managed): "
-                f"{'OK' if ok else 'FAILED'}"
-            )
-            if not ok:
+            if not device.set_fan_auto():
                 raise click.ClickException(
-                    "device did not acknowledge the fan command"
+                    "device did not acknowledge the fan auto command"
                 )
+            click.echo("Fan set to auto (firmware-managed): OK")
             return
         try:
             level = int(setting)
@@ -959,25 +965,20 @@ def fan_cmd(ctx: click.Context, setting: str) -> None:
             raise click.BadParameter("setting must be 'auto' or 0-4")
         if not 0 <= level <= 4:
             raise click.BadParameter("fixed fan level must be 0-4")
+        click.echo("")
         click.echo(
             "WARNING: fixed fan level overrides firmware thermal "
             "management; a low level during hashing can cause thermal "
             "damage. This is PERSISTENT -- restore with 'fan auto' "
             "when done."
         )
-        try:
-            temp = device.get_temperature()
-            click.echo(f"  temp before: {temp.sensors}")
-        except Exception:
-            pass
-        ok = device.set_fan(level)
-        click.echo(
-            f"Fan set to fixed level {level}: {'OK' if ok else 'FAILED'}"
-        )
-        if not ok:
+        _echo_temp(device, "before")
+        if not device.set_fan(level):
             raise click.ClickException(
                 "device did not acknowledge the fan command"
             )
+        click.echo(f"Fan set to fixed level {level}: OK")
+        _echo_temp(device, "after")
 
 
 @ml.command(name="publish")
