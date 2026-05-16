@@ -30,7 +30,8 @@
       "bucket": "hf://buckets/bshepp/bfl-ml-tierA",
       "target": "run_ml_tier",
       "args": ["--tier", "A"],
-      "status": "RUNNING",
+      "status": "COMPLETED",
+      "result": "~5.8h wall (21036s). Sweep cliff: r1-3 acc=1.00, r4-64 acc=0.50 (all 3 seeds). Full-SHA bounded null: acc~0.500, CI brackets 0.5, MDA-floor~0.0049, controls_ok -> no structure detected. Dynamics: t1=0.354 t2-4=0.25 (chance). All controls pass.",
       "expected_outputs": [
         "results/sweep_seed{0,1,2}.json + .png",
         "results/full_structure_seed{0,1,2}.json",
@@ -38,6 +39,24 @@
         "results/dynamics.json + .png",
         "results/summary.json",
         "results/progress.json (resumability; resubmit continues on SIGTERM)"
+      ]
+    },
+    "tier_b": {
+      "purpose": "Tier B generous run: finer sweep x5 seeds (n=500k), full_structure x5 (n=4M, ~0.2% null floor), indistinguishability (n=4M), dynamics (n=50k). ~30 CPU-h: exceeds 6h cap, resumes via progress.json across resubmissions.",
+      "id": "6a086568e48bea4538b9fba5",
+      "view": "https://huggingface.co/jobs/bshepp/6a086568e48bea4538b9fba5",
+      "bucket": "hf://buckets/bshepp/bfl-ml-tierB",
+      "target": "run_ml_tier",
+      "args": ["--tier", "B"],
+      "status": "RUNNING",
+      "resume_protocol": "On 6h SIGTERM the job flushes progress.json + partials; resubmit the same uv-run command against the same bucket to continue. Repeat until summary.json status==complete.",
+      "expected_outputs": [
+        "results/sweep_seed{0..4}.json + .png",
+        "results/full_structure_seed{0..4}.json",
+        "results/indistinguishability.json",
+        "results/dynamics.json + .png",
+        "results/summary.json",
+        "results/progress.json"
       ]
     }
   },
