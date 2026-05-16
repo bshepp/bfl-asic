@@ -30,3 +30,23 @@ def test_parse_fan_ack_tolerant():
     assert parse_fan_ack(b"anything\n") is True
     assert parse_fan_ack(b"ERR:INVALID DATA\n") is False
     assert parse_fan_ack(b"") is False
+
+
+@pytest.mark.parametrize("bad", [True, False])
+def test_build_fan_level_rejects_bool(bad):
+    # bool is an int subclass; a thermal-safety path must not silently
+    # accept True/False as a fan level.
+    with pytest.raises(ValueError):
+        build_fan_level(bad)
+
+
+@pytest.mark.parametrize("bad", ["2", 2.0, None])
+def test_build_fan_level_rejects_non_int(bad):
+    with pytest.raises(ValueError):
+        build_fan_level(bad)
+
+
+def test_parse_fan_ack_whitespace_and_crlf_are_false():
+    assert parse_fan_ack(b"   \n") is False
+    assert parse_fan_ack(b"\r\n") is False
+    assert parse_fan_ack(b"\t") is False

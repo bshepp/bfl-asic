@@ -17,7 +17,8 @@ def build_fan_auto() -> bytes:
 
 def build_fan_level(level: int) -> bytes:
     """`Z0X`..`Z4X` — set a fixed fan level (0..4)."""
-    if not isinstance(level, int) or not 0 <= level <= 4:
+    if (not isinstance(level, int) or isinstance(level, bool)
+            or not 0 <= level <= 4):
         raise ValueError(f"fan level must be an int in 0..4, got {level!r}")
     return CMD_FAN_LEVELS[level]
 
