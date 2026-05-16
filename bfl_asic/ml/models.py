@@ -13,9 +13,9 @@ from torch import nn
 
 
 class TinyCNN(nn.Module):
-    """Small 16x16x1 -> 2-class CNN. Deliberately tiny for fast CI."""
+    """Small 16x16x1 -> N-class CNN. Deliberately tiny for fast CI."""
 
-    def __init__(self, channels: int = 16) -> None:
+    def __init__(self, channels: int = 16, num_classes: int = 2) -> None:
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(1, channels, kernel_size=3, padding=1),
@@ -24,7 +24,7 @@ class TinyCNN(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(channels, 2),
+            nn.Linear(channels, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

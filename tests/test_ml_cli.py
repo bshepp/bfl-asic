@@ -130,3 +130,13 @@ def test_ml_sweep_per_batch_small_n_is_friendly_error(tmp_path, monkeypatch):
     )
     assert res.exit_code != 0
     assert "per-batch needs --n >= 2048" in res.output
+
+
+def test_ml_run_dynamics(tmp_path, monkeypatch):
+    monkeypatch.setenv("BFL_ASIC_OUTPUT_DIR", str(tmp_path))
+    res = CliRunner().invoke(
+        main,
+        ["ml", "run", "dynamics", "--n", "128", "--epochs", "1"],
+    )
+    assert res.exit_code == 0, res.output
+    assert list((tmp_path / "ml").rglob("snapshot.json"))

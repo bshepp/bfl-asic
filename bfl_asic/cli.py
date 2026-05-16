@@ -803,7 +803,8 @@ def ml_sweep(rounds, seed, n, epochs, model, feature, output, plot) -> None:
 
 @ml.command(name="run")
 @click.argument("experiment",
-                type=click.Choice(["indistinguishability", "full_structure"]))
+                type=click.Choice(
+                    ["indistinguishability", "full_structure", "dynamics"]))
 @click.option("--seed", default=0, type=int)
 @click.option("--n", default=8192, type=int)
 @click.option("--epochs", default=10, type=int)
@@ -814,7 +815,30 @@ def ml_run(experiment, seed, n, epochs, output) -> None:
     from bfl_asic.ml.experiments import run_full_structure, run_sweep
     from bfl_asic.ml.snapshot import MLSnapshot
 
-    if experiment == "indistinguishability":
+    if experiment == "dynamics":
+        from bfl_asic.ml.experiments import run_dynamics_sweep
+
+        points, controls = run_dynamics_sweep(
+            seed=seed, n=n, epochs=epochs
+        )
+        snap = MLSnapshot.from_runs(
+            experiment="dynamics", feature="seed-image",
+            model="tiny_cnn", points=points, controls=controls,
+        )
+        click.echo("  Dynamics learnability (knob = truncation bytes):")
+        for p in points:
+            click.echo(
+                f"    t={p['rounds']}  acc={p['accuracy']:.4f} "
+                f"(chance {p['chance']:.3f})"
+            )
+        run_dir = default_run_dir("ml") if output is None else None
+        snap_path = unique_output_path(
+            Path(output) if output else run_dir / "snapshot.json"
+        )
+        snap.save(snap_path)
+        click.echo(f"  Snapshot saved to: {snap_path}")
+        return
+    elif experiment == "indistinguishability":
         points, controls = run_sweep(
             [64], seed=seed, n=n, epochs=epochs, model="tiny_cnn"
         )

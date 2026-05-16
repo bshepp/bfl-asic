@@ -89,3 +89,15 @@ def test_per_batch_deviation_map_truncates_remainder():
     outputs = rng.integers(0, 256, size=(193, 32), dtype=np.uint8)
     dev = ex.extract(outputs)
     assert dev.shape == (3, 16, 16)  # 193 // 64 == 3, remainder dropped
+
+
+def test_orbit_dataset_builder_labels_and_determinism():
+    from bfl_asic.ml.datasets import OrbitDatasetBuilder
+
+    a = OrbitDatasetBuilder(seed=5, trunc_bytes=2, n=128, n_bins=3).build()
+    b = OrbitDatasetBuilder(seed=5, trunc_bytes=2, n=128, n_bins=3).build()
+    assert torch.equal(a.x_train, b.x_train)
+    assert a.x_train.shape[1:] == (1, 16, 16)
+    labels = torch.cat([a.y_train, a.y_val])
+    assert int(labels.min()) >= 0
+    assert int(labels.max()) <= 2

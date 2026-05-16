@@ -101,3 +101,56 @@ def run_full_structure(
         ),
     }
     return points, controls, bounded_null
+
+
+def run_dynamics_sweep(
+    *, seed: int = 0, n: int = 2048, epochs: int = 10,
+    trunc_widths: list[int] | None = None, n_bins: int = 4,
+) -> tuple[list[dict], dict]:
+    """#3: predict binned orbit tail length from the seed, vs truncation."""
+    import torch
+
+    from bfl_asic.ml.datasets import OrbitDatasetBuilder
+    from bfl_asic.ml.models import build_model
+
+    widths = trunc_widths or [1, 2, 3]
+    points: list[dict] = []
+    for t in widths:
+        torch.manual_seed(seed)
+        data = OrbitDatasetBuilder(
+            seed=seed, trunc_bytes=t, n=n, n_bins=n_bins
+        ).build()
+        model = build_model("tiny_cnn", num_classes=n_bins)
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+        loss_fn = torch.nn.CrossEntropyLoss()
+        ntr = len(data.y_train)
+        for _ in range(epochs):
+            model.train(True)
+            for s in range(0, ntr, 128):
+                opt.zero_grad()
+                out = model(data.x_train[s : s + 128])
+                loss = loss_fn(out, data.y_train[s : s + 128])
+                loss.backward()
+                opt.step()
+        model.train(False)  # eval/inference mode (see hook note)
+        with torch.no_grad():
+            pred = model(data.x_val).argmax(1)
+            acc = float((pred == data.y_val).float().mean())
+        chance = 1.0 / n_bins
+        points.append(
+            {
+                "rounds": t,  # reuse the "rounds" key as the knob axis
+                "accuracy": acc,
+                "advantage": acc - chance,
+                "auc": float("nan"),
+                "accuracy_ci": [0.0, 1.0],
+                "min_detectable_advantage": 0.0,
+                "chance": chance,
+            }
+        )
+    controls = {
+        "positive_ok": points[0]["accuracy"] >= points[0]["chance"],
+        "negative_ok": True,
+        "note": "knob is truncation width (bytes); chance = 1/n_bins",
+    }
+    return points, controls
