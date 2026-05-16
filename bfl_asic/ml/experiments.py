@@ -122,61 +122,108 @@ def run_dynamics_sweep(
     *, seed: int = 0, n: int = 2048, epochs: int = 10,
     trunc_widths: list[int] | None = None, n_bins: int = 4,
 ) -> tuple[list[dict], dict]:
-    """#3: predict binned orbit tail length from the seed, vs truncation."""
+    """#3: predict binned orbit tail length from the seed, vs truncation.
+
+    Validated to the project's standard: real Clopper-Pearson CI + a
+    CI-resolution floor on every point, positive_ok gated on the CI
+    lower bound exceeding chance, and a permuted-label negative control
+    on the lead width (shuffled labels must NOT beat chance, else the
+    apparent signal is a dataset/setup artifact, not orbit structure).
+    """
+    import numpy as np
     import torch
 
     from bfl_asic.ml.datasets import OrbitDatasetBuilder
+    from bfl_asic.ml.harness import accuracy_ci
     from bfl_asic.ml.models import build_model
 
-    widths = trunc_widths or [1, 2, 3]
-    points: list[dict] = []
-    for t in widths:
+    _Z = 1.959963984540054  # 97.5th pct of N(0,1); matches the harness
+
+    def _fit_and_score(x_tr, y_tr, x_val, y_val) -> tuple[int, int]:
+        # Same seed -> same init for the real and permuted-label models,
+        # so the only difference between them is the label mapping.
         torch.manual_seed(seed)
-        data = OrbitDatasetBuilder(
-            seed=seed, trunc_bytes=t, n=n, n_bins=n_bins
-        ).build()
         model = build_model("tiny_cnn", num_classes=n_bins)
         opt = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = torch.nn.CrossEntropyLoss()
-        ntr = len(data.y_train)
+        ntr = len(y_tr)
         for _ in range(epochs):
             model.train(True)
             for s in range(0, ntr, 128):
                 opt.zero_grad()
-                out = model(data.x_train[s : s + 128])
-                loss = loss_fn(out, data.y_train[s : s + 128])
+                loss = loss_fn(model(x_tr[s : s + 128]), y_tr[s : s + 128])
                 loss.backward()
                 opt.step()
-        model.train(False)  # eval/inference mode (see hook note)
+        model.train(False)  # inference mode (see hook note)
         with torch.no_grad():
-            pred = model(data.x_val).argmax(1)
-            acc = float((pred == data.y_val).float().mean())
-        chance = 1.0 / n_bins
+            pred = model(x_val).argmax(1)
+            correct = int((pred == y_val).sum())
+        return correct, int(len(y_val))
+
+    widths = trunc_widths or [1, 2, 3]
+    chance = 1.0 / n_bins
+    points: list[dict] = []
+    lead_data = None
+    for i, t in enumerate(widths):
+        data = OrbitDatasetBuilder(
+            seed=seed, trunc_bytes=t, n=n, n_bins=n_bins
+        ).build()
+        if i == 0:
+            lead_data = data
+        correct, n_val = _fit_and_score(
+            data.x_train, data.y_train, data.x_val, data.y_val
+        )
+        acc = correct / n_val if n_val else 0.0
+        ci = list(accuracy_ci(correct, n_val))
+        # CI-resolution floor: smallest above-chance gain whose 95%
+        # accuracy CI excludes chance at this n. NOT a power-based MDE
+        # -- same honest convention as the distinguisher path.
+        mda = _Z * float(np.sqrt(chance * (1.0 - chance) / max(n_val, 1)))
         points.append(
             {
                 "rounds": t,  # generic knob axis (truncation bytes here)
                 "accuracy": acc,
-                # NOTE: for dynamics "advantage" is gain over chance
-                # (acc - 1/n_bins), NOT the harness's 2*acc-1 binary
-                # distinguishing advantage. "chance" is recorded so
-                # report/plot can disambiguate.
+                # For dynamics "advantage" is gain over chance
+                # (acc - 1/n_bins), NOT the harness's 2*acc-1.
                 "advantage": acc - chance,
                 "auc": None,  # AUC undefined for multi-class dynamics
-                "accuracy_ci": [0.0, 1.0],  # placeholder; no CI here
-                "min_detectable_advantage": 0.0,
+                "accuracy_ci": ci,
+                "min_detectable_advantage": mda,
                 "chance": chance,
             }
         )
+
+    # Permuted-label negative control on the LEAD width: shuffle the
+    # training labels (break X->y), train the same model, evaluate on
+    # the real val set. If a shuffled-label model still beats chance,
+    # the apparent orbit signal is a dataset/setup artifact, not orbit
+    # structure -- the dynamics analog of the random-vs-random control.
+    g = torch.Generator().manual_seed(seed + 1)
+    perm = torch.randperm(len(lead_data.y_train), generator=g)
+    nc_correct, nc_n = _fit_and_score(
+        lead_data.x_train, lead_data.y_train[perm],
+        lead_data.x_val, lead_data.y_val,
+    )
+    nc_acc = nc_correct / nc_n if nc_n else 0.0
+    nc_ci = list(accuracy_ci(nc_correct, nc_n))
+
+    lead = points[0]
     controls = {
-        "positive_accuracy": points[0]["accuracy"],
-        "positive_ok": (
-            points[0]["accuracy"] >= points[0]["chance"] + 0.05
+        "positive_accuracy": lead["accuracy"],
+        "positive_ci": lead["accuracy_ci"],
+        # Significance test: CI lower bound must exceed chance (not a
+        # bare point estimate / arbitrary margin).
+        "positive_ok": lead["accuracy_ci"][0] > lead["chance"],
+        "permuted_label_accuracy": nc_acc,
+        "permuted_label_ci": nc_ci,
+        # Trustworthy only if the shuffled-label model does NOT beat
+        # chance (its CI lower bound stays at/below chance).
+        "negative_ok": nc_ci[0] <= chance,
+        "note": (
+            "knob=truncation width (bytes); chance=1/n_bins; "
+            "advantage=accuracy-chance; positive_ok = CI lower bound > "
+            "chance; negative_ok = permuted-label model CI lower bound "
+            "<= chance (no setup/dataset artifact)."
         ),
-        # No random-vs-random negative control here: the sweep itself is
-        # the control -- learnability must collapse toward `chance` as
-        # truncation width grows. negative_ok stays True by construction.
-        "negative_ok": True,
-        "note": "knob is truncation width (bytes); chance = 1/n_bins; "
-                "advantage = accuracy - chance",
     }
     return points, controls

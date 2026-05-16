@@ -54,3 +54,24 @@ def test_bounded_null_emits_when_controls_pass(monkeypatch):
         bnull["conclusion"]
         == "no structure detected above the detection floor"
     )
+
+
+def test_dynamics_sweep_is_validated_to_project_standard():
+    # The dynamics path must carry real Clopper-Pearson CI + a
+    # CI-resolution floor, gate positive_ok on the CI lower bound, and
+    # run a permuted-label negative control (no hardcoded negative_ok).
+    pts, ctl = experiments.run_dynamics_sweep(
+        seed=0, n=400, epochs=1, trunc_widths=[1, 2], n_bins=4
+    )
+    p = pts[0]
+    assert p["accuracy_ci"] != [0.0, 1.0]            # real CI, not stub
+    assert 0.0 <= p["accuracy_ci"][0] <= p["accuracy_ci"][1] <= 1.0
+    assert p["min_detectable_advantage"] > 0.0       # real floor, not 0.0
+    assert "permuted_label_accuracy" in ctl
+    assert "permuted_label_ci" in ctl
+    assert isinstance(ctl["positive_ok"], bool)
+    assert isinstance(ctl["negative_ok"], bool)
+    # positive_ok is the CI-lower-bound significance test, not bare mean
+    assert ctl["positive_ok"] == (p["accuracy_ci"][0] > p["chance"])
+    # negative_ok is derived from the permuted-label control
+    assert ctl["negative_ok"] == (ctl["permuted_label_ci"][0] <= p["chance"])
