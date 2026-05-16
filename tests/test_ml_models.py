@@ -48,4 +48,7 @@ def test_saliency_map_writes_png(tmp_path):
     model = build_model("linear_probe")
     fig = plot_saliency_map(model, save_path=tmp_path / "sal.png")
     assert (tmp_path / "sal.png").exists()
+    arr = fig.axes[0].images[0].get_array()
+    assert arr.shape == (16, 16)
+    assert float(arr.max()) > 0.0  # non-degenerate (not an all-zero map)
     plt.close(fig)

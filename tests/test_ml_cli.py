@@ -114,4 +114,19 @@ def test_ml_sweep_per_batch_feature(tmp_path, monkeypatch):
     )
     assert res.exit_code == 0, res.output
     runs = list((tmp_path / "ml").rglob("snapshot.json"))
-    assert runs
+    assert runs, res.output
+    data = json.loads(runs[0].read_text())
+    assert data["experiment"] == "sweep"
+    assert data["feature"] == "per-batch"
+    assert len(data["points"]) == 2
+
+
+def test_ml_sweep_per_batch_small_n_is_friendly_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("BFL_ASIC_OUTPUT_DIR", str(tmp_path))
+    res = CliRunner().invoke(
+        main,
+        ["ml", "sweep", "--rounds", "2", "--n", "256",
+         "--epochs", "1", "--feature", "per-batch"],
+    )
+    assert res.exit_code != 0
+    assert "per-batch needs --n >= 2048" in res.output

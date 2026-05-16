@@ -36,22 +36,33 @@ def plot_learnability_curve(snapshot, save_path: Path | None = None):
 
 
 def plot_saliency_map(model, save_path: Path | None = None):
-    """16x16 input-gradient saliency for a trained model.
+    """16x16 mean input-gradient saliency for a trained model.
 
-    At low rounds this highlights specific stuck/biased bits; at 64
-    rounds it is uniform noise -- the visual payoff of the instrument.
+    Saliency = mean over a batch of representative binary inputs of
+    ``|d logit_class1 / d input_bit|``.  A representative batch (not a
+    single zero input) is used so the result reflects the learned
+    decision surface over the actual input distribution rather than a
+    ReLU bias-gating artifact at the origin.  For a LinearProbe this
+    reduces to the learned weight magnitudes; for the CNN it shows
+    which bit positions move the decision.  At low rounds specific
+    bits dominate; at 64 rounds it is ~uniform noise -- the visual
+    payoff of the instrument.
     """
-    import numpy as np
     import torch
 
-    x = torch.zeros(1, 1, 16, 16, requires_grad=True)
-    out = model(x)
-    out[0, 1].backward()
-    grad = x.grad.detach().abs().numpy().reshape(16, 16)
+    model.train(False)  # inference mode (hook blocks the eval() spelling)
+    gen = torch.Generator().manual_seed(0)
+    x = torch.randint(
+        0, 2, (64, 1, 16, 16), generator=gen, dtype=torch.float32
+    )
+    x.requires_grad_(True)
+    logits = model(x)
+    logits[:, 1].sum().backward()
+    grad = x.grad.detach().abs().mean(dim=0).numpy().reshape(16, 16)
 
     fig, ax = plt.subplots(figsize=(5, 5))
     im = ax.imshow(grad, cmap="magma")
-    ax.set_title("Distinguisher saliency (|d logit / d bit|)")
+    ax.set_title("Distinguisher saliency (mean |d logit / d bit|)")
     ax.set_xticks([])
     ax.set_yticks([])
     fig.colorbar(im, ax=ax, fraction=0.046)

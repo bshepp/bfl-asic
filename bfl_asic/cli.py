@@ -750,6 +750,12 @@ def ml_sweep(rounds, seed, n, epochs, model, feature, output, plot) -> None:
     round_list = (
         [int(x) for x in rounds.split(",")] if rounds else DEFAULT_ROUNDS
     )
+    if feature == "per-batch" and n < 2048:
+        raise click.UsageError(
+            "--feature per-batch needs --n >= 2048: the deviation-map "
+            "extractor groups 1024 hashes per class into one example, "
+            f"so n={n} would yield an empty dataset."
+        )
     click.echo(
         f"Sweeping rounds {round_list} (model={model}, feature={feature})..."
     )
