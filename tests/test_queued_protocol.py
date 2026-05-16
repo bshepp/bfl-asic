@@ -56,6 +56,11 @@ def test_build_queue_job_pack_framing_and_cap():
     assert body[1] == 0xC1            # signature
     assert body[2] == 3               # jobsInArray
     assert body[-1] == 0xFE           # endOfWrapper
+    # exact total length + per-struct payloadSize offsets lock the framing
+    assert len(out) == 3 + 1 + 1 + 1 + 3 * 46 + 1  # == 145
+    assert out[6] == 45    # 1st job struct payloadSize
+    assert out[52] == 45   # 2nd job struct payloadSize (6 + 46)
+    assert out[98] == 45   # 3rd job struct payloadSize (52 + 46)
     with pytest.raises(ValueError):
         build_queue_job_pack([(bytes(32), bytes(12))] * 6)  # cap is 5
     with pytest.raises(ValueError):
@@ -66,3 +71,9 @@ def test_simple_commands():
     assert build_queue_results() == b"ZOX"
     assert build_queue_flush() == b"ZQX"
     assert build_details() == b"ZCX"
+
+
+def test_build_queue_job_rejects_non_bytes():
+    # len("x"*32)==32 passes the length guard; bytes+str then raises.
+    with pytest.raises((TypeError, ValueError)):
+        build_queue_job("x" * 32, bytes(12))

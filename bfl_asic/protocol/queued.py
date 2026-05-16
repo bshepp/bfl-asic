@@ -6,6 +6,8 @@ No I/O happens here.
 """
 from __future__ import annotations
 
+# dataclass/field (and RESP_COUNT below) are consumed by the parsers
+# added to this module in the next task; intentionally imported now.
 from dataclasses import dataclass, field
 
 from bfl_asic.protocol.constants import (
