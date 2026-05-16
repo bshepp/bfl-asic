@@ -96,3 +96,65 @@ def test_queued_work_session_runs_past_42():
         for _result in sess.run(work_iter=work(), max_jobs=120):
             seen += 1
     assert seen == 120  # > 42: the wall is gone via the queued path
+
+
+def test_queued_session_no_busyspin_or_result_loss(monkeypatch):
+    """Latched fake transport: results are NOT ready until a job has
+    been ZOX-polled twice. Locks C1 (must back off, not busy-spin) and
+    C2 (must not exit while jobs are in flight -> no result loss)."""
+    import time as _time
+    from bfl_asic.device import QueuedWorkSession
+
+    sleeps: list = []
+    monkeypatch.setattr(_time, "sleep", lambda s: sleeps.append(s))
+
+    class LatchT:
+        def __init__(self):
+            self.jobs: list = []  # each {"ttl": int, "uid": str}
+            self._out = b""
+            self._n = 0
+            self.is_open = True
+
+        def open(self):
+            self.is_open = True
+
+        def write(self, data: bytes):
+            if data[:3] == b"ZNX":
+                self._n += 1
+                self.jobs.append({"ttl": 2, "uid": f"{self._n:08x}"})
+                self._out = b"OK\n"
+            elif data[:3] == b"ZCX":
+                self._out = b"JOBS IN QUEUE: %d\nOK\n" % len(self.jobs)
+            elif data[:3] == b"ZOX":
+                for j in self.jobs:
+                    j["ttl"] -= 1
+                ready = [j for j in self.jobs if j["ttl"] <= 0]
+                self.jobs = [j for j in self.jobs if j["ttl"] > 0]
+                lines = [b"COUNT:%d" % len(ready)]
+                for j in ready:
+                    lines.append(j["uid"].encode() + b",0,1,deadbeef")
+                self._out = b"\n".join(lines) + b"\nOK\n"
+            elif data[:3] == b"ZQX":
+                self.jobs.clear()
+                self._out = b"OK\n"
+            else:
+                self._out = b"ERR:UNKNOWN\n"
+
+        def readline(self, timeout=None):
+            i = self._out.find(b"\n")
+            if i == -1:
+                r, self._out = self._out, b""
+                return r
+            r, self._out = self._out[:i + 1], self._out[i + 1:]
+            return r
+
+    t = LatchT()
+    seen = 0
+    with QueuedWorkSession(t, max_queue_depth=4, poll_interval=0.01) as s:
+        def work():
+            for i in range(6):
+                yield (bytes([i]) * 32, bytes([i]) * 12)
+        for _r in s.run(work_iter=work(), max_jobs=6):
+            seen += 1
+    assert seen == 6           # C2: every in-flight result collected
+    assert len(sleeps) >= 1    # C1: backed off instead of busy-spinning

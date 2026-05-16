@@ -165,65 +165,92 @@ class QueuedWorkSession:
     """Sustained SC queued-work session (opt-in; the naive BFLDevice
     work path is unchanged). Continuously drains results so the
     firmware queue never saturates -- the real-miner pattern.
+
+    On real hardware a submitted job's result is not ready for ~0.8s,
+    so ``run()`` backs off ``poll_interval`` seconds between empty
+    drains rather than busy-polling the serial port, and never exits
+    while jobs may still be in flight.
     """
 
-    def __init__(self, transport, *, max_queue_depth: int = 32) -> None:
-        self._t = transport
+    def __init__(self, transport, *, max_queue_depth: int = 32,
+                 poll_interval: float = 0.1) -> None:
+        self._transport = transport
         self._max_depth = max_queue_depth
+        self._poll_interval = poll_interval
 
     def __enter__(self) -> "QueuedWorkSession":
-        if not self._t.is_open:
-            self._t.open()
+        if not self._transport.is_open:
+            self._transport.open()
         return self
 
     def __exit__(self, *exc) -> None:
+        """Best-effort ZQX flush so the device is not left queued."""
         from bfl_asic.protocol.queued import build_queue_flush
         try:
-            self._t.write(build_queue_flush())
-            self._t.readline()
+            self._transport.write(build_queue_flush())
+            self._transport.readline()
         except Exception:
             pass
 
-    def _jobs_in_queue(self) -> int:
-        from bfl_asic.protocol.queued import build_details, parse_details
-        self._t.write(build_details())
+    def _read_until_terminator(self, max_lines: int) -> bytes:
+        """Read lines until OK/SUCCESS or an empty (timeout) line."""
         raw = b""
-        for _ in range(16):
-            line = self._t.readline()
+        for _ in range(max_lines):
+            line = self._transport.readline()
             raw += line
             if line.strip() in (b"OK", b"SUCCESS") or not line:
                 break
-        return parse_details(raw).jobs_in_queue
+        return raw
+
+    def _jobs_in_queue(self) -> int:
+        """ZCX -> device-reported JOBS IN QUEUE (backpressure signal)."""
+        from bfl_asic.protocol.queued import build_details, parse_details
+        self._transport.write(build_details())
+        return parse_details(self._read_until_terminator(16)).jobs_in_queue
 
     def submit(self, midstate: bytes, tail: bytes) -> None:
+        """Send one ZNX job. Raise BFLProtocolError if the firmware
+        rejects it (ERR:/INPROCESS:) so a job is never silently lost.
+        """
+        from bfl_asic.exceptions import BFLProtocolError
         from bfl_asic.protocol.queued import build_queue_job
-        self._t.write(build_queue_job(midstate, tail))
-        self._t.readline()  # ack
+        self._transport.write(build_queue_job(midstate, tail))
+        ack = self._transport.readline().strip()
+        if ack.startswith(b"ERR:") or ack.startswith(b"INPROCESS:"):
+            raise BFLProtocolError(f"ZNX submit rejected: {ack!r}")
 
     def drain(self) -> list:
+        """ZOX -> up to QUE_MAX_RESULTS completed results (frees slots).
+
+        Returns a list of bfl_asic.protocol.queued.QueuedResult.
+        """
         from bfl_asic.protocol.queued import (
             build_queue_results, parse_queue_results)
-        self._t.write(build_queue_results())
-        raw = b""
-        for _ in range(64):
-            line = self._t.readline()
-            raw += line
-            if line.strip() in (b"OK", b"SUCCESS") or not line:
-                break
-        return parse_queue_results(raw, version="v1")
+        self._transport.write(build_queue_results())
+        return parse_queue_results(self._read_until_terminator(64),
+                                   version="v1")
 
     def run(self, *, work_iter, max_jobs=None, duration=None):
-        """Submit from *work_iter*, draining continuously. Yields
-        QueuedResult objects. Stops at max_jobs submitted or duration s.
+        """Submit from *work_iter*, draining continuously; yields
+        QueuedResult objects.
+
+        Uses ONE ZCX per outer iteration (no TOCTOU race) and only
+        terminates when there is no more work to submit, the device
+        queue observed this iteration was empty, AND this iteration's
+        drain was empty -- so in-flight results are never abandoned.
+        Sleeps ``poll_interval`` between empty drains so real hardware
+        (results ~0.8s late) is not busy-polled.
         """
         import time
         submitted = 0
-        deadline = (time.monotonic() + duration) if duration else None
+        deadline = (time.monotonic() + duration
+                    if duration is not None else None)
         exhausted = False
         while True:
+            depth = self._jobs_in_queue()
             while (not exhausted
                    and (max_jobs is None or submitted < max_jobs)
-                   and self._jobs_in_queue() < self._max_depth):
+                   and depth < self._max_depth):
                 try:
                     mid, tail = next(work_iter)
                 except StopIteration:
@@ -231,12 +258,15 @@ class QueuedWorkSession:
                     break
                 self.submit(mid, tail)
                 submitted += 1
-            for r in self.drain():
+                depth += 1
+            results = self.drain()
+            for r in results:
                 yield r
-            if deadline and time.monotonic() >= deadline:
+            if deadline is not None and time.monotonic() >= deadline:
                 break
-            if exhausted and self._jobs_in_queue() == 0:
+            no_more_to_submit = exhausted or (
+                max_jobs is not None and submitted >= max_jobs)
+            if no_more_to_submit and depth == 0 and not results:
                 break
-            if (max_jobs is not None and submitted >= max_jobs
-                    and self._jobs_in_queue() == 0):
-                break
+            if not results:
+                time.sleep(self._poll_interval)
