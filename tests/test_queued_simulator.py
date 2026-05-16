@@ -79,3 +79,20 @@ def test_queue_job_pack_zwx_enqueues_all_jobs():
         if parse_details(d.process_command(b"ZCX")).jobs_in_queue == 0:
             break
     assert drained == 7
+
+
+def test_queued_work_session_runs_past_42():
+    from bfl_asic.transport.simulator import SimulatorTransport, SimulatedDevice
+    from bfl_asic.device import QueuedWorkSession
+
+    t = SimulatorTransport(SimulatedDevice(naive_work_limit=42,
+                                           simulated_hashrate=64))
+    t.open()
+    seen = 0
+    with QueuedWorkSession(t) as sess:
+        def work():
+            for i in range(120):
+                yield (bytes([i % 256]) * 32, bytes([i % 256]) * 12)
+        for _result in sess.run(work_iter=work(), max_jobs=120):
+            seen += 1
+    assert seen == 120  # > 42: the wall is gone via the queued path

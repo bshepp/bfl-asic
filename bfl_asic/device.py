@@ -159,3 +159,84 @@ class BFLDevice:
     def transport(self) -> BaseTransport:
         """Access the underlying transport."""
         return self._transport
+
+
+class QueuedWorkSession:
+    """Sustained SC queued-work session (opt-in; the naive BFLDevice
+    work path is unchanged). Continuously drains results so the
+    firmware queue never saturates -- the real-miner pattern.
+    """
+
+    def __init__(self, transport, *, max_queue_depth: int = 32) -> None:
+        self._t = transport
+        self._max_depth = max_queue_depth
+
+    def __enter__(self) -> "QueuedWorkSession":
+        if not self._t.is_open:
+            self._t.open()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        from bfl_asic.protocol.queued import build_queue_flush
+        try:
+            self._t.write(build_queue_flush())
+            self._t.readline()
+        except Exception:
+            pass
+
+    def _jobs_in_queue(self) -> int:
+        from bfl_asic.protocol.queued import build_details, parse_details
+        self._t.write(build_details())
+        raw = b""
+        for _ in range(16):
+            line = self._t.readline()
+            raw += line
+            if line.strip() in (b"OK", b"SUCCESS") or not line:
+                break
+        return parse_details(raw).jobs_in_queue
+
+    def submit(self, midstate: bytes, tail: bytes) -> None:
+        from bfl_asic.protocol.queued import build_queue_job
+        self._t.write(build_queue_job(midstate, tail))
+        self._t.readline()  # ack
+
+    def drain(self) -> list:
+        from bfl_asic.protocol.queued import (
+            build_queue_results, parse_queue_results)
+        self._t.write(build_queue_results())
+        raw = b""
+        for _ in range(64):
+            line = self._t.readline()
+            raw += line
+            if line.strip() in (b"OK", b"SUCCESS") or not line:
+                break
+        return parse_queue_results(raw, version="v1")
+
+    def run(self, *, work_iter, max_jobs=None, duration=None):
+        """Submit from *work_iter*, draining continuously. Yields
+        QueuedResult objects. Stops at max_jobs submitted or duration s.
+        """
+        import time
+        submitted = 0
+        deadline = (time.monotonic() + duration) if duration else None
+        exhausted = False
+        while True:
+            while (not exhausted
+                   and (max_jobs is None or submitted < max_jobs)
+                   and self._jobs_in_queue() < self._max_depth):
+                try:
+                    mid, tail = next(work_iter)
+                except StopIteration:
+                    exhausted = True
+                    break
+                self.submit(mid, tail)
+                submitted += 1
+            for r in self.drain():
+                yield r
+            if deadline and time.monotonic() >= deadline:
+                break
+            if exhausted and self._jobs_in_queue() == 0:
+                break
+            if (max_jobs is not None and submitted >= max_jobs
+                    and self._jobs_in_queue() == 0):
+                break
