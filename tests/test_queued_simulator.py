@@ -40,7 +40,7 @@ def test_queued_path_sustains_well_past_42():
         assert d.process_command(_job(i)) == b"OK\n"          # ZNX accepted
     blob = d.process_command(b"ZCX")
     from bfl_asic.protocol.queued import parse_details, parse_queue_results
-    assert parse_details(blob).jobs_in_queue >= 1
+    assert parse_details(blob).jobs_in_queue == 500
     drained = 0
     for _ in range(200):
         res = parse_queue_results(d.process_command(b"ZOX"))
@@ -57,3 +57,25 @@ def test_fan_state_roundtrip():
     assert d.fan_mode == "auto"
     assert d.process_command(b"Z4X") == b"OK\n"
     assert d.fan_mode == "fixed" and d.fan_level == 4
+    assert d.process_command(b"Z0X") == b"OK\n"
+    assert d.fan_mode == "fixed" and d.fan_level == 0
+
+
+def test_queue_job_pack_zwx_enqueues_all_jobs():
+    from bfl_asic.protocol.queued import build_queue_job_pack, parse_details
+    d = SimulatedDevice()
+    jobs2 = [(bytes(32), bytes(12)),
+             (bytes([0xAB]) * 32, bytes([0xCD]) * 12)]
+    assert d.process_command(build_queue_job_pack(jobs2)) == b"OK\n"
+    assert parse_details(d.process_command(b"ZCX")).jobs_in_queue == 2
+    jobs5 = [(bytes([i]) * 32, bytes([i]) * 12) for i in range(5)]
+    assert d.process_command(build_queue_job_pack(jobs5)) == b"OK\n"
+    assert parse_details(d.process_command(b"ZCX")).jobs_in_queue == 7
+    # drain everything; all 7 packed jobs must yield results
+    from bfl_asic.protocol.queued import parse_queue_results
+    drained = 0
+    for _ in range(20):
+        drained += len(parse_queue_results(d.process_command(b"ZOX")))
+        if parse_details(d.process_command(b"ZCX")).jobs_in_queue == 0:
+            break
+    assert drained == 7
