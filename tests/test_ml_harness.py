@@ -18,7 +18,11 @@ def test_determinism_two_identical_runs_match():
     cfg = RunConfig(seed=3, rounds=3, n=512, epochs=2, model="linear_probe")
     r1 = run_training(cfg)
     r2 = run_training(cfg)
-    assert math.isclose(r1.accuracy, r2.accuracy, rel_tol=0, abs_tol=0.0)
+    assert r1.accuracy == r2.accuracy
+    assert r1.advantage == r2.advantage
+    assert r1.train_curve == r2.train_curve
+    assert math.isclose(r1.advantage, 2.0 * r1.accuracy - 1.0)
+    assert r1.min_detectable_advantage > 0.0
 
 
 @pytest.mark.slow
@@ -40,3 +44,9 @@ def test_negative_control_random_vs_random_is_chance():
     res = run_training(cfg)
     lo, hi = res.accuracy_ci
     assert lo <= 0.5 <= hi, f"CI {res.accuracy_ci} should bracket 0.5"
+
+
+def test_accuracy_ci_edges():
+    assert accuracy_ci(0, 100)[0] == 0.0
+    assert accuracy_ci(100, 100)[1] == 1.0
+    assert accuracy_ci(5, 0) == (0.0, 1.0)

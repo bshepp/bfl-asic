@@ -18,7 +18,6 @@ from bfl_asic.ml.datasets import (
     FeatureExtractor,
     PerHashImage,
 )
-from bfl_asic.ml.models import build_model
 
 
 @dataclass
@@ -102,7 +101,11 @@ def run_training(cfg: RunConfig) -> RunResult:
     """Train + evaluate one configuration deterministically (CPU default)."""
     import torch
 
+    from bfl_asic.ml.models import build_model
+
     torch.manual_seed(cfg.seed)
+    # Defensive: our RNGs use np.random.default_rng / torch.Generator, but
+    # seed the legacy global too in case a third-party lib uses it.
     np.random.seed(cfg.seed)
 
     if cfg.negative_control:
@@ -148,12 +151,19 @@ def run_training(cfg: RunConfig) -> RunResult:
     try:
         from sklearn.metrics import roc_auc_score
 
+        # ImportError: sklearn absent (not in [ml] extra).
+        # ValueError: single-class y_val -> AUC undefined.
         auc = float(roc_auc_score(data.y_val.numpy(), probs))
-    except Exception:
+    except (ImportError, ValueError):
         auc = float("nan")
 
     ci = accuracy_ci(correct, n_val)
-    z = 1.959963984540054
+    z = 1.959963984540054  # 97.5th percentile of N(0,1) (two-tailed 95%)
+    # NOTE: this is the 95% CI half-width on advantage at worst-case p=0.5,
+    # i.e. a *CI-resolution* proxy ("below this advantage the accuracy CI
+    # still includes chance"), NOT a power-based minimum detectable effect.
+    # A true 80%-power MDA is ~1.4x larger; bounded-null reporting that
+    # consumes this field must phrase it as a CI-resolution floor.
     mda = 2.0 * z * float(np.sqrt(0.25 / max(n_val, 1)))
     return RunResult(
         config=cfg,
