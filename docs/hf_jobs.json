@@ -42,20 +42,32 @@
       ]
     },
     "tier_b": {
-      "purpose": "Tier B generous run: finer sweep x5 seeds (n=500k), full_structure x5 (n=4M, ~0.2% null floor), indistinguishability (n=4M), dynamics (n=50k). ~30 CPU-h: exceeds 6h cap, resumes via progress.json across resubmissions.",
+      "purpose": "Tier B sweep, TRIMMED to the 5-seed learnability sweep only (n=500k). The original full_structure x5 / indistinguishability / dynamics n=4M tail was dropped: 2 completed seeds replicated Tier A exactly and the tail is redundant with Tier A's valid bounded null. Job self-terminates after sweep_seed4 on resume.",
       "id": "6a086568e48bea4538b9fba5",
       "view": "https://huggingface.co/jobs/bshepp/6a086568e48bea4538b9fba5",
       "bucket": "hf://buckets/bshepp/bfl-ml-tierB",
       "target": "run_ml_tier",
       "args": ["--tier", "B"],
-      "status": "RUNNING",
-      "resume_protocol": "On 6h SIGTERM the job flushes progress.json + partials; resubmit the same uv-run command against the same bucket to continue. Repeat until summary.json status==complete.",
+      "status": "RUNNING (trimmed; sweep_seed0,1 done)",
+      "resume_protocol": "Bucket run_ml_tier.py trimmed in place (single-file cp; results/progress preserved). On 6h SIGTERM, resubmit the same uv-run command; progress.json skips done seeds, runs the rest, then exits cleanly after sweep_seed4 (no full_structure tail).",
       "expected_outputs": [
         "results/sweep_seed{0..4}.json + .png",
-        "results/full_structure_seed{0..4}.json",
-        "results/indistinguishability.json",
-        "results/dynamics.json + .png",
         "results/summary.json",
+        "results/progress.json"
+      ]
+    },
+    "indistinguishability": {
+      "purpose": "Standalone full-SHA-256 (64-round) vs random at n=4M, tiny_cnn, 30 epochs (n_val=800k -> CI-resolution floor ~0.22%). The single high-value Tier-B remnant, run as its own ~4h single-cycle job in parallel with the trimmed Tier B sweep.",
+      "id": "6a08bf133308d79117b9120e",
+      "view": "https://huggingface.co/jobs/bshepp/6a08bf133308d79117b9120e",
+      "bucket": "hf://buckets/bshepp/bfl-ml-indist",
+      "target": "run_indist",
+      "args": [],
+      "status": "RUNNING",
+      "resume_protocol": "Fits one 6h cpu-xl cycle (~4h). If SIGTERMed early, resubmit the same command; progress.json makes a post-completion resubmit a no-op.",
+      "expected_outputs": [
+        "results/indistinguishability.json",
+        "results/summary.json (status complete, accuracy/accuracy_ci/ci_resolution_floor, controls)",
         "results/progress.json"
       ]
     }
