@@ -12,11 +12,19 @@ Acting on a third-party review of the Tier A artifacts:
   control** on the lead width (was a hardcoded `negative_ok=True`). The
   shuffled-label model must not beat chance, or the signal is a
   dataset/setup artifact, not orbit structure.
-- **Tier A dynamics number is superseded.** The recorded Tier A
-  `dynamics` figure (width-1 ≈ 0.354 vs 0.25 chance) was produced by the
-  *pre-fix* harness with no permuted-label control. It is **exploratory,
-  not a verified positive** — do not cite it as a result. A re-run with
-  the corrected harness is required to make any dynamics claim.
+- **Tier A dynamics number was an artifact — now VERIFIED.** Re-ran the
+  Tier-A dynamics config (seed=0, n=20000, ep=25, widths 1–4) through the
+  validated harness (2124 s). Width-1 acc=0.3535, CI [0.339, 0.369],
+  above chance 0.25 — **but the permuted-label control scored
+  identically (0.3535, same CI)**, so `negative_ok=False`. With the
+  seed→tail mapping shuffled the model still gets 0.3535, i.e. it learns
+  nothing from the seed and collapses to the most-frequent quantile bin;
+  the "+10%" is the non-uniform label prior, not orbit structure. Widths
+  2–4 sit at chance (adv ≈ 0). **Verified conclusion: no learnable
+  seed→orbit-tail structure at any truncation width.** The prior 0.354
+  was a dataset-construction artifact, exactly as the review's §1
+  hypothesised — the fixed harness converted a false positive into a
+  correct, controlled negative (which is the whole point of the control).
 - **Per-batch feature probe (local, n=2M, rounds 3,4,5,6,8).** Per-batch
   reproduces the *same* round-4 learnability cliff as per-hash (r3=1.00;
   r4–8 CI brackets 0.5). The cliff is **not feature-bottlenecked**.

@@ -31,7 +31,7 @@
       "target": "run_ml_tier",
       "args": ["--tier", "A"],
       "status": "COMPLETED",
-      "result": "~5.8h wall (21036s). Sweep cliff: r1-3 acc=1.00, r4-64 acc=0.50 (all 3 seeds). Full-SHA bounded null: acc~0.500, CI brackets 0.5, MDA-floor~0.0049, controls_ok -> no structure detected. Dynamics: t1=0.354 t2-4=0.25 -- EXPLORATORY ONLY: produced by the pre-2026-05-16 harness with no permuted-label control / placeholder CI/MDA; superseded by the validated run_dynamics_sweep, re-run required before citing. Sweep + bounded-null units are verified.",
+      "result": "~5.8h wall (21036s). Sweep cliff: r1-3 acc=1.00, r4-64 acc=0.50 (all 3 seeds). Full-SHA bounded null: acc~0.500, CI brackets 0.5, MDA-floor~0.0049, controls_ok -> no structure detected. Dynamics: VERIFIED via the validated harness (re-run seed0 n=20000): width-1 0.3535 but the permuted-label control scores identically -> ARTIFACT (label-prior, not orbit structure); widths 2-4 at chance. Verified conclusion = no learnable seed->orbit-tail structure at any width. Sweep + bounded-null units verified.",
       "expected_outputs": [
         "results/sweep_seed{0,1,2}.json + .png",
         "results/full_structure_seed{0,1,2}.json",
