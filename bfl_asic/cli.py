@@ -923,6 +923,63 @@ def ml_plot(snapshot_path: str) -> None:
     click.echo(f"  Plot saved to: {png}")
 
 
+# ======================================================================
+# fan
+# ======================================================================
+
+
+@main.command(name="fan")
+@click.argument("setting")
+@click.pass_context
+def fan_cmd(ctx: click.Context, setting: str) -> None:
+    """Set fan: 'auto' (Z9X) or a fixed level 0-4 (Z0X-Z4X).
+
+    A fixed level is PERSISTENT and overrides firmware thermal
+    management until you run 'fan auto' again. A low level during
+    hashing can physically damage the ASIC.
+    """
+    transport = get_transport(
+        ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
+    )
+    with BFLDevice(transport) as device:
+        if setting == "auto":
+            ok = device.set_fan_auto()
+            click.echo(
+                f"Fan set to auto (firmware-managed): "
+                f"{'OK' if ok else 'FAILED'}"
+            )
+            if not ok:
+                raise click.ClickException(
+                    "device did not acknowledge the fan command"
+                )
+            return
+        try:
+            level = int(setting)
+        except ValueError:
+            raise click.BadParameter("setting must be 'auto' or 0-4")
+        if not 0 <= level <= 4:
+            raise click.BadParameter("fixed fan level must be 0-4")
+        click.echo(
+            "WARNING: fixed fan level overrides firmware thermal "
+            "management; a low level during hashing can cause thermal "
+            "damage. This is PERSISTENT -- restore with 'fan auto' "
+            "when done."
+        )
+        try:
+            temp = device.get_temperature()
+            click.echo(f"  temp before: {temp.sensors}")
+        except Exception:
+            pass
+        ok = device.set_fan(level)
+        click.echo(
+            f"Fan set to fixed level {level}: {'OK' if ok else 'FAILED'}"
+        )
+        if not ok:
+            raise click.ClickException(
+                "device did not acknowledge the fan command"
+            )
+
+
 @ml.command(name="publish")
 @click.argument("run_dir", type=click.Path(exists=True))
 @click.option("--repo-id", required=True,
