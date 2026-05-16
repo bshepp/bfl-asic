@@ -62,7 +62,10 @@ class BFLDevice:
         return parse_voltage(raw)
 
     def set_fan_auto(self) -> bool:
-        """Hand the fan back to firmware thermal management (Z9X)."""
+        """Hand the fan back to firmware thermal management (Z9X).
+
+        Returns True if the device acked, False on ERR:/no response.
+        """
         from bfl_asic.protocol.fan import build_fan_auto, parse_fan_ack
         self._transport.write(build_fan_auto())
         return parse_fan_ack(self._transport.readline())
@@ -74,13 +77,17 @@ class BFLDevice:
         and physically damage the ASIC. Prefer set_fan_auto(); always
         restore auto when done. Levels 1..3 are firmware-defined but
         hardware-unconfirmed.
+
+        Returns True if the device acked, False on ERR:/no response.
         """
         import warnings
+        from bfl_asic.exceptions import ThermalSafetyWarning
         from bfl_asic.protocol.fan import build_fan_level, parse_fan_ack
         warnings.warn(
             f"set_fan({level}): manual fan level overrides firmware "
             f"thermal management; low levels during hashing risk thermal "
             f"damage. Restore set_fan_auto() when done.",
+            category=ThermalSafetyWarning,
             stacklevel=2,
         )
         self._transport.write(build_fan_level(level))
@@ -295,3 +302,29 @@ class QueuedWorkSession:
                 break
             if not results:
                 time.sleep(self._poll_interval)
+
+
+class fan_fixed:
+    """Context manager: set a FIXED fan level, then ALWAYS restore
+    firmware auto (Z9X) on exit -- including on exception.
+
+    The structural guard for the thermal-safety restore-on-exit
+    contract. Prefer ``with fan_fixed(dev, level):`` over a bare
+    ``dev.set_fan(level)`` whenever a fixed level is used, so a low/off
+    fan can never be left engaged if the body raises.
+    """
+
+    def __init__(self, device: "BFLDevice", level: int) -> None:
+        self._device = device
+        self._level = level
+
+    def __enter__(self) -> "BFLDevice":
+        self._device.set_fan(self._level)
+        return self._device
+
+    def __exit__(self, *exc) -> None:
+        # Restore auto even when the body raised. If restoration itself
+        # fails on a dead transport, that failure surfaces (a failed
+        # thermal restore is more important to know about than a
+        # swallowed original error).
+        self._device.set_fan_auto()

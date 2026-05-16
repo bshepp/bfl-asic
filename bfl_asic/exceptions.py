@@ -24,3 +24,12 @@ class BFLTimeoutError(BFLError):
 
 class BFLDeviceError(BFLError):
     """Device-reported error (overheated, hardware fault, etc.)."""
+
+
+class ThermalSafetyWarning(UserWarning):
+    """A manual FIXED fan level was set, overriding firmware thermal
+    management. A low/off fan during hashing can physically damage the
+    ASIC. Subclasses UserWarning so it still matches broad capture, but
+    is a named category so it cannot be silenced by an unrelated
+    UserWarning filter.
+    """
