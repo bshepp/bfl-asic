@@ -340,11 +340,13 @@ Configurable via `$BFL_ASIC_OUTPUT_DIR`. Added `runs/` to `.gitignore`. **12 new
 
 ## Project Metrics
 
+_Point-in-time snapshot; live test/source totals are tracked in README.md and CLAUDE.md._
+
 | Metric | Value |
 |--------|-------|
 | Source lines | 5,142 |
 | Test lines | 5,919 |
-| Test count | 671 |
+| Test count | 783 |
 | Source files | 31 |
 | Test files | 26 |
 | Test:source ratio | 1.15x |
