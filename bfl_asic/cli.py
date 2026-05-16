@@ -707,3 +707,23 @@ def randomness_report(snapshot_path: str) -> None:
     click.echo(
         f"  Summary: {snapshot.pass_count} passed, {snapshot.fail_count} failed"
     )
+
+
+# ======================================================================
+# ml (optional subsystem -- requires `pip install -e ".[ml]"`)
+# ======================================================================
+
+
+def _require_torch() -> None:
+    """Raise a friendly ClickException if the optional ML deps are absent."""
+    try:
+        import torch  # noqa: F401
+    except ImportError:
+        raise click.ClickException(
+            'ML subsystem requires: pip install -e ".[ml]"'
+        )
+
+
+@main.group()
+def ml() -> None:
+    """Machine-learning learnability instrument (optional [ml] extra)."""

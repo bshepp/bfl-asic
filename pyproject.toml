@@ -22,6 +22,10 @@ dev = [
     "pytest",
     "pytest-asyncio",
 ]
+ml = [
+    "torch",
+    "huggingface_hub",
+]
 
 [project.scripts]
 bfl-asic = "bfl_asic.cli:main"
@@ -32,3 +36,6 @@ include = ["bfl_asic*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "slow: heavy ML training tests, excluded from the default fast run",
+]
