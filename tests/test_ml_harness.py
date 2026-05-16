@@ -23,7 +23,10 @@ def test_determinism_two_identical_runs_match():
 
 @pytest.mark.slow
 def test_positive_control_low_rounds_is_learnable():
-    cfg = RunConfig(seed=0, rounds=2, n=4096, epochs=8, model="tiny_cnn")
+    # 2-round SHA-256 is trivially distinguishable from random; the harness's
+    # deterministic fixed-per-epoch batch order converges slowly, so 12 epochs
+    # are needed to clear the strong >0.80 bar (8 epochs only reaches ~0.77).
+    cfg = RunConfig(seed=0, rounds=2, n=4096, epochs=12, model="tiny_cnn")
     res = run_training(cfg)
     assert res.accuracy > 0.80, f"got {res.accuracy}"
 
