@@ -23,6 +23,7 @@ class FeatureExtractor(ABC):
 
     @abstractmethod
     def name(self) -> str:
+        """Return a short, filesystem-safe identifier for this extractor."""
         ...
 
 
@@ -59,7 +60,7 @@ class PerBatchDeviationMap(FeatureExtractor):
         return dev.reshape(-1, 16, 16)
 
     def name(self) -> str:
-        return f"per-batch-deviation-map(b={self._batch})"
+        return f"per-batch-deviation-map-b{self._batch}"
 
 
 @dataclass
@@ -68,13 +69,13 @@ class Dataset:
 
     x_train: "object"  # torch.Tensor (N,1,16,16) float32
     y_train: "object"  # torch.Tensor (N,) int64
-    x_val: "object"
-    y_val: "object"
+    x_val: "object"  # torch.Tensor (N,1,16,16) float32
+    y_val: "object"  # torch.Tensor (N,) int64
     feature_name: str
 
 
-def _counter_inputs(rng: np.random.Generator, n: int) -> np.ndarray:
-    """N distinct 32-byte inputs (random, like a nonce stream)."""
+def _random_inputs(rng: np.random.Generator, n: int) -> np.ndarray:
+    """N independent uniform-random 32-byte inputs (a nonce-like stream)."""
     return rng.integers(0, 256, size=(n, 32), dtype=np.uint8)
 
 
@@ -106,7 +107,7 @@ class DistinguisherDatasetBuilder:
         rng = np.random.default_rng(self.seed)
         half = self.n // 2
 
-        a_in = _counter_inputs(rng, half)
+        a_in = _random_inputs(rng, half)
         a_out = round_reduced_sha256(
             a_in, rounds=self.rounds, double=self.double
         )
@@ -114,7 +115,7 @@ class DistinguisherDatasetBuilder:
         if self.class_b_random:
             b_out = rng.integers(0, 256, size=(half, 32), dtype=np.uint8)
         else:
-            b_in = _counter_inputs(rng, half)
+            b_in = _random_inputs(rng, half)
             b_out = round_reduced_sha256(b_in, rounds=64, double=self.double)
 
         feat_a = self.extractor.extract(a_out)

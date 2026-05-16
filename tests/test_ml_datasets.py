@@ -49,3 +49,43 @@ def test_distinguisher_different_seed_changes_data():
     a = DistinguisherDatasetBuilder(seed=1, rounds=4, n=256).build()
     b = DistinguisherDatasetBuilder(seed=2, rounds=4, n=256).build()
     assert not torch.equal(a.x_train, b.x_train)
+
+
+def test_class_b_random_false_path_differs_and_is_deterministic():
+    same_a = DistinguisherDatasetBuilder(seed=3, rounds=4, n=512).build()
+    ctrl1 = DistinguisherDatasetBuilder(
+        seed=3, rounds=4, n=512, class_b_random=False
+    ).build()
+    ctrl2 = DistinguisherDatasetBuilder(
+        seed=3, rounds=4, n=512, class_b_random=False
+    ).build()
+    # class_b_random=False (full-64-round SHA as the negative class) must be
+    # reproducible and must differ from the random-bytes class B.
+    assert torch.equal(ctrl1.x_train, ctrl2.x_train)
+    assert not torch.equal(ctrl1.x_train, same_a.x_train)
+    assert ctrl1.x_train.shape[1:] == (1, 16, 16)
+
+
+def test_val_and_train_tensor_dtypes():
+    d = DistinguisherDatasetBuilder(seed=8, rounds=4, n=256).build()
+    assert d.x_train.dtype == torch.float32
+    assert d.y_train.dtype == torch.int64
+    assert d.x_val.dtype == torch.float32
+    assert d.y_val.dtype == torch.int64
+
+
+def test_custom_extractor_injection():
+    builder = DistinguisherDatasetBuilder(
+        seed=2, rounds=4, n=512, extractor=PerBatchDeviationMap(batch=64)
+    )
+    d = builder.build()
+    assert d.x_train.shape[1:] == (1, 16, 16)
+    assert d.feature_name == "per-batch-deviation-map-b64"
+
+
+def test_per_batch_deviation_map_truncates_remainder():
+    ex = PerBatchDeviationMap(batch=64)
+    rng = np.random.default_rng(1)
+    outputs = rng.integers(0, 256, size=(193, 32), dtype=np.uint8)
+    dev = ex.extract(outputs)
+    assert dev.shape == (3, 16, 16)  # 193 // 64 == 3, remainder dropped
