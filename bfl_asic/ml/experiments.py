@@ -139,18 +139,29 @@ def run_dynamics_sweep(
         chance = 1.0 / n_bins
         points.append(
             {
-                "rounds": t,  # reuse the "rounds" key as the knob axis
+                "rounds": t,  # generic knob axis (truncation bytes here)
                 "accuracy": acc,
+                # NOTE: for dynamics "advantage" is gain over chance
+                # (acc - 1/n_bins), NOT the harness's 2*acc-1 binary
+                # distinguishing advantage. "chance" is recorded so
+                # report/plot can disambiguate.
                 "advantage": acc - chance,
-                "auc": float("nan"),
-                "accuracy_ci": [0.0, 1.0],
+                "auc": None,  # AUC undefined for multi-class dynamics
+                "accuracy_ci": [0.0, 1.0],  # placeholder; no CI here
                 "min_detectable_advantage": 0.0,
                 "chance": chance,
             }
         )
     controls = {
-        "positive_ok": points[0]["accuracy"] >= points[0]["chance"],
+        "positive_accuracy": points[0]["accuracy"],
+        "positive_ok": (
+            points[0]["accuracy"] >= points[0]["chance"] + 0.05
+        ),
+        # No random-vs-random negative control here: the sweep itself is
+        # the control -- learnability must collapse toward `chance` as
+        # truncation width grows. negative_ok stays True by construction.
         "negative_ok": True,
-        "note": "knob is truncation width (bytes); chance = 1/n_bins",
+        "note": "knob is truncation width (bytes); chance = 1/n_bins; "
+                "advantage = accuracy - chance",
     }
     return points, controls

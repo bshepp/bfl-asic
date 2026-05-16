@@ -810,7 +810,7 @@ def ml_sweep(rounds, seed, n, epochs, model, feature, output, plot) -> None:
 @click.option("--epochs", default=10, type=int)
 @click.option("-o", "--output", default=None, type=click.Path())
 def ml_run(experiment, seed, n, epochs, output) -> None:
-    """Experiments #2 / #4 by name."""
+    """Experiments #2, #3, #4 by name."""
     _require_torch()
     from bfl_asic.ml.experiments import run_full_structure, run_sweep
     from bfl_asic.ml.snapshot import MLSnapshot
@@ -889,12 +889,19 @@ def ml_report(snapshot_path: str) -> None:
     click.echo(f"  Feature:    {snap.feature}")
     click.echo(f"  Timestamp:  {snap.timestamp}")
     click.echo("")
-    click.echo(f"  {'rounds':>6}  {'accuracy':>9}  {'advantage':>9}")
+    has_chance = any("chance" in p for p in snap.points)
+    header = f"  {'knob':>6}  {'accuracy':>9}  {'advantage':>9}"
+    if has_chance:
+        header += f"  {'chance':>7}"
+    click.echo(header)
     for p in snap.points:
-        click.echo(
+        line = (
             f"  {p.get('rounds', '-'):>6}  {p['accuracy']:>9.4f}  "
             f"{p['advantage']:>9.4f}"
         )
+        if has_chance:
+            line += f"  {p.get('chance', float('nan')):>7.3f}"
+        click.echo(line)
     if snap.bounded_null:
         click.echo("")
         click.echo(f"  Bounded null: {snap.bounded_null.get('conclusion')}")

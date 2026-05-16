@@ -97,7 +97,17 @@ def test_orbit_dataset_builder_labels_and_determinism():
     a = OrbitDatasetBuilder(seed=5, trunc_bytes=2, n=128, n_bins=3).build()
     b = OrbitDatasetBuilder(seed=5, trunc_bytes=2, n=128, n_bins=3).build()
     assert torch.equal(a.x_train, b.x_train)
+    assert torch.equal(a.y_train, b.y_train)
     assert a.x_train.shape[1:] == (1, 16, 16)
     labels = torch.cat([a.y_train, a.y_val])
     assert int(labels.min()) >= 0
     assert int(labels.max()) <= 2
+
+
+def test_orbit_dataset_builder_rejects_bad_trunc_bytes():
+    from bfl_asic.ml.datasets import OrbitDatasetBuilder
+
+    with pytest.raises(ValueError):
+        OrbitDatasetBuilder(seed=0, trunc_bytes=0)
+    with pytest.raises(ValueError):
+        OrbitDatasetBuilder(seed=0, trunc_bytes=5)

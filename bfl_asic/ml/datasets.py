@@ -129,6 +129,8 @@ class OrbitDatasetBuilder:
             info = brent_detect(
                 bytes(seeds[i]), max_steps=self.max_steps, hash_fn=hash_fn
             )
+            # -1 = no cycle within max_steps (rare for default widths
+            # 1..3); it bins with the shortest tails -- acceptable noise.
             tails.append(info.tail_length if info is not None else -1)
         tarr = np.array(tails, dtype=np.float64)
         valid = tarr[tarr >= 0]
@@ -138,8 +140,13 @@ class OrbitDatasetBuilder:
             else np.linspace(0, 1, self.n_bins + 1)
         )
         edges[0], edges[-1] = -1.0, np.inf
+        # Deduplicate inner edges: collapsed quantiles (low-variance
+        # tail distributions) would feed non-monotone bins to
+        # np.digitize (undefined behaviour). Fewer distinct edges just
+        # yields fewer occupied classes, which CrossEntropy handles.
+        inner = np.unique(edges[1:-1])
         y = np.clip(
-            np.digitize(tarr, edges[1:-1]), 0, self.n_bins - 1
+            np.digitize(tarr, inner), 0, self.n_bins - 1
         ).astype(np.int64)
 
         bits = np.unpackbits(seeds, axis=1).reshape(-1, 16, 16)

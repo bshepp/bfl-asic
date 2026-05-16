@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -44,7 +45,9 @@ class MLSnapshot:
         )
 
     def to_json(self) -> str:
-        return json.dumps(self.__dict__, indent=2, default=_safe_default)
+        return json.dumps(
+            _json_safe(self.__dict__), indent=2, default=_safe_default
+        )
 
     def save(self, path: Path) -> None:
         Path(path).write_text(self.to_json())
@@ -56,6 +59,19 @@ class MLSnapshot:
     @classmethod
     def load(cls, path: Path) -> "MLSnapshot":
         return cls.from_json(Path(path).read_text())
+
+
+def _json_safe(o):
+    """Recursively replace non-finite floats with None so the output is
+    strict-RFC-8259 JSON (NaN/Infinity are not valid JSON and break
+    strict consumers such as the HF uploader / jq / browsers)."""
+    if isinstance(o, float):
+        return o if math.isfinite(o) else None
+    if isinstance(o, dict):
+        return {k: _json_safe(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_json_safe(v) for v in o]
+    return o
 
 
 def _safe_default(obj):

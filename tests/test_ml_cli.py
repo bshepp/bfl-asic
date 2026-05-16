@@ -140,3 +140,48 @@ def test_ml_run_dynamics(tmp_path, monkeypatch):
     )
     assert res.exit_code == 0, res.output
     assert list((tmp_path / "ml").rglob("snapshot.json"))
+
+
+def test_dynamics_snapshot_is_strict_valid_json(tmp_path):
+    import json as _json
+
+    from bfl_asic.ml.snapshot import MLSnapshot
+
+    snap = MLSnapshot.from_runs(
+        experiment="dynamics", feature="seed-image", model="tiny_cnn",
+        points=[{"rounds": 1, "accuracy": 0.5, "advantage": 0.25,
+                 "auc": None, "accuracy_ci": [0.0, 1.0],
+                 "min_detectable_advantage": 0.0, "chance": 0.25}],
+        controls={"positive_ok": True, "negative_ok": True},
+    )
+    text = snap.to_json()
+    assert "NaN" not in text and "Infinity" not in text
+    _json.loads(text)  # must parse with the strict stdlib parser
+
+
+def test_dynamics_plot_uses_correct_axis_and_chance(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from bfl_asic.ml.snapshot import MLSnapshot
+    from bfl_asic.ml.visualization import plot_learnability_curve
+
+    snap = MLSnapshot.from_runs(
+        experiment="dynamics", feature="seed-image", model="tiny_cnn",
+        points=[
+            {"rounds": 1, "accuracy": 0.60, "advantage": 0.35,
+             "auc": None, "accuracy_ci": [0.0, 1.0],
+             "min_detectable_advantage": 0.0, "chance": 0.25},
+            {"rounds": 3, "accuracy": 0.27, "advantage": 0.02,
+             "auc": None, "accuracy_ci": [0.0, 1.0],
+             "min_detectable_advantage": 0.0, "chance": 0.25},
+        ],
+        controls={"positive_ok": True, "negative_ok": True},
+    )
+    fig = plot_learnability_curve(snap, save_path=tmp_path / "d.png")
+    assert (tmp_path / "d.png").exists()
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "truncation width (bytes)"
+    assert "Dynamics" in ax.get_title()
+    plt.close(fig)

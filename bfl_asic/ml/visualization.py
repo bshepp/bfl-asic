@@ -11,24 +11,42 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 
 def plot_learnability_curve(snapshot, save_path: Path | None = None):
-    """Accuracy & CI vs the knob, with a chance band."""
+    """Accuracy vs the knob, with the correct chance reference.
+
+    Works for both the round-reduced sweep (binary, chance=0.5, x =
+    SHA-256 rounds) and the dynamics experiment (multi-class, chance =
+    1/n_bins carried per-point, x = truncation width in bytes).
+    """
     pts = sorted(snapshot.points, key=lambda p: p["rounds"])
     xs = [p["rounds"] for p in pts]
-    acc = [p["accuracy"] for p in pts]
-    lo = [p["accuracy_ci"][0] for p in pts]
-    hi = [p["accuracy_ci"][1] for p in pts]
+    acc = [p["accuracy"] for p in pts] or [0.5]
+    is_dynamics = snapshot.experiment == "dynamics"
+    chance = pts[0].get("chance", 0.5) if pts else 0.5
+    xlabel = (
+        "truncation width (bytes)" if is_dynamics
+        else "SHA-256 rounds (knob)"
+    )
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.axhspan(0.45, 0.55, color="grey", alpha=0.2, label="chance band")
-    ax.fill_between(xs, lo, hi, alpha=0.25, label="95% CI")
+    ax.axhline(chance, color="grey", ls="--", alpha=0.7,
+               label=f"chance ({chance:.2f})")
+    # Only shade a CI ribbon when CIs are informative; dynamics records
+    # a [0, 1] placeholder, so skip it there.
+    cis = [p.get("accuracy_ci", [0.0, 1.0]) for p in pts]
+    if cis and all(not (c[0] <= 0.0 and c[1] >= 1.0) for c in cis):
+        ax.fill_between(
+            xs, [c[0] for c in cis], [c[1] for c in cis],
+            alpha=0.25, label="95% CI",
+        )
     ax.plot(xs, acc, "o-", label="held-out accuracy")
-    ax.set_xlabel("SHA-256 rounds (knob)")
-    ax.set_ylabel("distinguisher accuracy")
-    ax.set_ylim(0.4, 1.02)
-    ax.set_title(
-        f"Learnability collapse ({snapshot.model}, {snapshot.feature})"
-    )
-    ax.legend(loc="upper right")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("held-out accuracy")
+    lo_y = max(0.0, min(min(acc), chance) - 0.05)
+    hi_y = min(1.02, max(max(acc), chance) + 0.05)
+    ax.set_ylim(lo_y, max(hi_y, chance + 0.1))
+    kind = "Dynamics learnability" if is_dynamics else "Learnability collapse"
+    ax.set_title(f"{kind} ({snapshot.model}, {snapshot.feature})")
+    ax.legend(loc="best")
     fig.tight_layout()
     if save_path is not None:
         fig.savefig(save_path, dpi=120)
