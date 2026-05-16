@@ -5,9 +5,12 @@ Mirrors `bfl_asic/ml/publish.py` (HfApi.create_repo + upload_folder) but
 with `repo_type="dataset"` and public-by-default, matching the author's
 existing HF dataset convention (`bshepp/pairwise-poisson-algebras`).
 
-Uploads only the curated card + Parquet + the two build/publish scripts
-(no synced run JSON, no payloads). Auth comes from the already-configured
-`hf` CLI token (HF_TOKEN env var or `~/.cache/huggingface/token`).
+Uploads a self-contained dataset: the curated card + Parquet + the
+build/publish scripts + the shipped `source/` run JSON, so the HF repo
+rebuilds via `python build_dataset.py` with no external data (no HF
+payloads/buckets). The card's `configs:` pin the four .parquet, so the
+source JSON is inert to the Dataset Viewer / `load_dataset`. Auth comes
+from the configured `hf` CLI token (HF_TOKEN or ~/.cache/huggingface/token).
 
 Usage:
     python dataset/publish_dataset.py                       # default repo, public
@@ -18,23 +21,35 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 from pathlib import Path
 
 DEFAULT_REPO = "bshepp/round-reduced-sha256-learnability"
-ALLOW = ["README.md", "*.parquet", "build_dataset.py", "publish_dataset.py"]
+ALLOW = [
+    "README.md",
+    "*.parquet",
+    "build_dataset.py",
+    "publish_dataset.py",
+    "source/*",  # fnmatch '*' spans '/', so this is recursive under source/
+]
 
 
 def publish(repo_id: str, *, private: bool, dry_run: bool) -> str:
     folder = Path(__file__).resolve().parent
     url = f"https://huggingface.co/datasets/{repo_id}"
+    # Mirror huggingface_hub's allow_patterns matching exactly (fnmatch
+    # on the repo-relative posix path) so the dry-run is honest.
     files = sorted(
-        p.name
-        for p in folder.iterdir()
-        if p.suffix in (".parquet", ".md", ".py")
+        rel
+        for p in folder.rglob("*")
+        if p.is_file()
+        and any(fnmatch.fnmatch(rel := p.relative_to(folder).as_posix(),
+                                pat) for pat in ALLOW)
     )
     if dry_run:
         print(f"[dry-run] would create dataset repo {repo_id} "
-              f"(private={private}) and upload from {folder}:")
+              f"(private={private}) and upload {len(files)} files "
+              f"from {folder}:")
         for f in files:
             print(f"  + {f}")
         print(f"[dry-run] -> {url}")

@@ -282,6 +282,11 @@ bfl-asic ml report runs/ml/<timestamp>/sweep_seed0.json
 python dataset/build_dataset.py     # deps: pandas, pyarrow
 ```
 
+This HF dataset repo is itself self-contained: `git clone` it, `pip
+install pandas pyarrow`, run `python build_dataset.py`, and the four
+Parquet rebuild from the bundled `source/` JSON — no external data, no
+GitHub checkout required.
+
 The harness is deterministic: the same seed reproduces the same curve.
 The `dynamics_validated` table is the output of the *fixed* harness
 (real Clopper–Pearson CI + permuted-label control); the earlier
