@@ -67,3 +67,39 @@ def test_invalid_rounds_rejected(bad):
 def test_input_longer_than_one_block_rejected():
     with pytest.raises(ValueError):
         round_reduced_sha256(np.zeros((1, 56), dtype=np.uint8), rounds=64)
+
+
+def test_feed_forward_false_anchored_to_hashlib_via_h_addition():
+    """feed_forward=False returns post-round state S; standard SHA-256
+    finalises as (H_init + S) mod 2^32 per 32-bit word. This anchors the
+    feed_forward=False path to hashlib (no external reference exists for
+    'SHA-256 without feed-forward' otherwise)."""
+    import struct
+
+    from bfl_asic.ml.roundreduced import _H
+
+    rng = np.random.default_rng(7)
+    data = rng.integers(0, 256, size=(16, 32), dtype=np.uint8)
+    state = round_reduced_sha256(
+        data, rounds=64, double=False, feed_forward=False
+    )
+    for i in range(16):
+        words = struct.unpack(">8I", bytes(state[i]))
+        finalised = b"".join(
+            struct.pack(">I", (w + int(_H[j])) & 0xFFFFFFFF)
+            for j, w in enumerate(words)
+        )
+        assert finalised == hashlib.sha256(bytes(data[i])).digest(), (
+            f"row {i} feed_forward=False anchor mismatch"
+        )
+
+
+def test_double_with_reduced_rounds_batched_equals_per_row():
+    """Locks in the second-pass single-block padding for double + reduced
+    rounds (only the rounds=64 anchor exercised it before)."""
+    rng = np.random.default_rng(9)
+    data = rng.integers(0, 256, size=(6, 20), dtype=np.uint8)
+    batched = round_reduced_sha256(data, rounds=8, double=True)
+    for i in range(6):
+        single = round_reduced_sha256(data[i], rounds=8, double=True)
+        assert np.array_equal(batched[i], single[0])
