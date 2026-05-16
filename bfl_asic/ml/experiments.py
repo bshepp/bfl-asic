@@ -88,17 +88,32 @@ def run_full_structure(
         points.append(p)
     _, controls = run_sweep([2], seed=seed, n=n, epochs=epochs)
     best = max(points, key=lambda p: p["accuracy"])
+    controls_ok = bool(
+        controls.get("positive_ok") and controls.get("negative_ok")
+    )
+    if not controls_ok:
+        # Spec rigor: a "no structure" null is only trustworthy when the
+        # positive control learned and the negative control failed. If
+        # either control did not pass, the instrument is broken and no
+        # null (or structure) claim is valid.
+        conclusion = (
+            "INSTRUMENT FAILURE -- controls did not pass "
+            f"(positive_ok={controls.get('positive_ok')}, "
+            f"negative_ok={controls.get('negative_ok')}); "
+            "null result is NOT valid"
+        )
+    elif best["accuracy_ci"][0] <= 0.5:
+        conclusion = "no structure detected above the detection floor"
+    else:
+        conclusion = "POSSIBLE structure -- investigate"
     bounded_null = {
         "best_model": best["model"],
         "accuracy": best["accuracy"],
         "accuracy_ci": best["accuracy_ci"],
         "advantage": best["advantage"],
         "min_detectable_advantage": best["min_detectable_advantage"],
-        "conclusion": (
-            "no structure detected above the detection floor"
-            if best["accuracy_ci"][0] <= 0.5
-            else "POSSIBLE structure -- investigate"
-        ),
+        "controls_ok": controls_ok,
+        "conclusion": conclusion,
     }
     return points, controls, bounded_null
 
