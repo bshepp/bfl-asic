@@ -1,5 +1,39 @@
 # Development Log
 
+## 2026-05-16 — Curated results published as a public HF dataset
+
+Published the verified ML results as a public Hugging Face dataset:
+`huggingface.co/datasets/bshepp/round-reduced-sha256-learnability`.
+
+- **Mirrors the `bshepp/pairwise-poisson-algebras` convention** — a
+  dataset card with HF frontmatter + Parquet configs + a deterministic
+  build script — and adds the one piece that convention lacked: a
+  reusable `dataset/publish_dataset.py` (`HfApi.create_repo(
+  repo_type="dataset")` + `upload_folder`, public-by-default), the
+  dataset analogue of `bfl_asic/ml/publish.py`.
+- **`dataset/build_dataset.py`** reads the synced run JSON (BOM-safe)
+  into 4 Parquet configs, 83 rows total: `learnability_sweep` (70, the
+  round-4 cliff ×5 seeds ×2 tiers), `bounded_null` (7, full-SHA-256
+  indistinguishable at n=800k, all `controls_ok`), `dynamics_validated`
+  (4, the verified label-prior artifact with the permuted-label control
+  carried on every row), `feature_probe` (2). The CI-resolution floor is
+  inverted to an exact `n_val` column.
+- **Training data deliberately not hosted** — regenerable from a seed,
+  consistent with the original spec non-goal. The dataset is the
+  curated, controls-verified *evidence*, not the inputs.
+- **Honesty held to the project bar.** The card foregrounds the
+  negative result, labels the CI floor as non-power, and *surfaces*
+  rather than smooths the 1-of-55 marginal post-cliff exceedance (Tier
+  A seed 1, round 6, +1.1%, ci_lo 0.5007 — fewer than the ≈2.7 spurious
+  one-sided 95% exceedances expected; `learnable` is a queryable
+  per-point flag so anyone can check). Framed as personal AI/ML
+  exploration, not novel cryptographic research.
+
+A future n=4M indistinguishability result can be folded into
+`bounded_null` and re-published with the same two-command refresh.
+
+---
+
 ## 2026-05-16 — Dynamics validation + per-batch probe (external-review follow-up)
 
 Acting on a third-party review of the Tier A artifacts:
