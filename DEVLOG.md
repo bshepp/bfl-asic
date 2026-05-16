@@ -1,5 +1,22 @@
 # Development Log
 
+## 2026-05-15 — Optional ML learnability subsystem
+
+Added `bfl_asic/ml/`: a numpy-vectorized round-reduced SHA-256 (bit-exact
+with hashlib SHA-256d at 64 rounds — the regression anchor), deterministic
+distinguisher/orbit datasets, TinyCNN + LinearProbe, and a controls-gated
+train/eval harness. Four experiments: the round-reduced learnability sweep
+(#1), the full-SHA indistinguishability demo (#2), the bounded-null
+"any structure" search (#4), and dynamics-orbit learnability vs truncation
+(#3). PyTorch is isolated behind the `[ml]` extra and lazy-imported by the
+CLI, so the core install and the default fast test suite remain torch-free.
+A "no structure" conclusion is only emitted when the positive control
+learns and the negative control fails; `min_detectable_advantage` is a
+CI-resolution floor (not a power-based MDE) and is labelled as such.
+Snapshots are strict-RFC-8259 JSON. Built TDD across 10 reviewed tasks.
+
+---
+
 ## 2026-02-25 — Phase 1: Device Communication Layer
 
 ### Session 1: Specification and Design

@@ -12,7 +12,10 @@ Communication layer and analysis tools for the Butterfly Labs BF0005G Jalapeno S
 # Install (editable, with dev deps)
 pip install -e ".[dev]"
 
-# Run all tests (~671 tests, ~20s, no hardware required)
+# Install with optional ML subsystem (adds PyTorch)
+pip install -e ".[ml]"
+
+# Run all tests (~721 tests, ~25s, no hardware required; plus 2 slow ML training tests run by plain pytest)
 pytest
 
 # Run a single test file
@@ -42,6 +45,13 @@ Four-layer design with strict separation of concerns:
 - `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
 - `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
 - `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`).
+- `bfl_asic/ml/` — Optional ML learnability instrument (PyTorch behind the
+  `[ml]` extra; lazy-imported by the CLI). Numpy-vectorized round-reduced
+  SHA-256 (hashlib-anchored), distinguisher/orbit datasets, TinyCNN/
+  LinearProbe, a deterministic train/eval harness with positive/negative
+  controls, and a `ml` CLI group (`sweep`/`run`/`report`/`plot`/`publish`).
+  The core install never requires torch; the default `pytest` fast run
+  stays torch-optional (heavy training tests are marked `slow`).
 
 ## Key Conventions
 

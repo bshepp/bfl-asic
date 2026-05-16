@@ -527,6 +527,32 @@ pip install pillow           # Image generation for hash space maps
 
 ---
 
+## Addendum: ML learnability instrument (implemented 2026-05-15)
+
+> **Status (2026-05-15):** implemented as `bfl_asic/ml/` — optional PyTorch subsystem
+> behind the `[ml]` extra. CLI: `bfl-asic ml sweep/run/report/plot/publish`.
+
+Four experiments ask the question "where does SHA-256 become unlearnable?"
+using a TinyCNN distinguisher gated by positive/negative controls:
+
+1. **Round-reduced learnability sweep** — train a distinguisher on 1, 2, 4, 8,
+   16, 32, 64 rounds of SHA-256. Accuracy collapses to chance at ~8–16 rounds,
+   showing exactly where the avalanche finishes.
+2. **Full-SHA indistinguishability demo** — a classifier trained on full (64-round)
+   SHA-256 learns nothing beyond chance; establishes the baseline.
+3. **Dynamics-orbit learnability vs truncation** — orbit trajectories (iterated
+   SHA-256) with varying truncation widths; learnability rises as the state
+   space shrinks.
+4. **Bounded-null "any structure" search** — a rigorous null: reports the
+   CI-resolution floor (`min_detectable_advantage`) below which no advantage
+   could have been detected, so "we found nothing" is a falsifiable claim.
+
+A "no structure" conclusion is only emitted when the positive control learns
+and the negative control fails. Snapshots are strict-RFC-8259 JSON and the
+core install stays torch-free.
+
+---
+
 *Document created: 2026-02-25*
 *Status: Seed specification — implementation in progress (see DEVLOG.md for session log).*
-*Implemented so far: Apps 1 (validation), 2, 8.  Apps 3, 4, 5, 6, 7, 9 unbuilt.  Hardware characterisation complete; firmware 42-work-submission limit is the primary blocker for sustained-hashing applications.*
+*Implemented so far: Apps 1 (validation), 2, 8, and the ML learnability instrument (addendum above).  Apps 3, 4, 5, 6, 7, 9 unbuilt.  Hardware characterisation complete; firmware 42-work-submission limit is the primary blocker for sustained-hashing applications.*

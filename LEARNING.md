@@ -217,6 +217,21 @@ Once hash functions feel intuitive, the natural extensions are:
   `bfl-asic-repurpose.md`).
 - **Side-channel and hardware attacks** -- App 9 in the roadmap.
 
+### Week 7 — Where learnability dies
+
+Goal: see, empirically, that cryptographic strength == unlearnability.
+
+- Run the sweep:
+  ```bash
+  bfl-asic ml sweep --rounds 1,2,4,8,16,32,64 --plot
+  ```
+- Open `runs/ml/<ts>/learnability.png`. The accuracy curve falls from
+  ~100% to the chance line: that collapse *is* the avalanche finishing.
+- Run `bfl-asic ml run full_structure`. The bounded-null line is the
+  honest scientific statement of "we found nothing, and here is the
+  CI-resolution floor below which we could not have detected a bias."
+  A flat curve at 64 rounds is SHA-256 working exactly as designed.
+
 ---
 
 ## How to use this toolkit while learning

@@ -87,6 +87,26 @@ longest run of ones in a block, DFT spectral, and cumulative sums
 ASIC-backed source plugs in unchanged once the firmware 42-work-limit
 is worked around.
 
+### ML learnability instrument (optional [ml] extra)
+
+````markdown
+```bash
+pip install -e ".[ml]"
+
+# Where does SHA-256 become unlearnable? (round-reduced sweep)
+bfl-asic ml sweep --rounds 1,2,4,8,16,32,64 --plot
+
+# Rigorous "is there ANY structure in full SHA-256?" bounded null
+bfl-asic ml run full_structure
+
+# Iterated-hash orbit learnability vs truncation width
+bfl-asic ml run dynamics
+```
+
+Requires PyTorch (installed only via the optional `[ml]` extra). The
+rest of the toolkit runs without it.
+````
+
 ### Where outputs go
 
 When you do not pass `-o`, results land under a `runs/` folder in the
@@ -133,6 +153,15 @@ bfl_asic/
     tests.py       # Pure-function tests over uint8 bit arrays
     battery.py     # Orchestrator over any HashSource
     snapshot.py    # JSON-serializable results
+  ml/              # Optional learnability instrument (torch behind [ml])
+    roundreduced.py # Numpy-vectorized round-reduced SHA-256
+    datasets.py     # Feature extractors + distinguisher/orbit datasets
+    models.py       # TinyCNN + LinearProbe
+    harness.py      # Deterministic train/eval + pos/neg controls
+    experiments.py  # The four named experiments
+    snapshot.py     # JSON-serializable results
+    visualization.py # Learnability curve + saliency map
+    publish.py      # Optional HF model-card upload
   device.py        # BFLDevice — sync high-level API
   async_device.py  # AsyncBFLDevice — async API with stream iterators
   cli.py           # Click CLI: identify, temperature, probe, discover,
@@ -166,7 +195,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-671 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization.
+723 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 721 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 
