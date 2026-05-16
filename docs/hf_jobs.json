@@ -6,7 +6,41 @@
   "rate_usd_per_hour": 1.0,
   "timeout": "6h",
   "max_cost_usd_per_job": 6.0,
-  "jobs": {},
+  "jobs": {
+    "smoke": {
+      "purpose": "Prove the HF loop (bucket payload -> uv CPU-torch -> import bfl_asic -> results)",
+      "id": "6a0811a4e48bea4538b9f7d4",
+      "view": "https://huggingface.co/jobs/bshepp/6a0811a4e48bea4538b9f7d4",
+      "bucket": "hf://buckets/bshepp/bfl-ml-tierA",
+      "target": "run_smoke",
+      "args": [],
+      "status": "COMPLETED",
+      "result": "r2=0.853 (learnable), r64=0.441 (chance); torch 2.12.0+cpu; ~8s",
+      "first_attempt_failure": {
+        "id": "6a0810fce48bea4538b9f7ca",
+        "exit_code": 1,
+        "cause": "ModuleNotFoundError: serial -- bfl_asic/__init__ eagerly imports the serial transport; bootstrap declared only ML deps",
+        "fix": "scripts/hf_jobs/bootstrap.py PEP-723 deps += pyserial, pyserial-asyncio (commit 8f99da4)"
+      }
+    },
+    "tier_a": {
+      "purpose": "Tier A meaningful run: sweep x3 seeds (n=200k), full_structure x3 (n=800k), indistinguishability (n=800k), dynamics",
+      "id": "6a081204e48bea4538b9f7d6",
+      "view": "https://huggingface.co/jobs/bshepp/6a081204e48bea4538b9f7d6",
+      "bucket": "hf://buckets/bshepp/bfl-ml-tierA",
+      "target": "run_ml_tier",
+      "args": ["--tier", "A"],
+      "status": "RUNNING",
+      "expected_outputs": [
+        "results/sweep_seed{0,1,2}.json + .png",
+        "results/full_structure_seed{0,1,2}.json",
+        "results/indistinguishability.json",
+        "results/dynamics.json + .png",
+        "results/summary.json",
+        "results/progress.json (resumability; resubmit continues on SIGTERM)"
+      ]
+    }
+  },
   "monitoring": [
     "hf jobs inspect <id>",
     "hf jobs logs <id> -f",
