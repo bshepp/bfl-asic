@@ -56,6 +56,7 @@ class SimulatedDevice:
         cooling_rate: float = 0.5,
         overheat_threshold: float = 85.0,
         error_rate: float = 0.0,
+        naive_work_limit: int | None = None,
     ) -> None:
         # Configuration
         self.simulated_hashrate = simulated_hashrate
@@ -72,6 +73,17 @@ class SimulatedDevice:
         self.found_nonces: list[int] = []
         self.work_complete: bool = False
         self.device_info: str = "BitFORCE SHA256 ASIC Jalapeno 5GH/s"
+        # Naive ZDX path: optional firmware-style wall (opt-in; default
+        # off so existing behaviour/tests are unchanged).
+        self.naive_work_limit = naive_work_limit
+        self._naive_zdx_count = 0
+        # SC queued model
+        self._job_queue: list[tuple[bytes, bytes]] = []
+        self._results: list[tuple[str, list[int]]] = []
+        self._uid = 0
+        # Fan state
+        self.fan_mode: str = "auto"
+        self.fan_level: int | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -103,6 +115,25 @@ class SimulatedDevice:
             return self._handle_work(data)
         if data.startswith(b"ZFX"):
             return self._handle_result()
+        if data.startswith(b"ZNX"):
+            return self._handle_queue_job(data)
+        if data.startswith(b"ZWX"):
+            return self._handle_queue_job_pack(data)
+        if data.startswith(b"ZOX"):
+            return self._handle_queue_results()
+        if data.startswith(b"ZQX"):
+            self._job_queue.clear()
+            self._results.clear()
+            return b"OK\n"
+        if data.startswith(b"ZCX"):
+            return self._handle_details()
+        if data.startswith(b"Z9X"):
+            self.fan_mode, self.fan_level = "auto", None
+            return b"OK\n"
+        for lvl in range(5):
+            if data.startswith(b"Z%dX" % lvl):
+                self.fan_mode, self.fan_level = "fixed", lvl
+                return b"OK\n"
         return b"ERR:UNKNOWN\n"
 
     # ------------------------------------------------------------------
@@ -120,6 +151,10 @@ class SimulatedDevice:
         return b"3300,1000,12000\n"
 
     def _handle_work(self, data: bytes) -> bytes:
+        if self.naive_work_limit is not None:
+            self._naive_zdx_count += 1
+            if self._naive_zdx_count > self.naive_work_limit:
+                return b""  # documented stall: empty response, no reset
         if self.state is DeviceState.OVERHEATED:
             return b"ERR:OVERHEATED\n"
 
@@ -162,6 +197,63 @@ class SimulatedDevice:
 
         # Fallback: IDLE but work was previously completed and already read.
         return b"IDLE\n"
+
+    # ------------------------------------------------------------------
+    # Queued-model handlers
+    # ------------------------------------------------------------------
+
+    def _mine_one(self, midstate: bytes, tail: bytes) -> list[int]:
+        nonces: list[int] = []
+        for nonce in range(self.simulated_hashrate):
+            h = hashlib.sha256(
+                hashlib.sha256(midstate + tail + nonce.to_bytes(4, "big")
+                               ).digest()).digest()
+            if h[0] == 0x00:
+                nonces.append(nonce)
+        return nonces
+
+    def _enqueue(self, midstate: bytes, tail: bytes) -> None:
+        self._uid += 1
+        self._results.append((f"{self._uid:08x}",
+                               self._mine_one(midstate, tail)))
+        self._job_queue.append((midstate, tail))
+
+    def _handle_queue_job(self, data: bytes) -> bytes:
+        payload = data[3:]
+        midstate = payload[1:33]
+        tail = payload[33:45]
+        self._enqueue(midstate.ljust(32, b"\x00"), tail.ljust(12, b"\x00"))
+        return b"OK\n"
+
+    def _handle_queue_job_pack(self, data: bytes) -> bytes:
+        body = data[3:]
+        n = body[2] if len(body) > 2 else 0
+        off = 3
+        for _ in range(n):
+            mid = body[off + 1:off + 33]
+            tail = body[off + 33:off + 45]
+            self._enqueue(mid.ljust(32, b"\x00"), tail.ljust(12, b"\x00"))
+            off += 46
+        return b"OK\n"
+
+    def _handle_queue_results(self) -> bytes:
+        from bfl_asic.protocol.constants import QUE_MAX_RESULTS
+        batch = self._results[:QUE_MAX_RESULTS]
+        self._results = self._results[QUE_MAX_RESULTS:]
+        # mirror real drain: results leave the queue's job slots too
+        del self._job_queue[:len(batch)]
+        lines = [f"COUNT:{len(batch)}".encode()]
+        for uid, nonces in batch:
+            fields = [uid, "0", str(len(nonces))] + [f"{n:08x}"
+                                                     for n in nonces]
+            lines.append(",".join(fields).encode())
+        lines.append(b"OK")
+        return b"\n".join(lines) + b"\n"
+
+    def _handle_details(self) -> bytes:
+        return (b"FIRMWARE: 1.0.0\nENGINES: 1\n"
+                b"JOBS IN QUEUE: %d\nCHIP PARALLELIZATION: NO\nOK\n"
+                % len(self._job_queue))
 
     # ------------------------------------------------------------------
     # Mining helpers
