@@ -814,7 +814,7 @@ def ml_run(experiment, seed, n, epochs, output) -> None:
         )
         snap = MLSnapshot.from_runs(
             experiment="indistinguishability",
-            feature="per-hash-image", model="tiny_cnn",
+            feature="per-hash", model="tiny_cnn",
             points=points, controls=controls,
         )
         click.echo(f"  Full SHA-256 vs random accuracy: "
@@ -826,7 +826,7 @@ def ml_run(experiment, seed, n, epochs, output) -> None:
         )
         snap = MLSnapshot.from_runs(
             experiment="full_structure",
-            feature="per-hash-image", model="multi",
+            feature="per-hash", model="multi",
             points=points, controls=controls, bounded_null=bnull,
         )
         click.echo(f"  Bounded null: {bnull['conclusion']}")

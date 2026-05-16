@@ -35,17 +35,25 @@ def run_sweep(
 ) -> tuple[list[dict], dict]:
     """Train one model per round count; return (points, controls)."""
     points: list[dict] = []
+    results_by_round: dict[int, RunResult] = {}
     for r in rounds:
         res = run_training(
             RunConfig(seed=seed, rounds=r, n=n, epochs=epochs,
                       model=model, feature=feature)
         )
+        results_by_round[r] = res
         points.append(_point(r, res))
 
-    pos = run_training(
-        RunConfig(seed=seed, rounds=2, n=n, epochs=epochs, model=model,
-                  feature=feature)
-    )
+    # Positive control: a low-round model must be learnable. The harness
+    # is deterministic, so if rounds==2 was already swept we reuse that
+    # exact result instead of re-training it (saves a full training run).
+    if 2 in results_by_round:
+        pos = results_by_round[2]
+    else:
+        pos = run_training(
+            RunConfig(seed=seed, rounds=2, n=n, epochs=epochs, model=model,
+                      feature=feature)
+        )
     neg = run_training(
         RunConfig(seed=seed, rounds=64, n=n, epochs=epochs, model=model,
                   feature=feature, negative_control=True)
