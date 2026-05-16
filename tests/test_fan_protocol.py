@@ -50,3 +50,14 @@ def test_parse_fan_ack_whitespace_and_crlf_are_false():
     assert parse_fan_ack(b"   \n") is False
     assert parse_fan_ack(b"\r\n") is False
     assert parse_fan_ack(b"\t") is False
+
+
+def test_device_fan_methods_and_warning(recwarn):
+    from bfl_asic.transport.simulator import SimulatorTransport
+    from bfl_asic.device import BFLDevice
+
+    with BFLDevice(SimulatorTransport()) as dev:
+        assert dev.set_fan_auto() is True
+        assert dev.set_fan(4) is True            # fixed level
+    msgs = [str(w.message) for w in recwarn.list]
+    assert any("thermal" in m.lower() for m in msgs)  # safety warning fired

@@ -61,6 +61,31 @@ class BFLDevice:
         raw = self._transport.readline()
         return parse_voltage(raw)
 
+    def set_fan_auto(self) -> bool:
+        """Hand the fan back to firmware thermal management (Z9X)."""
+        from bfl_asic.protocol.fan import build_fan_auto, parse_fan_ack
+        self._transport.write(build_fan_auto())
+        return parse_fan_ack(self._transport.readline())
+
+    def set_fan(self, level: int) -> bool:
+        """Set a FIXED fan level 0..4 (Z0X..Z4X).
+
+        WARNING: a low/off fixed fan during active hashing can overheat
+        and physically damage the ASIC. Prefer set_fan_auto(); always
+        restore auto when done. Levels 1..3 are firmware-defined but
+        hardware-unconfirmed.
+        """
+        import warnings
+        from bfl_asic.protocol.fan import build_fan_level, parse_fan_ack
+        warnings.warn(
+            f"set_fan({level}): manual fan level overrides firmware "
+            f"thermal management; low levels during hashing risk thermal "
+            f"damage. Restore set_fan_auto() when done.",
+            stacklevel=2,
+        )
+        self._transport.write(build_fan_level(level))
+        return parse_fan_ack(self._transport.readline())
+
     def submit_work(self, midstate: bytes, tail: bytes) -> None:
         """Submit a work unit to the device (ZDX command).
 
