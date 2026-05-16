@@ -33,3 +33,29 @@ def plot_learnability_curve(snapshot, save_path: Path | None = None):
     if save_path is not None:
         fig.savefig(save_path, dpi=120)
     return fig
+
+
+def plot_saliency_map(model, save_path: Path | None = None):
+    """16x16 input-gradient saliency for a trained model.
+
+    At low rounds this highlights specific stuck/biased bits; at 64
+    rounds it is uniform noise -- the visual payoff of the instrument.
+    """
+    import numpy as np
+    import torch
+
+    x = torch.zeros(1, 1, 16, 16, requires_grad=True)
+    out = model(x)
+    out[0, 1].backward()
+    grad = x.grad.detach().abs().numpy().reshape(16, 16)
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    im = ax.imshow(grad, cmap="magma")
+    ax.set_title("Distinguisher saliency (|d logit / d bit|)")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    fig.colorbar(im, ax=ax, fraction=0.046)
+    fig.tight_layout()
+    if save_path is not None:
+        fig.savefig(save_path, dpi=120)
+    return fig

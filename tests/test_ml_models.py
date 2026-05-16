@@ -35,3 +35,17 @@ def test_tiny_cnn_channels_kwarg_via_build_model():
     assert model(x).shape == (2, 2)
     # channels kwarg must thread through to the final classifier layer
     assert model.net[-1].in_features == 32
+
+
+def test_saliency_map_writes_png(tmp_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from bfl_asic.ml.models import build_model
+    from bfl_asic.ml.visualization import plot_saliency_map
+
+    model = build_model("linear_probe")
+    fig = plot_saliency_map(model, save_path=tmp_path / "sal.png")
+    assert (tmp_path / "sal.png").exists()
+    plt.close(fig)

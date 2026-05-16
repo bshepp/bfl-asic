@@ -102,3 +102,16 @@ def test_ml_plot_writes_png(tmp_path):
     res = CliRunner().invoke(main, ["ml", "plot", str(p)])
     assert res.exit_code == 0, res.output
     assert (tmp_path / "snap.png").exists()
+
+
+def test_ml_sweep_per_batch_feature(tmp_path, monkeypatch):
+    monkeypatch.setenv("BFL_ASIC_OUTPUT_DIR", str(tmp_path))
+    res = CliRunner().invoke(
+        main,
+        ["ml", "sweep", "--rounds", "2,64", "--n", "4096",
+         "--epochs", "1", "--model", "linear_probe",
+         "--feature", "per-batch"],
+    )
+    assert res.exit_code == 0, res.output
+    runs = list((tmp_path / "ml").rglob("snapshot.json"))
+    assert runs
