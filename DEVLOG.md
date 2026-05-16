@@ -1,5 +1,41 @@
 # Development Log
 
+## 2026-05-16 — Dynamics validation + per-batch probe (external-review follow-up)
+
+Acting on a third-party review of the Tier A artifacts:
+
+- **Dynamics path validated to the project standard.** `run_dynamics_sweep`
+  now computes a real Clopper-Pearson `accuracy_ci` and a CI-resolution
+  floor per point (was `[0,1]` / `0.0` placeholders), gates `positive_ok`
+  on the CI lower bound exceeding chance (was a bare point estimate with
+  an arbitrary +0.05 margin), and runs a **permuted-label negative
+  control** on the lead width (was a hardcoded `negative_ok=True`). The
+  shuffled-label model must not beat chance, or the signal is a
+  dataset/setup artifact, not orbit structure.
+- **Tier A dynamics number is superseded.** The recorded Tier A
+  `dynamics` figure (width-1 ≈ 0.354 vs 0.25 chance) was produced by the
+  *pre-fix* harness with no permuted-label control. It is **exploratory,
+  not a verified positive** — do not cite it as a result. A re-run with
+  the corrected harness is required to make any dynamics claim.
+- **Per-batch feature probe (local, n=2M, rounds 3,4,5,6,8).** Per-batch
+  reproduces the *same* round-4 learnability cliff as per-hash (r3=1.00;
+  r4–8 CI brackets 0.5). The cliff is **not feature-bottlenecked**.
+  Caveat: per-batch's CI-floor here is coarse (~0.10) because the
+  deviation-map feature yields few examples — decisive for the Tier C
+  *decision* (feature variation, C.1, is low-value), not a tight null.
+- **Tier C status.** C.1 (feature variation) deprioritized by the above
+  evidence. C.2 (architecture variation — does the cliff move with model
+  capacity / inductive bias?) is the only open question and is future
+  work (new model classes). C.3 (overlay published reduced-round
+  algebraic-distinguisher counts vs the ML cliff) is a cheap honest
+  framing addition for a future methodology note — verify citations
+  before asserting round numbers.
+
+This is a personal AI/ML capability exploration, not novel research; the
+honesty bar (controls gate the verdict; no overclaim) is what matters.
+
+---
+
 ## 2026-05-15 — Optional ML learnability subsystem
 
 Added `bfl_asic/ml/`: a numpy-vectorized round-reduced SHA-256 (bit-exact
