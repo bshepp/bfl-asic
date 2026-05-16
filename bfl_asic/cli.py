@@ -921,3 +921,25 @@ def ml_plot(snapshot_path: str) -> None:
     fig = plot_learnability_curve(snap, save_path=png)
     plt.close(fig)
     click.echo(f"  Plot saved to: {png}")
+
+
+@ml.command(name="publish")
+@click.argument("run_dir", type=click.Path(exists=True))
+@click.option("--repo-id", required=True,
+              help="HF repo id, e.g. user/bfl-ml-runs.")
+@click.option("--public", is_flag=True, default=False)
+def ml_publish(run_dir: str, repo_id: str, public: bool) -> None:
+    """Push a run directory to the HF Hub as a shareable lab notebook."""
+    try:
+        from bfl_asic.ml.publish import publish_run
+    except ImportError:
+        raise click.ClickException(
+            'ml publish requires: pip install -e ".[ml]"'
+        )
+    try:
+        rid = publish_run(Path(run_dir), repo_id=repo_id, private=not public)
+    except ImportError:
+        raise click.ClickException(
+            'ml publish requires: pip install -e ".[ml]"'
+        )
+    click.echo(f"  Published to: https://huggingface.co/{rid}")
