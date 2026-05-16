@@ -84,8 +84,28 @@ bfl-asic randomness report randomness.json
 Six tests are included: frequency (monobit), block frequency, runs,
 longest run of ones in a block, DFT spectral, and cumulative sums
 (forward + reverse).  The battery consumes any `HashSource`, so an
-ASIC-backed source plugs in unchanged once the firmware 42-work-limit
-is worked around.
+ASIC-backed source plugs in unchanged.
+
+### Sustained device work (SC queued path)
+
+The naive `ZDX`/`ZFX` path stalls after roughly **42 submissions** because
+the firmware queue fills and never gets drained — not a hardware ceiling.
+`QueuedWorkSession` speaks the SC queued protocol (`ZNX`/`ZWX` + continuous
+`ZOX` result-drain + `ZCX` `JOBS IN QUEUE` backpressure) exactly as
+cgminer/bfgminer do, and runs unbounded with no power-cycling required.
+`NonceSource` wraps `QueuedWorkSession` as the honest device surface: it
+yields **nonces** (mining winners), not full digests — it is **not** a
+`HashSource` and cannot feed the statistical/randomness battery directly.
+
+```bash
+# Fan control — thermal safety caveat applies
+bfl-asic -p COM3 fan auto       # restore firmware thermal management (default)
+bfl-asic -p COM3 fan 2          # fixed level 0-4 (0 = off, 4 = full)
+```
+
+Warning: a low fixed fan level during active hashing can cause thermal
+damage to the ASIC.  The setting is persistent until changed or the device
+is power-cycled.  Always restore with `fan auto` when done.
 
 ### ML learnability instrument (optional [ml] extra)
 
@@ -195,7 +215,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-723 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 721 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+783 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 781 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 

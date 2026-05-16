@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 # Install with optional ML subsystem (adds PyTorch)
 pip install -e ".[ml]"
 
-# Run all tests (~721 tests, ~25s, no hardware required; plus 2 slow ML training tests run by plain pytest)
+# Run all tests (783 total, ~27s, no hardware required; 781 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
 pytest
 
 # Run a single test file
@@ -44,7 +44,9 @@ Four-layer design with strict separation of concerns:
 - `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization (including an animated bit-frequency convergence GIF for teaching the law of large numbers).
 - `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
 - `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
-- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`).
+- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`).
+- `bfl_asic/nonce_source.py` — honest device nonce stream (`NonceSource`); wraps `QueuedWorkSession` for continuous drain via SC queued protocol. **Not** a `HashSource` — the device yields nonces (mining winners), not full digests.
+- `BFLDevice.set_fan_auto()` / `BFLDevice.set_fan(level)` / `fan_fixed(level)` context manager — thermal-safety-guarded fan control; low fixed levels during hashing risk ASIC damage; `fan_fixed` restores `auto` on exit.
 - `bfl_asic/ml/` — Optional ML learnability instrument (PyTorch behind the
   `[ml]` extra; lazy-imported by the CLI). Numpy-vectorized round-reduced
   SHA-256 (hashlib-anchored), distinguisher/orbit datasets, TinyCNN/
@@ -64,6 +66,10 @@ Four-layer design with strict separation of concerns:
 
 ## Hardware Notes
 
-- The SC firmware has a **42 work submission limit** per power cycle — the device stops accepting work after 42 submissions and must be power-cycled.
+- The naive `ZDX`/`ZFX` work path stalls after **42 submissions per power
+  cycle** — but this is an artifact of never draining the firmware queue,
+  **not** a hardware limit (the device mined for days via cgminer without
+  power-cycling). Use `QueuedWorkSession` (SC queued `ZNX`/`ZOX`/`ZCX`
+  path) for sustained work; the naive path is left unchanged on purpose.
 - Temperature/voltage commands were discovered to be **reversed** from initial protocol assumptions: ZLX reads temperature, ZTX reads voltage (not vice versa).
 - VCC1 readings show anomalous ~1.2V drops after ZTX queries (suspected ADC settling time issue).

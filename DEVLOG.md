@@ -255,6 +255,20 @@ This limit is firmware-level, not serial/FTDI-level. The device accepts non-work
 
 **Implications for software design:** Applications submitting work must track the submission count and either power-cycle the device or implement a workaround (such as a USB power relay) for sustained operation.
 
+##### 2026-05-16 correction — the "42 limit" is a naive-path artifact
+
+The original conclusion ("firmware-level counter ... only a power cycle
+resets it ... apps must power-cycle") is **over-stated**. Empirical
+disproof: this device was run as a Bitcoin miner for days / thousands of
+submissions with zero power cycles. cgminer/bfgminer drive the SC
+*queued* protocol (`ZNX`/`ZWX` + continuous `ZOX` result-drain +
+`ZCX` `JOBS IN QUEUE` backpressure) and never approach 42. The 42 wall
+is an artifact of the naive `ZDX`/`ZFX` path never draining the queue --
+not a hardware ceiling. Fixed additively by `QueuedWorkSession`
+(`bfl_asic/device.py`); the naive path is intentionally left unchanged
+as the honest demonstration of the wall. See
+`docs/superpowers/specs/2026-05-16-sc-queued-work-design.md`.
+
 #### 5. Work Result Status — IDLE vs NO-NONCE
 
 All work units return `IDLE` status (not `NO-NONCE` or `NONCE-FOUND`). The SC firmware appears to:
