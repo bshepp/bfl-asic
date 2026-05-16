@@ -43,3 +43,26 @@ RESP_NO_NONCE: bytes = b"NO-NONCE"
 RESP_NONCE_FOUND: bytes = b"NONCE-FOUND"
 RESP_OK: bytes = b"OK"
 RESP_IDLE: bytes = b"IDLE"
+
+# ---------------------------------------------------------------------------
+# SC queued-work protocol (additive; naive ZDX/ZFX path is unchanged)
+# Byte facts from cgminer driver-bflsc.h (GPLv3 reference; not copied).
+# ---------------------------------------------------------------------------
+CMD_QJOB: bytes = b"ZNX"        # queue one job
+CMD_QJOBS: bytes = b"ZWX"       # queue a job pack (<=5)
+CMD_QRESULTS: bytes = b"ZOX"    # query/drain results (frees queue slots)
+CMD_QFLUSH: bytes = b"ZQX"      # flush the queue
+CMD_DETAILS: bytes = b"ZCX"     # device details (incl. JOBS IN QUEUE)
+
+CMD_FAN_AUTO: bytes = b"Z9X"
+CMD_FAN_LEVELS: tuple[bytes, ...] = (b"Z0X", b"Z1X", b"Z2X", b"Z3X", b"Z4X")
+
+EOB: int = 0xAA          # end-of-block marker in a queued job
+SIGNATURE: int = 0xC1    # job-pack signature byte
+EOW: int = 0xFE          # end-of-wrapper marker in a job pack
+QUE_MAX_RESULTS: int = 8           # max results returned per ZOX read
+QJOB_PAYLOAD_SIZE: int = 45        # midstate(32)+blockdata(12)+EOB(1)
+
+RESP_SUCCESS: bytes = b"SUCCESS"
+RESP_COUNT: bytes = b"COUNT:"
+RESP_ERR: bytes = b"ERR:"
