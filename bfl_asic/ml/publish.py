@@ -25,8 +25,9 @@ def build_model_card(snapshot) -> str:
     ]
     for p in snapshot.points:
         lines.append(
-            f"| {p.get('rounds', '-')} | {p['accuracy']:.4f} "
-            f"| {p['advantage']:.4f} |"
+            f"| {p.get('rounds', '-')} "
+            f"| {p.get('accuracy', float('nan')):.4f} "
+            f"| {p.get('advantage', float('nan')):.4f} |"
         )
     if snapshot.bounded_null:
         lines += [
@@ -44,7 +45,11 @@ def build_model_card(snapshot) -> str:
 
 
 def publish_run(run_dir: Path, repo_id: str, *, private: bool = True) -> str:
-    """Upload *run_dir* (snapshot/plots) + a model card to the Hub."""
+    """Write README.md (the generated model card) into *run_dir*, then
+    upload the whole directory to the HF Hub. Returns the repo_id.
+
+    Note: this mutates *run_dir* by adding README.md before upload.
+    """
     from huggingface_hub import HfApi
 
     from bfl_asic.ml.snapshot import MLSnapshot
