@@ -727,3 +727,160 @@ def _require_torch() -> None:
 @main.group()
 def ml() -> None:
     """Machine-learning learnability instrument (optional [ml] extra)."""
+
+
+@ml.command(name="sweep")
+@click.option("--rounds", default=None,
+              help="Comma-separated round counts. Default: the standard set.")
+@click.option("--seed", default=0, type=int)
+@click.option("--n", default=8192, type=int, help="Samples per round.")
+@click.option("--epochs", default=10, type=int)
+@click.option("--model", default="tiny_cnn",
+              type=click.Choice(["tiny_cnn", "linear_probe"]))
+@click.option("--feature", default="per-hash",
+              type=click.Choice(["per-hash", "per-batch"]))
+@click.option("-o", "--output", default=None, type=click.Path())
+@click.option("--plot", is_flag=True, default=False)
+def ml_sweep(rounds, seed, n, epochs, model, feature, output, plot) -> None:
+    """Experiment #1: round-reduced learnability sweep."""
+    _require_torch()
+    from bfl_asic.ml.experiments import DEFAULT_ROUNDS, run_sweep
+    from bfl_asic.ml.snapshot import MLSnapshot
+
+    round_list = (
+        [int(x) for x in rounds.split(",")] if rounds else DEFAULT_ROUNDS
+    )
+    click.echo(
+        f"Sweeping rounds {round_list} (model={model}, feature={feature})..."
+    )
+    points, controls = run_sweep(
+        round_list, seed=seed, n=n, epochs=epochs, model=model,
+        feature=feature,
+    )
+    snap = MLSnapshot.from_runs(
+        experiment="sweep", feature=feature, model=model,
+        points=points, controls=controls,
+    )
+
+    click.echo("")
+    click.echo(f"  {'rounds':>6}  {'accuracy':>9}  {'advantage':>9}")
+    for p in points:
+        click.echo(
+            f"  {p['rounds']:>6}  {p['accuracy']:>9.4f}  "
+            f"{p['advantage']:>9.4f}"
+        )
+    click.echo("")
+    click.echo(
+        f"  Controls: positive_ok={controls['positive_ok']} "
+        f"negative_ok={controls['negative_ok']}"
+    )
+
+    run_dir = default_run_dir("ml") if output is None else None
+    snap_path = unique_output_path(
+        Path(output) if output else run_dir / "snapshot.json"
+    )
+    snap.save(snap_path)
+    click.echo(f"  Snapshot saved to: {snap_path}")
+
+    if plot:
+        import matplotlib.pyplot as plt
+        from bfl_asic.ml.visualization import plot_learnability_curve
+
+        png = unique_output_path(
+            (Path(output).with_suffix(".png")) if output
+            else run_dir / "learnability.png"
+        )
+        fig = plot_learnability_curve(snap, save_path=png)
+        plt.close(fig)
+        click.echo(f"  Plot saved to: {png}")
+
+
+@ml.command(name="run")
+@click.argument("experiment",
+                type=click.Choice(["indistinguishability", "full_structure"]))
+@click.option("--seed", default=0, type=int)
+@click.option("--n", default=8192, type=int)
+@click.option("--epochs", default=10, type=int)
+@click.option("-o", "--output", default=None, type=click.Path())
+def ml_run(experiment, seed, n, epochs, output) -> None:
+    """Experiments #2 / #4 by name."""
+    _require_torch()
+    from bfl_asic.ml.experiments import run_full_structure, run_sweep
+    from bfl_asic.ml.snapshot import MLSnapshot
+
+    if experiment == "indistinguishability":
+        points, controls = run_sweep(
+            [64], seed=seed, n=n, epochs=epochs, model="tiny_cnn"
+        )
+        snap = MLSnapshot.from_runs(
+            experiment="indistinguishability",
+            feature="per-hash-image", model="tiny_cnn",
+            points=points, controls=controls,
+        )
+        click.echo(f"  Full SHA-256 vs random accuracy: "
+                   f"{points[0]['accuracy']:.4f} "
+                   f"CI={points[0]['accuracy_ci']}")
+    else:
+        points, controls, bnull = run_full_structure(
+            seed=seed, n=n, epochs=epochs
+        )
+        snap = MLSnapshot.from_runs(
+            experiment="full_structure",
+            feature="per-hash-image", model="multi",
+            points=points, controls=controls, bounded_null=bnull,
+        )
+        click.echo(f"  Bounded null: {bnull['conclusion']}")
+        click.echo(f"    best acc={bnull['accuracy']:.4f} "
+                   f"CI={bnull['accuracy_ci']} "
+                   f"MDA(CI-floor)={bnull['min_detectable_advantage']:.4f}")
+
+    run_dir = default_run_dir("ml") if output is None else None
+    snap_path = unique_output_path(
+        Path(output) if output else run_dir / "snapshot.json"
+    )
+    snap.save(snap_path)
+    click.echo(f"  Snapshot saved to: {snap_path}")
+
+
+@ml.command(name="report")
+@click.argument("snapshot_path", type=click.Path(exists=True))
+def ml_report(snapshot_path: str) -> None:
+    """Print a saved ML snapshot."""
+    from bfl_asic.ml.snapshot import MLSnapshot
+
+    try:
+        snap = MLSnapshot.load(Path(snapshot_path))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        raise click.ClickException(f"Failed to load snapshot: {exc}")
+
+    click.echo("=== ML Report ===")
+    click.echo(f"  Experiment: {snap.experiment}")
+    click.echo(f"  Model:      {snap.model}")
+    click.echo(f"  Feature:    {snap.feature}")
+    click.echo(f"  Timestamp:  {snap.timestamp}")
+    click.echo("")
+    click.echo(f"  {'rounds':>6}  {'accuracy':>9}  {'advantage':>9}")
+    for p in snap.points:
+        click.echo(
+            f"  {p.get('rounds', '-'):>6}  {p['accuracy']:>9.4f}  "
+            f"{p['advantage']:>9.4f}"
+        )
+    if snap.bounded_null:
+        click.echo("")
+        click.echo(f"  Bounded null: {snap.bounded_null.get('conclusion')}")
+
+
+@ml.command(name="plot")
+@click.argument("snapshot_path", type=click.Path(exists=True))
+def ml_plot(snapshot_path: str) -> None:
+    """Render the learnability curve from a saved snapshot."""
+    import matplotlib.pyplot as plt
+
+    from bfl_asic.ml.snapshot import MLSnapshot
+    from bfl_asic.ml.visualization import plot_learnability_curve
+
+    snap = MLSnapshot.load(Path(snapshot_path))
+    png = unique_output_path(Path(snapshot_path).with_suffix(".png"))
+    fig = plot_learnability_curve(snap, save_path=png)
+    plt.close(fig)
+    click.echo(f"  Plot saved to: {png}")
