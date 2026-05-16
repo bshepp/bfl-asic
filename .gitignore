@@ -9,3 +9,7 @@ build/
 
 # Default CLI output root (configurable via $BFL_ASIC_OUTPUT_DIR)
 runs/
+
+# HF Jobs local staging and results (never commit these)
+hf_payload/
+hf_results/

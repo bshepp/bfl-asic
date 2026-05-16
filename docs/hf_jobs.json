@@ -1,0 +1,15 @@
+﻿{
+  "campaign": "bfl-ml-tier-a",
+  "flavor": "cpu-xl",
+  "vcpu": 16,
+  "memory_gb": 124,
+  "rate_usd_per_hour": 1.0,
+  "timeout": "6h",
+  "max_cost_usd_per_job": 6.0,
+  "jobs": {},
+  "monitoring": [
+    "hf jobs inspect <id>",
+    "hf jobs logs <id> -f",
+    "hf buckets sync hf://buckets/bshepp/<bucket> ./hf_results/<bucket>"
+  ]
+}
