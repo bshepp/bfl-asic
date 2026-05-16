@@ -178,6 +178,13 @@ def _tier_a_units() -> list[dict]:
 
 
 def _tier_b_units() -> list[dict]:
+    # Trimmed to the 5-seed sweep only (user decision, 2026-05-16):
+    # the first two completed Tier B seeds replicated Tier A's
+    # learnability cliff exactly, and the original full_structure x5 /
+    # indistinguishability / dynamics tail (~25 h at n=4M) is redundant
+    # with Tier A's already-valid bounded null. With this list the job
+    # self-terminates cleanly after sweep_seed4 on resume (progress.json
+    # skips already-completed seeds) -- no manual cancel/race needed.
     units = []
     for s in range(5):
         units.append({
@@ -190,31 +197,6 @@ def _tier_b_units() -> list[dict]:
             },
             "save_plot": True,
         })
-    for s in range(5):
-        units.append({
-            "key": f"full_structure_seed{s}",
-            "kind": "full_structure",
-            "kwargs": {"seed": s, "n": 4_000_000, "epochs": 30},
-            "save_plot": False,
-        })
-    units.append({
-        "key": "indistinguishability",
-        "kind": "sweep",
-        "kwargs": {
-            "rounds": [64], "seed": 0, "n": 4_000_000, "epochs": 30,
-            "model": "tiny_cnn",
-        },
-        "save_plot": False,
-    })
-    units.append({
-        "key": "dynamics",
-        "kind": "dynamics",
-        "kwargs": {
-            "seed": 0, "n": 50_000, "epochs": 30,
-            "trunc_widths": [1, 2, 3, 4], "n_bins": 4,
-        },
-        "save_plot": True,
-    })
     return units
 
 
