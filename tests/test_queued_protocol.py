@@ -115,3 +115,50 @@ def test_parse_details_jobs_in_queue():
     assert d.jobs_in_queue == 5
     assert d.fields["FIRMWARE"] == "1.0.0"
     assert d.fields["ENGINES"] == "1"
+
+
+def test_parse_queue_results_skips_non_hex_nonce_keeps_draining():
+    # C1: a bad row must NOT abort the drain — later rows still parse.
+    block = b"COUNT:2\nAA,0,1,ZZZZZZZZ\nBB,0,1,deadbeef\nOK\n"
+    res = parse_queue_results(block)
+    assert [r.uid for r in res] == ["BB"]
+    assert res[0].nonces == [0xDEADBEEF]
+
+
+def test_parse_queue_results_non_ascii_in_uid_does_not_crash_raw():
+    # I2: a stray non-ASCII wire byte in a parsed line must not crash
+    # the .raw encode.
+    res = parse_queue_results(b"COUNT:1\nA\xaaA,0,1,deadbeef\nOK\n")
+    assert len(res) == 1 and res[0].nonces == [0xDEADBEEF]
+
+
+def test_parse_queue_results_crlf():
+    res = parse_queue_results(b"COUNT:1\r\nAA,0,1,deadbeef\r\nOK\r\n")
+    assert res[0].uid == "AA" and res[0].nonces == [0xDEADBEEF]
+
+
+def test_parse_queue_results_multi_result_mixed_counts():
+    block = b"COUNT:3\nA,0,1,11\nB,0,2,22,33\nC,0,0\nOK\n"
+    res = parse_queue_results(block)
+    assert [(r.uid, r.nonces) for r in res] == [
+        ("A", [0x11]), ("B", [0x22, 0x33]), ("C", [])]
+
+
+def test_parse_queue_results_unknown_version_raises():
+    with pytest.raises(ValueError):
+        parse_queue_results(b"COUNT:0\nOK\n", version="V1")
+
+
+def test_parse_queue_results_drops_err_line():
+    assert parse_queue_results(b"COUNT:1\nERR:TIMEOUT\nOK\n") == []
+
+
+def test_device_details_jobs_in_queue_edge_cases():
+    assert parse_details(b"FIRMWARE: 1.0.0\nOK\n").jobs_in_queue == 0
+    assert parse_details(b"JOBS IN QUEUE: junk\nOK\n").jobs_in_queue == 0
+    assert parse_details(b"JOBS IN QUEUE: -1\nOK\n").jobs_in_queue == -1
+
+
+def test_parse_details_value_with_colon():
+    d = parse_details(b"FIRMWARE: 1.0.0:beta\nOK\n")
+    assert d.fields["FIRMWARE"] == "1.0.0:beta"

@@ -89,7 +89,8 @@ def _result_lines(raw: bytes) -> list[str]:
     out: list[str] = []
     for line in text.splitlines():
         s = line.strip()
-        if not s or s in ("OK", "SUCCESS") or s.startswith("COUNT:"):
+        if (not s or s in ("OK", "SUCCESS")
+                or s.startswith(("COUNT:", "ERR:", "INPROCESS:"))):
             continue
         out.append(s)
     return out
@@ -101,7 +102,17 @@ def parse_queue_results(raw: bytes, version: str = "v1") -> list[QueuedResult]:
     V1 fields: ``UID, CC, NONCECOUNT, nonce, ...``
     V2 fields: ``UID, CC, CHIP, NONCECOUNT, nonce, ...``
     Firmware "SC 1.0" is V1 (driver-bflsc.c drv_ver()).
+
+    Lenient by design: malformed / short / non-hex lines are skipped so
+    a single bad row never aborts a drain (cgminer logs-and-continues
+    too). The declared ``COUNT:`` is NOT enforced here; the session
+    layer compares the returned length against expectations and is the
+    place that may raise a protocol error.
     """
+    if version not in ("v1", "v2"):
+        raise ValueError(
+            f"unknown version {version!r}; expected 'v1' or 'v2'"
+        )
     nonce_start = 3 if version == "v1" else 4
     results: list[QueuedResult] = []
     for line in _result_lines(raw):
@@ -109,13 +120,23 @@ def parse_queue_results(raw: bytes, version: str = "v1") -> list[QueuedResult]:
         if len(parts) < nonce_start:
             continue
         uid = parts[0]
-        nonces = [int(p, 16) for p in parts[nonce_start:]]
-        results.append(QueuedResult(uid=uid, nonces=nonces,
-                                     raw=line.encode("ascii")))
+        try:
+            nonces = [int(p, 16) for p in parts[nonce_start:]]
+        except ValueError:
+            continue  # non-hex nonce token — skip line, keep draining
+        results.append(QueuedResult(
+            uid=uid, nonces=nonces,
+            raw=line.encode("ascii", errors="replace"),
+        ))
     return results
 
 
 def parse_details(raw: bytes) -> DeviceDetails:
+    """Parse a `ZCX` details reply into `DeviceDetails`.
+
+    Each non-framing line is ``KEY : VALUE`` (split on the first colon);
+    empty / OK / SUCCESS / colon-less lines are ignored.
+    """
     text = raw.decode("ascii", errors="replace")
     fields: dict[str, str] = {}
     for line in text.splitlines():
