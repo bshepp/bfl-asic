@@ -1,5 +1,41 @@
 # Development Log
 
+## 2026-05-16 — n=4M bound, n_val correctness fix, Tier B closeout
+
+Second pass the same day, after the public dataset went live.
+
+- **n=4M indistinguishability probe (HF cpu-xl) landed clean** — acc
+  0.500065, 95% CI [0.49897, 0.50116] (brackets 0.5), controls
+  positive_ok/negative_ok, 5.18 h, rc=0. Folded into `bounded_null`:
+  the full-SHA-256 CI-resolution floor tightens from ≈ 0.49 % (n=800k)
+  to ≈ 0.22 % (n=4M). Still a bounded null — just a tighter one.
+  (`9210524`)
+- **Fixed a pre-existing `n_val` inversion bug, globally.** The harness
+  reports the distinguisher floor in *advantage* units (`2·acc−1`):
+  `floor = 2z·√(0.25/n_val)`. `build_dataset.py:_n_val` inverted the
+  *accuracy*-unit form, so the published `n_val` ran ≈ 4× low across
+  `learnability_sweep` + `bounded_null`. Now `n_val = (Z/floor)²`
+  exactly (the n=4M probe → n_val 800k as it should). Only the derived
+  Parquet + card changed; the verified `dataset/source/*.json` evidence
+  is untouched. HF dataset republished additively (head `f2256ae`,
+  prior revisions retained). (`02223e4`)
+- **Tier B closeout.** The long-running Tier B job had loaded the
+  *pre-trim* 12-unit plan (the script was trimmed to the 5-seed sweep
+  in-bucket *after* launch; the trim only takes on resubmit). The
+  5-seed learnability sweep completed and replicates the round-4 cliff
+  on the fine grid across all seeds (controls pass every seed). The
+  redundant `full_structure×5 / indist / dynamics` tail — already
+  deemed redundant on the 2026-05-16 trim, not worth ~20–28 h more
+  cpu-xl — was cancelled. Clean SIGTERM: atomic partial flush,
+  idempotent `progress.json`, `rc=143`, 16.62 h total. The safety
+  design behaved exactly as promised; nothing lost.
+- **Durable backup.** All HF state mirrored to gitignored
+  `hf_results/`; the load-bearing Tier B sweep + job log + flushed
+  `summary.json` + a timing analysis committed under
+  `archive/hf-runs/bfl-ml-tierB/` (git-only, not republished). Per-unit
+  timing variance is pure shared-`cpu-xl` jitter (4/5 within ~7 %, one
+  +39 % noisy-neighbour spike). (`eefeaea`, `31fce3d`, `c21623b`)
+
 ## 2026-05-16 — Curated results published as a public HF dataset
 
 Published the verified ML results as a public Hugging Face dataset:
