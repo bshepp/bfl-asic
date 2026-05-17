@@ -12,6 +12,13 @@ This project repurposes a Butterfly Labs BitForce SHA-256 ASIC cryptocurrency mi
 - **Protocol:** ASCII commands (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX) with 60-byte binary work packets
 - **Power:** 13V DC adapter
 
+<p>
+  <a href="docs/images/jalapeno-rig.jpg">
+    <img src="docs/images/jalapeno-rig.thumb.jpg" width="320" alt="The BF0005G Jalapeno ASIC rig, with a sourdough starter beside it">
+  </a>
+  <br><sub><em>The rig in situ — the BF0005G Jalapeno (left). The sourdough starter really does live right next to it. Click to enlarge.</em></sub>
+</p>
+
 ## Installation
 
 ```bash
