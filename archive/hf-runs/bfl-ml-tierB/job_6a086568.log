@@ -1,0 +1,40 @@
+Downloading networkx (2.0MiB)
+Downloading fonttools (4.8MiB)
+Downloading pillow (6.8MiB)
+Downloading kiwisolver (1.4MiB)
+Downloading numpy (15.9MiB)
+Downloading matplotlib (8.4MiB)
+Downloading setuptools (1.0MiB)
+Downloading scipy (33.6MiB)
+Downloading sympy (6.0MiB)
+Downloading torch (183.4MiB)
+ Downloaded kiwisolver
+ Downloaded setuptools
+ Downloaded fonttools
+ Downloaded networkx
+ Downloaded pillow
+ Downloaded matplotlib
+ Downloaded numpy
+ Downloaded scipy
+ Downloaded sympy
+ Downloaded torch
+Installed 25 packages in 349ms
+[bootstrap] target='run_ml_tier' mnt='/mnt'
+[bootstrap] python=3.12.12 platform=Linux-6.12.83-113.160.amzn2023.x86_64-x86_64-with-glibc2.36
+[bootstrap] cwd=/
+[bootstrap] numpy=2.4.5
+[bootstrap] torch=2.12.0+cpu cuda=False
+[bootstrap] running /mnt/run_ml_tier.py ['--tier', 'B']
+[tier] starting tier=B units=12
+[tier] progress: 0 units already complete: []
+[tier] running unit: sweep_seed0
+[tier] unit 'sweep_seed0' done in 10855.7s
+[tier] running unit: sweep_seed1
+[tier] unit 'sweep_seed1' done in 10581.5s
+[tier] running unit: sweep_seed2
+[tier] unit 'sweep_seed2' done in 15088.3s
+[tier] running unit: sweep_seed3
+[tier] unit 'sweep_seed3' done in 11583.6s
+[tier] running unit: sweep_seed4
+[tier] unit 'sweep_seed4' done in 10323.6s
+[tier] running unit: full_structure_seed0
