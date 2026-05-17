@@ -25,3 +25,7 @@ hf_results/
 
 # Pasted external review notes — not for publication
 /docs/tier_b_concerns_and_tier_c_proposal.md
+
+# Raw phone photo originals — only the web-optimized copies in
+# docs/images/ are committed (see docs/images/jalapeno-rig.jpg)
+/docs/PXL_*.jpg
