@@ -40,3 +40,29 @@ worst-case per-unit cost, not the mean — `full_structure` runs at
 `n=800_000` (larger than the sweep's `n=500_000`), and a single
 seed2-style contention window adds ~40% on top. Estimates beyond a few
 units out are low-confidence by nature on shared infra.
+
+## Shutdown — graceful cancel (signal 15)
+
+Cancelled 2026-05-17 05:16 UTC, after the 5 sweep units, while
+`full_structure_seed0` was in flight. The shutdown path worked exactly
+as designed:
+
+```
+[tier] caught signal 15; flushing partial state
+[tier] partial flushed -> /mnt/results/full_structure_seed0.partial.json
+[bootstrap] target exit rc=143  elapsed=59826.7s
+```
+
+- Total wall clock **59,826.5 s ≈ 16.62 h** (`summary.json`).
+- `summary.json` flushed atomically on SIGTERM: all 5 sweeps
+  `status=complete` with `elapsed_s` + full per-round accuracy curve +
+  controls (every seed: `positive_ok`, `negative_ok`, `negative_ci`
+  brackets 0.5). Corroborates the log timings to the centisecond and
+  carries the Tier B learnability-cliff result (acc ≈ 1.0 at rounds
+  1–3, ≈ 0.50 from round 4 on, all 5 seeds).
+- `full_structure_seed0.partial.json`: `status=partial:sigterm`, no
+  computed data (killed mid-unit) — redundant and regenerable;
+  `progress.json` still lists only the 5 completed sweeps, so a
+  resubmit with the trimmed script is a clean no-op.
+- **Nothing lost.** SIGTERM handler + atomic flush + idempotent
+  `progress.json` behaved exactly as the design promised.

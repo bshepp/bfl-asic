@@ -38,3 +38,6 @@ Installed 25 packages in 349ms
 [tier] running unit: sweep_seed4
 [tier] unit 'sweep_seed4' done in 10323.6s
 [tier] running unit: full_structure_seed0
+[tier] caught signal 15; flushing partial state
+[tier] partial flushed -> /mnt/results/full_structure_seed0.partial.json
+[bootstrap] target exit rc=143  elapsed=59826.7s
