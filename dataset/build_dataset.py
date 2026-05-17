@@ -128,9 +128,13 @@ def build_bounded_null() -> pd.DataFrame:
         {
             "experiment": "indistinguishability",
             "seed": 0,
+            # Dedicated tightening probe: run_sweep([64], seed=0,
+            # n=4_000_000, epochs=30, tiny_cnn) on HF cpu-xl. Drives the
+            # CI-resolution floor down to ~0.22% (from ~0.49% at the
+            # full_structure n=800k budget).
             "model": ind["model"],
             "rounds": 64,
-            "n_train": 800_000,
+            "n_train": 4_000_000,
             "n_val": _n_val(floor, 0.5),
             "accuracy": p["accuracy"],
             "advantage": p["advantage"],

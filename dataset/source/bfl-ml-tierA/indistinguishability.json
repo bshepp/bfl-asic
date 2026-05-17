@@ -1,27 +1,27 @@
 {
-  "timestamp": "2026-05-16T11:54:28.796744+00:00",
+  "timestamp": "2026-05-17T00:13:06.570169+00:00",
   "experiment": "indistinguishability",
   "feature": "per-hash",
   "model": "tiny_cnn",
   "points": [
     {
       "rounds": 64,
-      "accuracy": 0.5007625,
-      "advantage": 0.0015249999999999986,
+      "accuracy": 0.500065,
+      "advantage": 0.00012999999999996348,
       "auc": null,
       "accuracy_ci": [
-        0.49830942764154007,
-        0.5032155447256841
+        0.4989687232581321,
+        0.5011612762711881
       ],
-      "min_detectable_advantage": 0.004899909961350135
+      "min_detectable_advantage": 0.002191306351441454
     }
   ],
   "controls": {
     "positive_accuracy": 1.0,
     "positive_ok": true,
     "negative_ci": [
-      0.49830942764154007,
-      0.5032155447256841
+      0.4989687232581321,
+      0.5011612762711881
     ],
     "negative_ok": true
   },

@@ -94,10 +94,13 @@ Four small Parquet tables, **83 rows total**:
    by ~50×. It is reported, not hidden: `learnable` is a per-point
    `ci_lo > 0.5` flag precisely so this is queryable.
 
-2. **Full SHA-256 is indistinguishable from random — bounded.** At
-   n=800k (n_val=40k), best-of-{TinyCNN, linear probe} accuracy is
+2. **Full SHA-256 is indistinguishable from random — bounded.** Across
+   3 seeds at n=800k, best-of-{TinyCNN, linear probe} accuracy is
    0.499–0.501; the 95% CI brackets 0.5 in every seed; `controls_ok`.
-   Verdict: *no structure above a CI-resolution floor of ≈ 0.49%*.
+   A dedicated indistinguishability probe then **tightens the bound at
+   n=4,000,000**: accuracy 0.50006, 95% CI [0.4990, 0.5012] (brackets
+   0.5), controls passed — pushing the CI-resolution floor down from
+   ≈ 0.49% to **≈ 0.22%**. Verdict: *no structure above ≈ 0.22%*.
    This is a **bounded null at this budget**, explicitly **not** a
    claim that SHA-256 is random.
 
@@ -164,8 +167,20 @@ matter:
   excludes chance at that eval-set size
   (`floor = z·√(p(1−p)/n_val)`). "No structure" means *none above this
   floor at this budget* — it is **not** a statement that the effect is
-  zero, and **not** a power calculation. `n_val` is the exact
-  inversion of that formula and is included for transparency.
+  zero, and **not** a power calculation. The `ci_resolution_floor`
+  value is taken **verbatim from the run** — every "no structure above
+  X" claim rests on it directly, not on any inversion.
+
+- **`n_val` caveat (distinguisher configs).** For the distinguisher
+  configs (`learnability_sweep`, `bounded_null`) the harness reports
+  the floor in *advantage* units (`2·acc−1`), i.e.
+  `floor = 2z·√(0.25/n_val)`. The `n_val` column is the exact inversion
+  of the *accuracy-unit* form above, so for these configs it runs ≈ 4×
+  below the literal eval-set count (e.g. the n=4,000,000
+  indistinguishability probe's true eval split is ≈ 800k while the
+  column shows ≈ 200k). It is a self-consistent, documented derived
+  quantity for transparency — read `n_train` (the run's dataset size)
+  and `ci_resolution_floor` (verbatim) as the load-bearing numbers.
 
 - **The permuted-label control is the dynamics analog of
   random-vs-random.** Train on shuffled labels; if the shuffled model
@@ -189,7 +204,7 @@ variant, per-hash feature, TinyCNN. 5 seeds across 2 tiers.
 |---|---|---|
 | `tier` | str | `A` (n_train=200k) or `B` (n_train=500k, finer round grid) |
 | `n_train` | int | Training examples |
-| `n_val` | int | Eval examples (exact inversion of the CI floor) |
+| `n_val` | int | Inversion of the accuracy-unit CI floor (≈ ¼ of the literal eval count — see the `n_val` caveat above) |
 | `seed` | int | RNG seed (0–2 for A, 0–1 for B) |
 | `rounds` | int | SHA-256 compression rounds (1–64) |
 | `accuracy` | float | Validation accuracy (chance = 0.5) |
@@ -200,9 +215,10 @@ variant, per-hash feature, TinyCNN. 5 seeds across 2 tiers.
 
 ### `bounded_null` (7 rows)
 
-Full 64-round SHA-256 vs random. One row per (seed, model) plus the
-standalone indistinguishability run. `conclusion` is verbatim from the
-harness.
+Full 64-round SHA-256 vs random. Six rows: one per (seed, model) for
+the n=800k full-structure sweep, plus the standalone n=4,000,000
+indistinguishability probe that tightens the CI-resolution floor to
+≈ 0.22%. `conclusion` is verbatim from the harness.
 
 | Column | Type | Description |
 |---|---|---|
@@ -210,10 +226,10 @@ harness.
 | `seed` | int | RNG seed |
 | `model` | str | `tiny_cnn` or `linear_probe` |
 | `rounds` | int | 64 (full SHA-256) |
-| `n_train`, `n_val` | int | Training / eval examples (800k / 40k) |
+| `n_train`, `n_val` | int | Dataset size n / eval examples. full_structure: 800k. indistinguishability: 4,000,000 |
 | `accuracy`, `advantage` | float | Validation accuracy and `2·acc−1` |
 | `ci_lo`, `ci_hi` | float | 95% Clopper–Pearson CI |
-| `ci_resolution_floor` | float | CI-resolution floor (≈ 0.0049) |
+| `ci_resolution_floor` | float | CI-resolution floor (full_structure ≈ 0.0049; indistinguishability ≈ 0.0022) |
 | `is_best_model` | bool | Best-accuracy model for this seed |
 | `controls_ok` | bool | Positive **and** negative control passed |
 | `positive_ok`, `negative_ok` | bool | Individual control outcomes |
