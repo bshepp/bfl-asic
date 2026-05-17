@@ -37,12 +37,17 @@ def _load(path: Path) -> dict:
         return json.load(fh)
 
 
-def _n_val(floor: float, chance: float) -> int:
-    """Invert the CI-resolution floor to the eval-set size that produced it.
+def _n_val(floor: float) -> int:
+    """Invert the distinguisher CI-resolution floor to the eval-set size.
 
-    floor = Z * sqrt(chance*(1-chance)/n_val)  ->  exact integer n_val.
+    The harness reports the distinguisher floor in *advantage* units
+    (2*acc-1), i.e. ``floor = 2 * Z * sqrt(0.25 / n_val)`` (harness.py),
+    so the exact inversion is ``n_val = (Z / floor)**2``. This is the
+    literal eval-set size for every distinguisher config
+    (``learnability_sweep``, ``bounded_null``); the dynamics config
+    reports its floor directly and does not use this.
     """
-    return round(chance * (1.0 - chance) * (_Z / floor) ** 2)
+    return round((_Z / floor) ** 2)
 
 
 def build_learnability_sweep() -> pd.DataFrame:
@@ -68,7 +73,7 @@ def build_learnability_sweep() -> pd.DataFrame:
                 {
                     "tier": tier,
                     "n_train": n_train,
-                    "n_val": _n_val(floor, 0.5),
+                    "n_val": _n_val(floor),
                     "seed": seed,
                     "rounds": p["rounds"],
                     "accuracy": p["accuracy"],
@@ -106,7 +111,7 @@ def build_bounded_null() -> pd.DataFrame:
                     "model": p["model"],
                     "rounds": 64,
                     "n_train": 800_000,
-                    "n_val": _n_val(floor, 0.5),
+                    "n_val": _n_val(floor),
                     "accuracy": p["accuracy"],
                     "advantage": p["advantage"],
                     "ci_lo": lo,
@@ -135,7 +140,7 @@ def build_bounded_null() -> pd.DataFrame:
             "model": ind["model"],
             "rounds": 64,
             "n_train": 4_000_000,
-            "n_val": _n_val(floor, 0.5),
+            "n_val": _n_val(floor),
             "accuracy": p["accuracy"],
             "advantage": p["advantage"],
             "ci_lo": lo,

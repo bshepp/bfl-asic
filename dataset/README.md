@@ -164,23 +164,20 @@ matter:
 
 - **`ci_resolution_floor` is a CI-resolution floor, NOT a power-based
   MDE.** It is the smallest above-chance gain whose 95% accuracy CI
-  excludes chance at that eval-set size
-  (`floor = z·√(p(1−p)/n_val)`). "No structure" means *none above this
-  floor at this budget* — it is **not** a statement that the effect is
-  zero, and **not** a power calculation. The `ci_resolution_floor`
-  value is taken **verbatim from the run** — every "no structure above
-  X" claim rests on it directly, not on any inversion.
+  excludes chance at that eval-set size. For the distinguisher configs
+  (`learnability_sweep`, `bounded_null`) the harness reports it in
+  *advantage* units (`2·acc−1`): `floor = 2z·√(0.25/n_val)`. "No
+  structure" means *none above this floor at this budget* — it is
+  **not** a statement that the effect is zero, and **not** a power
+  calculation. The `ci_resolution_floor` value is taken **verbatim
+  from the run**; every "no structure above X" claim rests on it
+  directly.
 
-- **`n_val` caveat (distinguisher configs).** For the distinguisher
-  configs (`learnability_sweep`, `bounded_null`) the harness reports
-  the floor in *advantage* units (`2·acc−1`), i.e.
-  `floor = 2z·√(0.25/n_val)`. The `n_val` column is the exact inversion
-  of the *accuracy-unit* form above, so for these configs it runs ≈ 4×
-  below the literal eval-set count (e.g. the n=4,000,000
-  indistinguishability probe's true eval split is ≈ 800k while the
-  column shows ≈ 200k). It is a self-consistent, documented derived
-  quantity for transparency — read `n_train` (the run's dataset size)
-  and `ci_resolution_floor` (verbatim) as the load-bearing numbers.
+- **`n_val` is the literal eval-set size.** It is the exact inversion
+  of the advantage-unit floor above, `n_val = (z/floor)²`, so e.g. the
+  n=4,000,000 indistinguishability probe resolves to `n_val = 800k`.
+  Included for transparency alongside `n_train` (the run's dataset
+  size).
 
 - **The permuted-label control is the dynamics analog of
   random-vs-random.** Train on shuffled labels; if the shuffled model
@@ -204,7 +201,7 @@ variant, per-hash feature, TinyCNN. 5 seeds across 2 tiers.
 |---|---|---|
 | `tier` | str | `A` (n_train=200k) or `B` (n_train=500k, finer round grid) |
 | `n_train` | int | Training examples |
-| `n_val` | int | Inversion of the accuracy-unit CI floor (≈ ¼ of the literal eval count — see the `n_val` caveat above) |
+| `n_val` | int | Eval examples (exact inversion of the advantage-unit CI floor) |
 | `seed` | int | RNG seed (0–2 for A, 0–1 for B) |
 | `rounds` | int | SHA-256 compression rounds (1–64) |
 | `accuracy` | float | Validation accuracy (chance = 0.5) |
@@ -226,7 +223,7 @@ indistinguishability probe that tightens the CI-resolution floor to
 | `seed` | int | RNG seed |
 | `model` | str | `tiny_cnn` or `linear_probe` |
 | `rounds` | int | 64 (full SHA-256) |
-| `n_train`, `n_val` | int | Dataset size n / eval examples. full_structure: 800k. indistinguishability: 4,000,000 |
+| `n_train`, `n_val` | int | Dataset size n / eval examples. full_structure: 800k / 160k. indistinguishability: 4,000,000 / 800k |
 | `accuracy`, `advantage` | float | Validation accuracy and `2·acc−1` |
 | `ci_lo`, `ci_hi` | float | 95% Clopper–Pearson CI |
 | `ci_resolution_floor` | float | CI-resolution floor (full_structure ≈ 0.0049; indistinguishability ≈ 0.0022) |
