@@ -4,6 +4,9 @@ Communication layer and statistical analysis tools for the Butterfly Labs BF0005
 
 This project repurposes a Butterfly Labs BitForce SHA-256 ASIC cryptocurrency miner as a general-purpose cryptographic research platform. Rather than mining, it provides tools for statistical analysis of SHA-256 hash output, iterated hash dynamics exploration, and direct hardware interaction through a layered Python API.
 
+- **Writeup:** [Teaching a Dead Mining ASIC to Measure Nothing, Carefully — the story & the negative results](blog/round-reduced-sha256-learnability.md) (also published as a Hugging Face Article — link added on publish)
+- **Dataset:** [`bshepp/round-reduced-sha256-learnability`](https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability)
+
 ## Hardware
 
 - **Device:** Butterfly Labs BF0005G Jalapeno (5 GH/s)
