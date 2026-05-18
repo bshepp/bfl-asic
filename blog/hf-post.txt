@@ -1,0 +1,14 @@
+A dead 2013 Butterfly Labs "Jalapeno" SHA-256 mining ASIC sat in a drawer for a decade. It became the excuse for a small, careful question: how much structure can a tiny, cheap model learn in SHA-256, and how would I know if I were fooling myself? (The ML runs on CPU and a HF job, not the ASIC; the dead miner is just the origin story.)
+
+Three findings, written up honestly:
+
+1. A sharp round-4 cliff. Round-reduced SHA-256 is ~100% distinguishable through 3 rounds, then collapses to chance at round 4 and stays there out to the full 64. Reproduced across 5 seeds.
+
+2. A controls-gated bounded null on full SHA-256: no learnable structure above a ~0.22% resolution floor at n=4,000,000. That is a bounded null at this budget, not a claim that SHA-256 is random.
+
+3. A "signal" in the iterated-hash dynamics that a permuted-label control unmasked as a label-prior artifact. The instrument caught its own false positive. That was the point of building the controls.
+
+Negative results, stated with their resolution. The dataset carries the controls on every row.
+
+Dataset: https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability
+Code (MIT) + full writeup: https://github.com/bshepp/bfl-asic

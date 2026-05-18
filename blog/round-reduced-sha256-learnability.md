@@ -6,13 +6,14 @@ authors:
 ---
 
 <!--
-PUBLISH: paste this file's body (everything below this comment) into
-https://huggingface.co/new-blog  (requires HF PRO). Set the thumbnail to
-blog/assets/round4-cliff.png and upload the two body images in the
-editor. Suggested slug: round-reduced-sha256-learnability.
-Alternate titles (swap in the frontmatter if you prefer):
-  - "The Round-4 Cliff: A Controls-Gated SHA-256 Learnability Study on Repurposed Mining Hardware"
-  - "What a Defunct Bitcoin Miner Taught Me About Negative Results"
+This is the long-form CANONICAL writeup. It is meant to be read
+rendered as Markdown on GitHub (linked from the README), not pasted
+into HF: the HF Posts surface is short and does not take this much
+Markdown. For HF, post `blog/hf-post.txt` (short, plain text, links
+back here). Keep this file as the full version of record.
+Alternate titles: "The Round-4 Cliff: A Controls-Gated SHA-256
+Learnability Study on Repurposed Mining Hardware"; "What a Defunct
+Bitcoin Miner Taught Me About Negative Results".
 -->
 
 In 2013, Butterfly Labs shipped a small purple box called the Jalapeno: a 5 GH/s SHA-256 mining ASIC that was obsolete almost the moment it arrived. Mine sat dead for a decade. This project started as an attempt to resurrect it (a clean protocol layer, a serial transport, a device simulator) and then kept going, past "make the hardware talk" and into a question I actually cared about: **how much structure can a small, cheap model learn in SHA-256, and how would I know if I were fooling myself?**
