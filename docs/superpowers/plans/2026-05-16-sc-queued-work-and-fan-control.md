@@ -183,7 +183,7 @@ Expected: FAIL (`ModuleNotFoundError: bfl_asic.protocol.queued`).
 """Pure builders/parsers for the BFL 'SC' queued-work protocol.
 
 Byte layout facts are taken from cgminer's driver-bflsc.h/.c (GPLv3
-reference at F:\\experimental-projects\\cgminer-ref\\); no code is copied.
+reference at cgminer-ref/); no code is copied.
 No I/O happens here.
 """
 from __future__ import annotations

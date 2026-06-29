@@ -29,3 +29,6 @@ hf_results/
 # Raw phone photo originals — only the web-optimized copies in
 # docs/images/ are committed (see docs/images/jalapeno-rig.jpg)
 /docs/PXL_*.jpg
+
+# Third-party GPLv3 reference (cgminer BFL driver, driver-bflsc.c/.h) — facts-only reference, never committed
+/cgminer-ref/
