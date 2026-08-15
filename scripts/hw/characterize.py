@@ -199,6 +199,9 @@ def main() -> int:
     ap.add_argument("--reps", type=int, default=24)
     ap.add_argument("--sample-every", type=float, default=60.0,
                     help="Telemetry cadence seconds.")
+    ap.add_argument("--bins", type=int, default=64,
+                    help="Nonce-value histogram bins (raise for a long "
+                         "engine-mapping run; default 64).")
     ap.add_argument("--out", default="docs/characterization/run.json")
     args = ap.parse_args()
 
@@ -306,8 +309,8 @@ def main() -> int:
                                          for k, v in sorted(yield_hist.items())},
         }
         results["nonce_distribution"] = {
-            "n": len(nonce_values), "bins": 64,
-            "counts": _histogram(nonce_values, 64),
+            "n": len(nonce_values), "bins": args.bins,
+            "counts": _histogram(nonce_values, args.bins),
             "min": min(nonce_values) if nonce_values else None,
             "max": max(nonce_values) if nonce_values else None,
         }
