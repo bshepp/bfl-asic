@@ -1,0 +1,193 @@
+{
+  "meta": {
+    "port": "COM3",
+    "max_temp_c": 65.0,
+    "start_fan": 3,
+    "min_fan": 0,
+    "reps": 14,
+    "started_utc": "2026-08-15T16:53:15.956013+00:00",
+    "device": "BitForce SHA256 SC 1.0"
+  },
+  "samples": [
+    {
+      "fan": 3,
+      "temp_c": 33.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.34 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 3,
+      "temp_c": 34.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.34 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 3,
+      "temp_c": 34.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.34 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 3,
+      "temp_c": 35.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.33 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 3,
+      "temp_c": 35.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.33 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 2,
+      "temp_c": 36.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.33 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 2,
+      "temp_c": 36.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.33 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 2,
+      "temp_c": 37.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.33 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 2,
+      "temp_c": 37.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 2,
+      "temp_c": 37.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 1,
+      "temp_c": 39.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 1,
+      "temp_c": 38.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 1,
+      "temp_c": 38.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 1,
+      "temp_c": 39.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 1,
+      "temp_c": 39.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 0,
+      "temp_c": 39.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 0,
+      "temp_c": 41.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.32 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 0,
+      "temp_c": 39.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.31 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 0,
+      "temp_c": 40.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.31 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    },
+    {
+      "fan": 0,
+      "temp_c": 40.0,
+      "error_rate": 0.0,
+      "engines": 27,
+      "mining_speed": "5.31 GH/s",
+      "freq_mhz": 189,
+      "distinct_sets": null
+    }
+  ]
+}

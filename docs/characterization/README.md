@@ -85,9 +85,31 @@ diff-1 expectation), rather than stopping at the first hit.
   settling/first-read effect rather than a real rail drop. VCC2 steady
   ~1.00 V; VMAIN ~11.0–11.6 V (12 V rail, noisy).
 
-## Not run (deferred to a supervised session)
+## Temperature sweep (supervised, 2026-08-15)
 
-The deliberate error-rate-vs-temperature sweep (reducing cooling via a
-fixed fan level to push temperature up) was **not** run — it takes the
-device out of its self-protecting envelope and should only run with a
-human watching. See the hardware-safety notes in `CLAUDE.md`.
+Ran `scripts/hw/temp_sweep.py` with a 65 °C hard ceiling, fan stepped
+3 → 2 → 1 → 0 under continuous load, human supervising. Raw data:
+[`temp_sweep.json`](temp_sweep.json). Result — **inconclusive on
+error-onset, but a clear thermal finding**:
+
+| Fan level | Temp reached | Error rate |
+|-----------|--------------|-----------:|
+| 3 | 33–35 °C | 0.000 |
+| 2 | 36–37 °C | 0.000 |
+| 1 | 38–39 °C | 0.000 |
+| 0 (off) | 39–41 °C | 0.000 |
+
+- **Zero hardware errors at every step** (identical-work nonce sets never
+  diverged); engines steady at 27, frequency steady at 189 MHz, mining
+  speed drifting only 5.34 → 5.31 GH/s.
+- **The device won't get hot.** Even with the fan fully **off** under
+  continuous load it peaked at ~41 °C — cooler than the 45 °C plateau of
+  the 30-min auto-fan run (which simply ran longer). The ceiling was
+  never approached; it aborted nothing.
+- So we cannot reach the error-onset temperature by removing cooling
+  alone under normal desk conditions — this unit is thermally
+  over-provisioned for its ~5.3 GH/s workload. Pushing it into an
+  erroring regime would need blocked airflow, elevated ambient, or a much
+  longer fan-off soak to find true equilibrium (the fan-0 phase here was
+  only ~2 min). That is itself a useful result: **no thermal errors are
+  reachable in ordinary operation.**

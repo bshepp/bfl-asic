@@ -32,3 +32,4 @@ hf_results/
 
 # Third-party GPLv3 reference (cgminer BFL driver, driver-bflsc.c/.h) — facts-only reference, never committed
 /cgminer-ref/
+docs/characterization/*.log
