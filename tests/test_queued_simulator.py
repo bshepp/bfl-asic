@@ -15,6 +15,33 @@ def _cold() -> SimulatedDevice:
     return SimulatedDevice(heat_per_work=0.0)
 
 
+def test_simulator_details_census_is_realistic():
+    # ZCX should look like a real Jalapeno, not the old ENGINES:1 stub.
+    from bfl_asic.protocol.queued import parse_details
+    det = parse_details(SimulatedDevice().process_command(b"ZCX"))
+    assert det.device == "BitFORCE SC"
+    assert det.firmware == "1.0.0"
+    assert det.engines == 30
+    assert det.frequency == "[UNKNOWN]"
+    assert det.jobs_in_queue == 0
+
+
+def test_simulator_details_engines_configurable():
+    # Phase-2 nonce mapping needs a knowable engine count.
+    from bfl_asic.protocol.queued import parse_details
+    d = SimulatedDevice(engines=16)
+    assert parse_details(d.process_command(b"ZCX")).engines == 16
+
+
+def test_simulator_details_jobs_in_queue_still_tracks():
+    # The census upgrade must not break the JOBS IN QUEUE backpressure line.
+    from bfl_asic.protocol.queued import parse_details
+    d = SimulatedDevice()
+    d.process_command(_job(0))
+    d.process_command(_job(1))
+    assert parse_details(d.process_command(b"ZCX")).jobs_in_queue == 2
+
+
 def test_naive_wall_off_by_default():
     # Default sim has NO wall: existing behaviour preserved.
     d = _cold()

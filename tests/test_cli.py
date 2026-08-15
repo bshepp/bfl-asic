@@ -54,6 +54,46 @@ class TestTemperature:
 
 
 # ======================================================================
+# device details
+# ======================================================================
+
+
+class TestDeviceDetails:
+    def test_device_details_prints_census(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["--simulate", "device", "details"])
+        assert result.exit_code == 0
+        assert "BitFORCE SC" in result.output
+        assert "30" in result.output          # engine count
+        assert "[UNKNOWN]" in result.output   # frequency field
+
+    def test_device_group_has_details_subcommand(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["device", "--help"])
+        assert result.exit_code == 0
+        assert "details" in result.output
+
+    def test_render_census_labels_discovered_fields(self) -> None:
+        from bfl_asic.cli import _render_census
+        from bfl_asic.protocol.queued import parse_details
+        real = (
+            b"DEVICE: BitFORCE SC\nFIRMWARE: 1.0.0\n"
+            b"MINIG SPEED: 5.15 GH/s\n"
+            b"PROCESSOR 3: 12 engines @ 199 MHz\n"
+            b"PROCESSOR 7: 14 engines @ 200 MHz\n"
+            b"ENGINES: 26\nFREQUENCY: 189 MHz\n"
+            b"XLINK MODE: MASTER\nCRITICAL TEMPERATURE: 0\n"
+            b"XLINK PRESENT: NO\nOK\n"
+        )
+        text = "\n".join(_render_census(parse_details(real)))
+        assert "5.15 GH/s" in text
+        assert "189 MHz" in text
+        assert "Processor 3: 12 engines @ 199 MHz" in text
+        assert "Processor 7: 14 engines @ 200 MHz" in text
+        # Every field here is now first-class, so nothing is dumped as
+        # "undocumented".
+        assert "undocumented" not in text.lower()
+
+
+# ======================================================================
 # probe
 # ======================================================================
 

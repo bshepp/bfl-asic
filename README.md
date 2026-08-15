@@ -44,9 +44,23 @@ bfl-asic -p COM3 probe
 # Read temperature and voltages
 bfl-asic -p COM3 temperature
 
+# Full ZCX device census: firmware, engine count, real clock,
+# per-processor topology, and any undocumented firmware fields
+bfl-asic -p COM3 device details
+
 # Benchmark work submission throughput
 bfl-asic -p COM3 benchmark --duration 10
 ```
+
+> **Device census (`ZCX`).** `device details` parses the complete device
+> reply, not just the handful of fields cgminer consumed. On real
+> hardware this surfaces undocumented fields — a firmware-estimated
+> hashrate, a `CRITICAL TEMPERATURE`, and a per-processor engine/clock
+> breakdown (`PROCESSOR N: X engines @ Y MHz`) that exposes the chip's
+> internal topology. Anything unrecognised is still printed verbatim
+> under "Other fields". `scripts/hw/read_details.py` is a strictly
+> read-only capture of the same reply (no work queued, no fan touched,
+> no NVRAM written).
 
 ### Without hardware (simulator)
 
@@ -194,8 +208,9 @@ bfl_asic/
     publish.py      # Optional HF model-card upload
   device.py        # BFLDevice — sync high-level API
   async_device.py  # AsyncBFLDevice — async API with stream iterators
-  cli.py           # Click CLI: identify, temperature, probe, discover,
-                   #   benchmark, hash, stats, dynamics, randomness
+  cli.py           # Click CLI: identify, temperature, device details,
+                   #   probe, discover, benchmark, hash, stats, dynamics,
+                   #   randomness
   exceptions.py    # BFLError hierarchy
 ```
 
@@ -213,9 +228,19 @@ bfl_asic/
 | Identify | `ZGX` | `BitForce SHA256 SC 1.0\n` |
 | Temperature | `ZLX` | `Temp1: 30, Temp2: 30\n` |
 | Voltages | `ZTX` | `3564,1011,11420\n` (mV: VCC1, VCC2, VMAIN) |
+| Device census | `ZCX` | multi-line `KEY: VALUE` block → `OK\n` (firmware, engines, frequency, per-processor topology, `JOBS IN QUEUE`, …) |
 | Submit work | `ZDX` + 60-byte packet | `OK\n` |
 | Poll result | `ZFX` | `IDLE\n` / `B\n` / `NONCE-FOUND:<hex>\n` / `NO-NONCE\n` |
 | Nonce range | `ZPX` + 68-byte packet | `OK\n` |
+
+The `ZCX` census parses into a `DeviceDetails` with typed accessors —
+`firmware`, `engines`, `frequency` / `frequency_mhz`, `mining_speed`,
+`critical_temperature`, `xlink_mode`, `processors` (a list of
+`Processor(index, engines, mhz)`), and `jobs_in_queue`. Lookups are
+case- and dash-insensitive, so the wire's `--DEVICES IN CHAIN` resolves
+cleanly. Reported fields vary by firmware build: the reference unit
+returns `FREQUENCY: [UNKNOWN]` and no per-processor lines, while other
+builds populate a real clock and the full topology.
 
 Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>>>>`
 
@@ -225,7 +250,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-783 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 781 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+800 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 798 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 
@@ -239,6 +264,10 @@ with BFLDevice(SerialTransport(port="COM3")) as dev:
     info = dev.identify()
     temp = dev.get_temperature()
     volts = dev.get_voltage()
+    details = dev.get_details()          # full ZCX census
+    print(details.firmware, details.engines, details.frequency_mhz)
+    for p in details.processors:         # per-processor topology
+        print(f"proc {p.index}: {p.engines} engines @ {p.mhz} MHz")
     nonces = dev.hash_data(b"hello world")
 
 # Simulator

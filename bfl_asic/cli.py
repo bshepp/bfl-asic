@@ -148,6 +148,84 @@ def temperature(ctx: click.Context) -> None:
 
 
 # ======================================================================
+# device (protocol-surface queries)
+# ======================================================================
+
+
+# Fields the census prints under explicit labels; anything else the
+# firmware returns is surfaced under "Other fields" (undocumented
+# surface). PROCESSOR N lines are handled separately (see _render_census).
+_CENSUS_KNOWN = {
+    "DEVICE", "FIRMWARE", "ENGINES", "FREQUENCY", "XLINK MODE",
+    "XLINK PRESENT", "DEVICES IN CHAIN", "CHAIN PRESENCE MASK",
+    "JOBS IN QUEUE", "MINIG SPEED", "MINING SPEED", "CRITICAL TEMPERATURE",
+}
+
+
+def _render_census(det) -> list[str]:  # noqa: ANN001
+    """Format a DeviceDetails census into display lines.
+
+    Pure (no I/O) so it can be unit-tested against captured hardware
+    replies. Any firmware field not explicitly labelled here still shows
+    up under "Other fields (undocumented)" so real-unit surprises are
+    never silently dropped.
+    """
+    def _or(value: object) -> str:
+        return "?" if value is None else str(value)
+
+    lines = [
+        "Device details (ZCX):",
+        f"  Device:      {_or(det.device)}",
+        f"  Firmware:    {_or(det.firmware)}",
+        f"  Engines:     {_or(det.engines)}",
+        f"  Frequency:   {_or(det.frequency)}",
+    ]
+    if det.mining_speed is not None:
+        lines.append(f"  Mining speed: {det.mining_speed}")
+    if det.critical_temperature is not None:
+        lines.append(f"  Critical temp: {det.critical_temperature}")
+    lines.append(f"  X-Link:      mode={_or(det.xlink_mode)} "
+                 f"present={_or(det.xlink_present)}")
+    lines.append(f"  Chain:       devices={_or(det.devices_in_chain)} "
+                 f"mask={_or(det.chain_presence_mask)}")
+    lines.append(f"  Jobs queued: {det.jobs_in_queue}")
+    procs = det.processors
+    if procs:
+        lines.append("  Processors:")
+        for p in procs:
+            lines.append(f"    Processor {p.index}: {p.engines} engines "
+                         f"@ {p.mhz} MHz")
+    extra = {
+        k: v for k, v in det.fields.items()
+        if k.lstrip("-").strip().upper() not in _CENSUS_KNOWN
+        and not k.lstrip("-").strip().upper().startswith("PROCESSOR")
+    }
+    if extra:
+        lines.append("  Other fields (undocumented):")
+        for k, v in extra.items():
+            lines.append(f"    {k}: {v}")
+    return lines
+
+
+@main.group()
+def device() -> None:
+    """Device identity and protocol-surface queries."""
+
+
+@device.command(name="details")
+@click.pass_context
+def device_details(ctx: click.Context) -> None:
+    """Full ZCX device census: firmware, engines, frequency, X-Link."""
+    transport = get_transport(
+        ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
+    )
+    with BFLDevice(transport) as dev:
+        det = dev.get_details()
+        for line in _render_census(det):
+            click.echo(line)
+
+
+# ======================================================================
 # probe
 # ======================================================================
 

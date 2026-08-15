@@ -6,9 +6,12 @@ No I/O happens here.
 """
 from __future__ import annotations
 
+import re
+
 # dataclass/field (and RESP_COUNT below) are consumed by the parsers
 # added to this module in the next task; intentionally imported now.
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from bfl_asic.protocol.constants import (
     CMD_DETAILS, CMD_QFLUSH, CMD_QJOB, CMD_QJOBS, CMD_QRESULTS,
@@ -69,11 +72,55 @@ class QueuedResult:
     raw: bytes = b""
 
 
+class Processor(NamedTuple):
+    """One on-chip processor from a ZCX ``PROCESSOR N:`` line.
+
+    Real Jalapeno firmware enumerates active processors individually,
+    e.g. ``PROCESSOR 3: 12 engines @ 199 MHz`` -- exposing the internal
+    engine/clock topology that the aggregate ``ENGINES:`` field hides.
+    Processor indices can be sparse (fused-off cores are omitted).
+    """
+
+    index: int
+    engines: int
+    mhz: int
+
+
+_PROC_KEY_RE = re.compile(r"PROCESSOR\s+(\d+)", re.IGNORECASE)
+_PROC_VAL_RE = re.compile(
+    r"(\d+)\s+engines?\s*@\s*(\d+)\s*MHz", re.IGNORECASE)
+_LEADING_INT_RE = re.compile(r"(\d+)")
+
+
 @dataclass
 class DeviceDetails:
-    """Parsed `ZCX` details."""
+    """Parsed `ZCX` details.
+
+    The raw ``fields`` dict is preserved verbatim (keys exactly as the
+    firmware spelled them, including any leading ``--``). The typed
+    properties below are the census view: they look keys up case-
+    insensitively and ignore leading dashes, so ``--DEVICES IN CHAIN``
+    is reachable as :attr:`devices_in_chain`.
+    """
 
     fields: dict[str, str] = field(default_factory=dict)
+
+    def _get(self, key: str) -> str | None:
+        """Case-insensitive, dash-insensitive field lookup."""
+        want = key.lstrip("-").strip().upper()
+        for k, v in self.fields.items():
+            if k.lstrip("-").strip().upper() == want:
+                return v
+        return None
+
+    def _get_int(self, key: str) -> int | None:
+        v = self._get(key)
+        if v is None:
+            return None
+        try:
+            return int(v.strip())
+        except ValueError:
+            return None
 
     @property
     def jobs_in_queue(self) -> int:
@@ -82,6 +129,84 @@ class DeviceDetails:
             return int(v)
         except ValueError:
             return 0
+
+    @property
+    def device(self) -> str | None:
+        """Model string, e.g. ``BitFORCE SC``."""
+        return self._get("DEVICE")
+
+    @property
+    def firmware(self) -> str | None:
+        """Firmware version string, e.g. ``1.0.0``."""
+        return self._get("FIRMWARE")
+
+    @property
+    def engines(self) -> int | None:
+        """Hashing-engine count; ``None`` if absent or non-numeric."""
+        return self._get_int("ENGINES")
+
+    @property
+    def frequency(self) -> str | None:
+        """Reported clock; SC firmware returns the literal ``[UNKNOWN]``."""
+        return self._get("FREQUENCY")
+
+    @property
+    def xlink_mode(self) -> str | None:
+        return self._get("XLINK MODE")
+
+    @property
+    def xlink_present(self) -> str | None:
+        return self._get("XLINK PRESENT")
+
+    @property
+    def devices_in_chain(self) -> int | None:
+        return self._get_int("DEVICES IN CHAIN")
+
+    @property
+    def chain_presence_mask(self) -> str | None:
+        return self._get("CHAIN PRESENCE MASK")
+
+    @property
+    def frequency_mhz(self) -> int | None:
+        """Reported clock as an integer MHz; ``None`` if ``[UNKNOWN]``."""
+        v = self._get("FREQUENCY")
+        if v is None:
+            return None
+        m = _LEADING_INT_RE.search(v)
+        return int(m.group(1)) if m else None
+
+    @property
+    def mining_speed(self) -> str | None:
+        """Firmware-estimated hashrate string, e.g. ``5.15 GH/s``.
+
+        Tolerates the firmware's real ``MINIG SPEED`` typo as well as a
+        corrected ``MINING SPEED``.
+        """
+        return self._get("MINIG SPEED") or self._get("MINING SPEED")
+
+    @property
+    def critical_temperature(self) -> int | None:
+        return self._get_int("CRITICAL TEMPERATURE")
+
+    @property
+    def processors(self) -> list[Processor]:
+        """Per-processor engine/clock topology, sorted by index.
+
+        Parsed from every ``PROCESSOR N: X engines @ Y MHz`` line; empty
+        if the firmware does not report a breakdown.
+        """
+        procs: list[Processor] = []
+        for key, val in self.fields.items():
+            km = _PROC_KEY_RE.match(key.lstrip("-").strip())
+            if not km:
+                continue
+            vm = _PROC_VAL_RE.search(val)
+            if not vm:
+                continue
+            procs.append(Processor(
+                int(km.group(1)), int(vm.group(1)), int(vm.group(2))))
+        procs.sort(key=lambda p: p.index)
+        return procs
 
 
 def _result_lines(raw: bytes) -> list[str]:

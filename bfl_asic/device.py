@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import struct
 import time
+from typing import TYPE_CHECKING
 
 from bfl_asic.exceptions import BFLTimeoutError
 from bfl_asic.protocol.commands import (
@@ -32,6 +33,9 @@ from bfl_asic.protocol.responses import (
 )
 from bfl_asic.protocol.work import build_synthetic_work
 from bfl_asic.transport.base import BaseTransport
+
+if TYPE_CHECKING:
+    from bfl_asic.protocol.queued import DeviceDetails
 
 
 class BFLDevice:
@@ -60,6 +64,26 @@ class BFLDevice:
         self._transport.write(build_voltage())
         raw = self._transport.readline()
         return parse_voltage(raw)
+
+    def get_details(self) -> "DeviceDetails":
+        """Query the full device details census (ZCX command).
+
+        Reads the complete multi-line reply through to ``OK`` and parses
+        it into a :class:`~bfl_asic.protocol.queued.DeviceDetails`:
+        firmware version, engine count, reported frequency, X-Link
+        state, chain fields, and the live JOBS IN QUEUE backpressure
+        value. Unlike single-line queries this drains several lines, so a
+        lone ``readline()`` would truncate it at ``DEVICE:``.
+        """
+        from bfl_asic.protocol.queued import build_details, parse_details
+        self._transport.write(build_details())
+        raw = b""
+        for _ in range(32):
+            line = self._transport.readline()
+            raw += line
+            if line.strip() in (b"OK", b"SUCCESS") or not line:
+                break
+        return parse_details(raw)
 
     def set_fan_auto(self) -> bool:
         """Hand the fan back to firmware thermal management (Z9X).

@@ -162,3 +162,99 @@ def test_device_details_jobs_in_queue_edge_cases():
 def test_parse_details_value_with_colon():
     d = parse_details(b"FIRMWARE: 1.0.0:beta\nOK\n")
     assert d.fields["FIRMWARE"] == "1.0.0:beta"
+
+
+# The real ZCX details reply from a Jalapeno, recorded verbatim in the
+# getinfo() comment of cgminer's driver-bflsc.c (Kano's first dev unit).
+# Note the leading dashes on the chain fields and FREQUENCY: [UNKNOWN].
+KANO_JALAPENO_DETAILS = (
+    b"DEVICE: BitFORCE SC\n"
+    b"FIRMWARE: 1.0.0\n"
+    b"ENGINES: 30\n"
+    b"FREQUENCY: [UNKNOWN]\n"
+    b"XLINK MODE: MASTER\n"
+    b"XLINK PRESENT: YES\n"
+    b"--DEVICES IN CHAIN: 0\n"
+    b"--CHAIN PRESENCE MASK: 00000000\n"
+    b"OK\n"
+)
+
+
+def test_details_census_typed_accessors():
+    d = parse_details(KANO_JALAPENO_DETAILS)
+    assert d.device == "BitFORCE SC"
+    assert d.firmware == "1.0.0"
+    assert d.engines == 30
+    assert d.frequency == "[UNKNOWN]"
+    assert d.xlink_mode == "MASTER"
+    assert d.xlink_present == "YES"
+    # Leading '--' on the wire must not defeat the accessor.
+    assert d.devices_in_chain == 0
+    assert d.chain_presence_mask == "00000000"
+
+
+def test_details_engines_none_when_missing_or_non_int():
+    assert parse_details(b"FIRMWARE: 1.0.0\nOK\n").engines is None
+    assert parse_details(b"ENGINES: [UNKNOWN]\nOK\n").engines is None
+
+
+def test_details_accessors_none_when_field_absent():
+    d = parse_details(b"OK\n")
+    assert d.device is None
+    assert d.firmware is None
+    assert d.frequency is None
+    assert d.xlink_mode is None
+    assert d.devices_in_chain is None
+
+
+# Captured verbatim from a real BF0005G Jalapeno (firmware 1.0.0) via
+# scripts/hw/read_details.py. Richer than the cgminer reference: it
+# reports real per-processor topology, a real clock, firmware-estimated
+# hashrate (note the firmware's "MINIG" typo), and a critical-temp field.
+REAL_JALAPENO_DETAILS = (
+    b"DEVICE: BitFORCE SC\n"
+    b"FIRMWARE: 1.0.0\n"
+    b"MINIG SPEED: 5.15 GH/s\n"
+    b"PROCESSOR 3: 12 engines @ 199 MHz\n"
+    b"PROCESSOR 7: 14 engines @ 200 MHz\n"
+    b"ENGINES: 26\n"
+    b"FREQUENCY: 189 MHz\n"
+    b"XLINK MODE: MASTER\n"
+    b"CRITICAL TEMPERATURE: 0\n"
+    b"XLINK PRESENT: NO\n"
+    b"OK\n"
+)
+
+
+def test_details_real_unit_scalar_fields():
+    d = parse_details(REAL_JALAPENO_DETAILS)
+    assert d.engines == 26
+    assert d.frequency == "189 MHz"
+    assert d.frequency_mhz == 189
+    assert d.mining_speed == "5.15 GH/s"
+    assert d.critical_temperature == 0
+    assert d.xlink_present == "NO"
+    assert d.devices_in_chain is None  # standalone unit omits chain fields
+
+
+def test_details_processor_topology():
+    from bfl_asic.protocol.queued import Processor
+    procs = parse_details(REAL_JALAPENO_DETAILS).processors
+    assert procs == [Processor(3, 12, 199), Processor(7, 14, 200)]
+    # The per-processor engine counts must reconcile with ENGINES:.
+    assert sum(p.engines for p in procs) == 26
+
+
+def test_details_mining_speed_handles_correct_spelling_too():
+    # If a firmware build fixes the "MINIG" typo, still read it.
+    d = parse_details(b"MINING SPEED: 4.9 GH/s\nOK\n")
+    assert d.mining_speed == "4.9 GH/s"
+
+
+def test_details_frequency_mhz_none_when_unknown():
+    assert parse_details(b"FREQUENCY: [UNKNOWN]\nOK\n").frequency_mhz is None
+    assert parse_details(b"OK\n").frequency_mhz is None
+
+
+def test_details_processors_empty_when_absent():
+    assert parse_details(b"ENGINES: 1\nOK\n").processors == []

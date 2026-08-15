@@ -47,6 +47,25 @@ ZFX — Read results
 ZTX — Get temperature
 ```
 
+> **Status (2026-08-15):** command layer implemented and largely mapped
+> (`bfl_asic/protocol/`). Corrections vs. the list above: **ZLX** reads
+> temperature and **ZTX** reads voltage (they were reversed from initial
+> assumptions). Full SC set now covered: identify `ZGX`, temp `ZLX`,
+> voltage `ZTX`, work `ZDX`/poll `ZFX`, nonce-range `ZPX`, fan
+> `Z9X`/`Z0X`–`Z4X`, and the SC queued path `ZNX`/`ZWX`/`ZOX`/`ZQX`/`ZCX`.
+> **Task 4 (map the full command set):** the `ZCX` details census is now
+> parsed in full (`device details` CLI + `scripts/hw/read_details.py`,
+> read-only). On the real unit it exposes undocumented fields cgminer
+> never consumed — real per-processor engine/clock topology, a
+> firmware-estimated hashrate, and a critical-temp field. Still open:
+> the genuinely-unused `ZJX`/`ZSX`/`ZUX` commands (defined in the
+> cgminer header but never sent), queued for a probe increment; blind
+> `Z?X` scanning and `ZMX` flash are reserved for a **sacrificial** unit.
+> **Task 5 (output modes):** settled — the firmware returns only winning
+> *nonces*, never full digests, and difficulty is fixed at diff-1 in
+> firmware. Full-digest capture would require a controller reflash
+> (out of scope); bulk hash study is done in software instead.
+
 ### Tasks
 
 1. **Enumerate the USB device**

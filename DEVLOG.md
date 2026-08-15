@@ -1,5 +1,41 @@
 # Development Log
 
+## 2026-08-15 — ZCX device census + real-hardware topology discovery
+
+Reframed the device from "hash source" (settled: it only ever returns
+winning nonces, never digests) to two untapped angles — undocumented
+protocol surface and silicon forensics — and started a 4-phase
+extraction roadmap. This is Phase 1, increment 1.
+
+- **`ZCX` device census, first-class.** `parse_details` now yields a
+  `DeviceDetails` with typed, case-/dash-insensitive accessors
+  (`firmware`, `engines`, `frequency`/`frequency_mhz`, `mining_speed`,
+  `critical_temperature`, `xlink_*`, `processors` → `list[Processor]`,
+  `jobs_in_queue`); unrecognised firmware fields are preserved in
+  `.fields`. Added `BFLDevice.get_details()` (drains the multi-line
+  reply through `OK`), a `device details` CLI backed by a pure
+  `_render_census` helper, and a strictly read-only capture script
+  `scripts/hw/read_details.py`. Simulator upgraded from the old
+  `ENGINES: 1` stub to a realistic reply with a configurable engine
+  count. All TDD (16 new tests).
+
+- **cgminer never sends `ZJX`/`ZSX`/`ZUX`.** They're defined in
+  `driver-bflsc.h` but dead code — so their wire format is genuinely
+  unknown, and the firmware version everyone quotes actually comes from
+  the `ZCX` `FIRMWARE:` field, not `ZJX`. That reshaped Phase 1: the
+  census (grounded) subsumes the firmware query; the three unused
+  commands become undocumented probes for increment 2.
+
+- **The real unit reports more than any reference documents.** Captured
+  from the physical Jalapeno (firmware 1.0.0): `ENGINES: 26`, a real
+  `FREQUENCY: 189 MHz` (the cgminer reference build returns
+  `[UNKNOWN]`), a per-processor breakdown `PROCESSOR 3: 12 engines @
+  199 MHz` / `PROCESSOR 7: 14 engines @ 200 MHz` (sparse indices ⇒
+  fused-off cores; 12+14 = 26), `MINIG SPEED: 5.15 GH/s` (firmware's own
+  typo), and `CRITICAL TEMPERATURE: 0`. The per-processor topology is
+  the Phase-2 engine map handed over directly; the populated frequency
+  reopens Phase-3 clock characterization.
+
 ## 2026-05-16 — n=4M bound, n_val correctness fix, Tier B closeout
 
 Second pass the same day, after the public dataset went live.
@@ -460,7 +496,7 @@ _Point-in-time snapshot; live test/source totals are tracked in README.md and CL
 |--------|-------|
 | Source lines | 5,142 |
 | Test lines | 5,919 |
-| Test count | 783 |
+| Test count | 800 |
 | Source files | 31 |
 | Test files | 26 |
 | Test:source ratio | 1.15x |

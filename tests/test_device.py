@@ -244,6 +244,30 @@ class TestTransportProperty:
 
 
 # ======================================================================
+# Details census
+# ======================================================================
+
+
+class TestDetails:
+    def test_get_details_returns_census(self, device: BFLDevice):
+        from bfl_asic.protocol.queued import DeviceDetails
+        det = device.get_details()
+        assert isinstance(det, DeviceDetails)
+        assert det.device == "BitFORCE SC"
+        assert det.firmware == "1.0.0"
+        assert det.engines == 30
+        assert det.frequency == "[UNKNOWN]"
+
+    def test_get_details_reads_full_multiline_reply(self, device: BFLDevice):
+        # A single readline() would only capture DEVICE:; the census must
+        # consume the whole reply through to OK.
+        det = device.get_details()
+        assert det.xlink_mode == "MASTER"
+        assert det.chain_presence_mask == "00000000"
+        assert det.jobs_in_queue == 0
+
+
+# ======================================================================
 # Package-level import
 # ======================================================================
 

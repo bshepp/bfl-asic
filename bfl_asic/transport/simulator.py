@@ -51,6 +51,7 @@ class SimulatedDevice:
         self,
         *,
         simulated_hashrate: int = 1000,
+        engines: int = 30,
         base_temperature: float = 35.0,
         heat_per_work: float = 2.0,
         cooling_rate: float = 0.5,
@@ -60,6 +61,7 @@ class SimulatedDevice:
     ) -> None:
         # Configuration
         self.simulated_hashrate = simulated_hashrate
+        self.engines = engines
         self.base_temperature = base_temperature
         self.heat_per_work = heat_per_work
         self.cooling_rate = cooling_rate
@@ -251,9 +253,23 @@ class SimulatedDevice:
         return b"\n".join(lines) + b"\n"
 
     def _handle_details(self) -> bytes:
-        return (b"FIRMWARE: 1.0.0\nENGINES: 1\n"
-                b"JOBS IN QUEUE: %d\nCHIP PARALLELIZATION: NO\nOK\n"
-                % len(self._job_queue))
+        # Mirror a real Jalapeno's ZCX reply (recorded in cgminer's
+        # driver-bflsc.c getinfo() comment): DEVICE/FIRMWARE/ENGINES/
+        # FREQUENCY/XLINK plus the dashed chain fields. FREQUENCY is the
+        # literal "[UNKNOWN]" the SC firmware actually returns. The
+        # JOBS IN QUEUE line stays live for backpressure polling.
+        return (
+            "DEVICE: BitFORCE SC\n"
+            "FIRMWARE: 1.0.0\n"
+            f"ENGINES: {self.engines}\n"
+            "FREQUENCY: [UNKNOWN]\n"
+            "XLINK MODE: MASTER\n"
+            "XLINK PRESENT: YES\n"
+            "--DEVICES IN CHAIN: 0\n"
+            "--CHAIN PRESENCE MASK: 00000000\n"
+            f"JOBS IN QUEUE: {len(self._job_queue)}\n"
+            "OK\n"
+        ).encode()
 
     # ------------------------------------------------------------------
     # Mining helpers
