@@ -1,6 +1,8 @@
 """Simulator queued model + the naive-vs-queued contrast regression."""
 from __future__ import annotations
 
+import pytest
+
 from bfl_asic.transport.simulator import SimulatedDevice
 
 
@@ -40,6 +42,56 @@ def test_simulator_details_jobs_in_queue_still_tracks():
     d.process_command(_job(0))
     d.process_command(_job(1))
     assert parse_details(d.process_command(b"ZCX")).jobs_in_queue == 2
+
+
+class _AckStub:
+    """Minimal transport stub returning a fixed line to readline()."""
+
+    def __init__(self, ack: bytes) -> None:
+        self.ack = ack
+        self.written: list[bytes] = []
+
+    def write(self, data: bytes) -> None:
+        self.written.append(data)
+
+    def readline(self, timeout=None) -> bytes:  # noqa: ANN001
+        return self.ack
+
+
+def test_submit_accepts_inprocess_ack():
+    # Real firmware answers ZNX with "INPROCESS:<n>" (n jobs in process)
+    # as a valid ACCEPT. cgminer's isokerr treats anything without
+    # "ERR:" as OK, so this must not raise.
+    from bfl_asic.device import QueuedWorkSession
+    s = QueuedWorkSession(_AckStub(b"INPROCESS:1\n"))
+    s.submit(bytes(32), bytes(12))  # must not raise
+
+
+def test_submit_rejects_err_ack():
+    from bfl_asic.device import QueuedWorkSession
+    from bfl_asic.exceptions import BFLProtocolError
+    s = QueuedWorkSession(_AckStub(b"ERR:QUEUE FULL\n"))
+    with pytest.raises(BFLProtocolError):
+        s.submit(bytes(32), bytes(12))
+
+
+def test_simulator_firmware_query_returns_reply():
+    from bfl_asic.protocol.probe import parse_firmware
+    fw = parse_firmware(SimulatedDevice().process_command(b"ZJX"))
+    assert fw.version == "1.0.0"  # bare version, matching real hardware
+    assert fw.raw  # raw reply always preserved
+
+
+def test_simulator_nvram_savestr_loadstr_roundtrip():
+    from bfl_asic.protocol.probe import (
+        build_savestr, parse_loadstr, parse_savestr_ack)
+    d = SimulatedDevice()
+    # Empty scratch initially.
+    assert parse_loadstr(d.process_command(b"ZUX")) == ""
+    # Write, then read it back.
+    ack = parse_savestr_ack(d.process_command(build_savestr(b"hello silicon")))
+    assert ack is True
+    assert parse_loadstr(d.process_command(b"ZUX")) == "hello silicon"
 
 
 def test_naive_wall_off_by_default():

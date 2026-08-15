@@ -35,6 +35,7 @@ from bfl_asic.protocol.work import build_synthetic_work
 from bfl_asic.transport.base import BaseTransport
 
 if TYPE_CHECKING:
+    from bfl_asic.protocol.probe import FirmwareInfo
     from bfl_asic.protocol.queued import DeviceDetails
 
 
@@ -77,13 +78,60 @@ class BFLDevice:
         """
         from bfl_asic.protocol.queued import build_details, parse_details
         self._transport.write(build_details())
+        return parse_details(self._read_until_ok())
+
+    def _read_until_ok(self, max_lines: int = 32) -> bytes:
+        """Accumulate reply lines until OK/SUCCESS or an empty (timeout)
+        line. Used for the multi-line device replies (ZCX, ZJX, ZUX)."""
         raw = b""
-        for _ in range(32):
+        for _ in range(max_lines):
             line = self._transport.readline()
             raw += line
             if line.strip() in (b"OK", b"SUCCESS") or not line:
                 break
-        return parse_details(raw)
+        return raw
+
+    def get_firmware(self) -> "FirmwareInfo":
+        """Query firmware info via the undocumented `ZJX` command.
+
+        UNVERIFIED against hardware: cgminer defines ZJX but never sends
+        it, so the reply is parsed leniently and the raw bytes are always
+        retained on the returned :class:`FirmwareInfo`.
+        """
+        from bfl_asic.protocol.probe import build_firmware, parse_firmware
+        self._transport.write(build_firmware())
+        return parse_firmware(self._read_until_ok())
+
+    def read_note(self) -> str:
+        """Read the device's NVRAM scratch string via `ZUX` (LOADSTR).
+
+        Returns the stored string, or "" if nothing is stored. UNVERIFIED
+        against hardware.
+        """
+        from bfl_asic.protocol.probe import build_loadstr, parse_loadstr
+        self._transport.write(build_loadstr())
+        return parse_loadstr(self._read_until_ok())
+
+    def write_note(self, text: str | bytes) -> bool:
+        """Write the device's NVRAM scratch string via `ZSX` (SAVESTR).
+
+        WRITES persistent on-device storage. Emits an
+        :class:`NVRAMWriteWarning` so the write is never silent. Prefer
+        confirming with a subsequent :meth:`read_note`. UNVERIFIED
+        against hardware. Returns True on OK/SUCCESS ack.
+        """
+        import warnings
+        from bfl_asic.exceptions import NVRAMWriteWarning
+        from bfl_asic.protocol.probe import build_savestr, parse_savestr_ack
+        warnings.warn(
+            "write_note(): ZSX writes the device's persistent NVRAM "
+            "scratch string; the command is unverified against hardware. "
+            "Confirm with read_note().",
+            category=NVRAMWriteWarning,
+            stacklevel=2,
+        )
+        self._transport.write(build_savestr(text))
+        return parse_savestr_ack(self._transport.readline())
 
     def set_fan_auto(self) -> bool:
         """Hand the fan back to firmware thermal management (Z9X).
@@ -265,14 +313,20 @@ class QueuedWorkSession:
         return parse_details(self._read_until_terminator(16)).jobs_in_queue
 
     def submit(self, midstate: bytes, tail: bytes) -> None:
-        """Send one ZNX job. Raise BFLProtocolError if the firmware
-        rejects it (ERR:/INPROCESS:) so a job is never silently lost.
+        """Send one ZNX job. Raise BFLProtocolError only if the firmware
+        reports an error (reply contains ``ERR:``), so a genuinely
+        rejected job is never silently lost.
+
+        Real firmware acks a queued job with ``INPROCESS:<n>`` (n jobs
+        now in process) under sustained load; that is an ACCEPT, not a
+        rejection. This mirrors cgminer's ``isokerr()``, which treats any
+        reply without the ``ERR:`` signature as OK.
         """
         from bfl_asic.exceptions import BFLProtocolError
         from bfl_asic.protocol.queued import build_queue_job
         self._transport.write(build_queue_job(midstate, tail))
         ack = self._transport.readline().strip()
-        if ack.startswith(b"ERR:") or ack.startswith(b"INPROCESS:"):
+        if b"ERR:" in ack:
             raise BFLProtocolError(f"ZNX submit rejected: {ack!r}")
 
     def drain(self) -> list:

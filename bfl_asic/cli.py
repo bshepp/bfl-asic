@@ -225,6 +225,55 @@ def device_details(ctx: click.Context) -> None:
             click.echo(line)
 
 
+@device.command(name="firmware")
+@click.pass_context
+def device_firmware(ctx: click.Context) -> None:
+    """Firmware info via the undocumented `ZJX` command (UNVERIFIED)."""
+    transport = get_transport(
+        ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
+    )
+    with BFLDevice(transport) as dev:
+        fw = dev.get_firmware()
+        click.echo("Firmware (ZJX):")
+        click.echo(f"  Version: {fw.version or '?'}")
+        for k, v in fw.fields.items():
+            click.echo(f"  {k}: {v}")
+        click.echo(f"  raw reply: {fw.text!r}")
+
+
+@device.command(name="note")
+@click.option("--write", "write_text", default=None,
+              help="Write TEXT to device NVRAM (ZSX). Requires "
+                   "--confirm-nvram-write.")
+@click.option("--confirm-nvram-write", is_flag=True, default=False,
+              help="Explicitly confirm the persistent NVRAM write.")
+@click.pass_context
+def device_note(ctx: click.Context, write_text: str | None,
+                confirm_nvram_write: bool) -> None:
+    """Read (`ZUX`) or write (`ZSX`) the device NVRAM scratch string.
+
+    Reading is safe. Writing is a persistent on-device mutation and is
+    refused unless --confirm-nvram-write is passed. Both commands are
+    unverified against hardware.
+    """
+    if write_text is not None and not confirm_nvram_write:
+        raise click.UsageError(
+            "Refusing to write device NVRAM without --confirm-nvram-write "
+            "(ZSX persistently mutates on-device state).")
+    transport = get_transport(
+        ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
+    )
+    with BFLDevice(transport) as dev:
+        if write_text is not None:
+            ok = dev.write_note(write_text)
+            readback = dev.read_note()
+            click.echo(f"Wrote NVRAM note (ack={ok}); read back: "
+                       f"{readback!r}")
+        else:
+            note = dev.read_note()
+            click.echo(f"Note: {note!r}" if note else "Note: (empty)")
+
+
 # ======================================================================
 # probe
 # ======================================================================

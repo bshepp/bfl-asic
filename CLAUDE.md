@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 # Install with optional ML subsystem (adds PyTorch)
 pip install -e ".[ml]"
 
-# Run all tests (800 total, ~30s, no hardware required; 798 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
+# Run all tests (825 total, ~65s, no hardware required; 823 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
 pytest
 
 # Run a single test file
@@ -34,7 +34,7 @@ bfl-asic --port COM3 temperature
 
 Four-layer design with strict separation of concerns:
 
-**Protocol layer** (`bfl_asic/protocol/`) — Pure functions, no I/O. Builds command byte sequences (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX; SC queued ZNX/ZWX/ZOX/ZQX/ZCX), parses responses into dataclasses, computes SHA-256 midstates. `queued.parse_details` turns the multi-line `ZCX` reply into a `DeviceDetails` census with typed, case-/dash-insensitive accessors (`firmware`, `engines`, `frequency`/`frequency_mhz`, `mining_speed`, `critical_temperature`, `processors` → `list[Processor]`, `jobs_in_queue`); unrecognised firmware fields are preserved verbatim in `.fields`. All protocol logic is independently testable.
+**Protocol layer** (`bfl_asic/protocol/`) — Pure functions, no I/O. Builds command byte sequences (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX; SC queued ZNX/ZWX/ZOX/ZQX/ZCX), parses responses into dataclasses, computes SHA-256 midstates. `queued.parse_details` turns the multi-line `ZCX` reply into a `DeviceDetails` census with typed, case-/dash-insensitive accessors (`firmware`, `engines`, `frequency`/`frequency_mhz`, `mining_speed`, `critical_temperature`, `processors` → `list[Processor]`, `jobs_in_queue`); unrecognised firmware fields are preserved verbatim in `.fields`. `protocol/probe.py` holds the undocumented probe commands `ZJX`/`ZUX`/`ZSX` (firmware / load-string / save-string) with lenient parsers. All protocol logic is independently testable.
 
 **Transport layer** (`bfl_asic/transport/`) — I/O abstraction via `BaseTransport` ABC. `SerialTransport` wraps pyserial for real hardware (FTDI VID 0x0403, PID 0x6014, 115200 8N1). `SimulatorTransport` provides an in-process fake device with thermal model and real SHA-256d computation — all tests run against the simulator. Async methods default to `asyncio.to_thread()` wrapping of sync implementations.
 
@@ -44,7 +44,7 @@ Four-layer design with strict separation of concerns:
 - `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization (including an animated bit-frequency convergence GIF for teaching the law of large numbers).
 - `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
 - `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
-- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`device details`, `stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`). `device details` renders the `ZCX` census via the pure `_render_census` helper.
+- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`device details/firmware/note`, `stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`). `device details` renders the `ZCX` census via the pure `_render_census` helper; `device note --write` is gated behind `--confirm-nvram-write`.
 - `bfl_asic/nonce_source.py` — honest device nonce stream (`NonceSource`); wraps `QueuedWorkSession` for continuous drain via SC queued protocol. **Not** a `HashSource` — the device yields nonces (mining winners), not full digests.
 - `BFLDevice.set_fan_auto()` / `BFLDevice.set_fan(level)` / `fan_fixed(level)` context manager — thermal-safety-guarded fan control; low fixed levels during hashing risk ASIC damage; `fan_fixed` restores `auto` on exit.
 - `bfl_asic/ml/` — Optional ML learnability instrument (PyTorch behind the
@@ -83,4 +83,23 @@ Four-layer design with strict separation of concerns:
   5.15 GH/s` (the firmware's own typo for "MINING"), and `CRITICAL
   TEMPERATURE: 0`. Reported fields are firmware-build-dependent; the
   simulator emits the leaner cgminer-reference variant on purpose, and
-  the parser handles both.
+  the parser handles both. The self-reported topology also **fluctuates
+  live** between queries (26–27 engines, PROCESSOR 3 = 12–13 engines @
+  198–199 MHz, MINIG SPEED 5.15–5.34 GH/s) — it is a live health readout,
+  not a fixed spec.
+- Undocumented probe commands (recovered from real hardware, since
+  cgminer defines but never sends them): `ZJX` returns a bare firmware
+  version (`1.0.0`, no framing); `ZUX` returns the NVRAM scratch string
+  or the sentinel `MEMORY EMPTY`; `ZSX` writes NVRAM (`SaveString` =
+  length byte + payload), gated in the CLI.
+- Queued submit acks: real firmware answers `ZNX` with `OK` **or**
+  `INPROCESS:<n>` under load — both are accepts. Only a reply containing
+  `ERR:` is a rejection (matches cgminer's `isokerr`); `QueuedWorkSession.submit`
+  was fixed accordingly (previously it wrongly rejected `INPROCESS:`).
+- Driving the queued protocol on real hardware requires an input-buffer
+  flush before every command — the firmware is chatty (multi-line details
+  blocks, `INPROCESS:n` result prefixes) and unflushed sequential reads
+  desync. `scripts/hw/characterize.py` drives the protocol directly with
+  per-command flushes for this reason; `JOBS IN QUEUE` reads ~0 even
+  mid-scan, so it is not usable for backpressure (bound in-flight jobs by
+  submitted-minus-drained instead).

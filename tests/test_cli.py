@@ -92,6 +92,30 @@ class TestDeviceDetails:
         # "undocumented".
         assert "undocumented" not in text.lower()
 
+    def test_device_firmware(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["--simulate", "device", "firmware"])
+        assert result.exit_code == 0
+        assert "1.0.0" in result.output
+
+    def test_device_note_read_empty(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["--simulate", "device", "note"])
+        assert result.exit_code == 0
+        assert "empty" in result.output.lower()
+
+    def test_device_note_write_requires_confirm(self, runner: CliRunner) -> None:
+        result = runner.invoke(
+            main, ["--simulate", "device", "note", "--write", "hi"])
+        assert result.exit_code != 0
+        assert "confirm" in result.output.lower()
+
+    def test_device_note_write_with_confirm_roundtrips(
+            self, runner: CliRunner) -> None:
+        result = runner.invoke(
+            main, ["--simulate", "device", "note", "--write", "hi",
+                   "--confirm-nvram-write"])
+        assert result.exit_code == 0
+        assert "hi" in result.output
+
 
 # ======================================================================
 # probe

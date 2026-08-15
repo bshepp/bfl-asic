@@ -83,6 +83,8 @@ class SimulatedDevice:
         self._job_queue: list[tuple[bytes, bytes]] = []
         self._results: list[tuple[str, list[int]]] = []
         self._uid = 0
+        # NVRAM scratch string, exercised by the ZSX/ZUX probe commands.
+        self._nvram: bytes = b""
         # Fan state
         self.fan_mode: str = "auto"
         self.fan_level: int | None = None
@@ -129,6 +131,12 @@ class SimulatedDevice:
             return b"OK\n"
         if data.startswith(b"ZCX"):
             return self._handle_details()
+        if data.startswith(b"ZJX"):
+            return self._handle_firmware()
+        if data.startswith(b"ZUX"):
+            return self._handle_loadstr()
+        if data.startswith(b"ZSX"):
+            return self._handle_savestr(data)
         if data.startswith(b"Z9X"):
             self.fan_mode, self.fan_level = "auto", None
             return b"OK\n"
@@ -199,6 +207,29 @@ class SimulatedDevice:
 
         # Fallback: IDLE but work was previously completed and already read.
         return b"IDLE\n"
+
+    # ------------------------------------------------------------------
+    # Probe-command handlers (ZJX/ZUX/ZSX)
+    # ------------------------------------------------------------------
+
+    def _handle_firmware(self) -> bytes:
+        # Real ZJX (firmware 1.0.0) returns a bare version string with no
+        # framing and no OK terminator (captured via probe_commands.py).
+        return b"1.0.0"
+
+    def _handle_loadstr(self) -> bytes:
+        if self._nvram:
+            return self._nvram + b"\nOK\n"
+        # Real device reports a blank scratchpad with this sentinel.
+        return b"MEMORY EMPTY\n"
+
+    def _handle_savestr(self, data: bytes) -> bytes:
+        body = data[3:]  # strip "ZSX"
+        if not body:
+            return b"ERR:NODATA\n"
+        size = body[0]
+        self._nvram = bytes(body[1:1 + size])
+        return b"OK\n"
 
     # ------------------------------------------------------------------
     # Queued-model handlers

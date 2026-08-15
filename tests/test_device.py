@@ -268,6 +268,32 @@ class TestDetails:
 
 
 # ======================================================================
+# Probe commands (ZJX/ZUX/ZSX)
+# ======================================================================
+
+
+class TestProbeCommands:
+    def test_get_firmware(self, device: BFLDevice):
+        from bfl_asic.protocol.probe import FirmwareInfo
+        fw = device.get_firmware()
+        assert isinstance(fw, FirmwareInfo)
+        assert fw.version == "1.0.0"
+
+    def test_nvram_note_roundtrip(self, device: BFLDevice):
+        assert device.read_note() == ""
+        assert device.write_note("hello silicon") is True
+        assert device.read_note() == "hello silicon"
+
+    def test_write_note_warns_nvram(self, device: BFLDevice):
+        import warnings
+        from bfl_asic.exceptions import NVRAMWriteWarning
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            device.write_note("x")
+        assert any(issubclass(c.category, NVRAMWriteWarning) for c in caught)
+
+
+# ======================================================================
 # Package-level import
 # ======================================================================
 

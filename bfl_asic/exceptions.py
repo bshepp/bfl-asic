@@ -33,3 +33,11 @@ class ThermalSafetyWarning(UserWarning):
     is a named category so it cannot be silenced by an unrelated
     UserWarning filter.
     """
+
+
+class NVRAMWriteWarning(UserWarning):
+    """A ZSX (SAVESTR) command is about to write the device's persistent
+    non-volatile scratch storage. Low-risk versus fan/flash, but it
+    mutates on-device state and the command's handling is unverified
+    against hardware, so the write is surfaced rather than silent.
+    """

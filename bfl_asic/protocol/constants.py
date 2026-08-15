@@ -54,6 +54,14 @@ CMD_QRESULTS: bytes = b"ZOX"    # query/drain results (frees queue slots)
 CMD_QFLUSH: bytes = b"ZQX"      # flush the queue
 CMD_DETAILS: bytes = b"ZCX"     # device details (incl. JOBS IN QUEUE)
 
+# Undocumented probe commands: defined in cgminer's driver-bflsc.h but
+# NEVER sent by it, so their reply formats are unverified against
+# hardware. ZSX carries a SaveString struct (payloadSize byte + payload).
+CMD_FIRMWARE: bytes = b"ZJX"    # firmware-info query (bare)
+CMD_LOADSTR: bytes = b"ZUX"     # read back NVRAM scratch string (bare)
+CMD_SAVESTR: bytes = b"ZSX"     # write NVRAM scratch string (+ payload)
+SAVESTR_MAX: int = 255          # BFLSC_MAXPAYLOAD
+
 CMD_FAN_AUTO: bytes = b"Z9X"    # return fan to firmware auto-management
 CMD_FAN_LEVELS: tuple[bytes, ...] = (
     b"Z0X", b"Z1X", b"Z2X", b"Z3X", b"Z4X",  # fixed levels: 0=min .. 4=max

@@ -1,5 +1,45 @@
 # Development Log
 
+## 2026-08-15 (pm) — probe commands, a queued-protocol bug, first silicon characterization
+
+Phase 1 increment 2 plus the first real characterization run.
+
+- **Undocumented probe commands (`protocol/probe.py`).** `ZJX`/`ZUX`/
+  `ZSX` are defined in cgminer's header but never sent by it. Added
+  builders + lenient parsers, `BFLDevice.get_firmware/read_note/
+  write_note` (the NVRAM write emits an `NVRAMWriteWarning` and the CLI
+  gates it behind `--confirm-nvram-write`), and a read-only
+  `scripts/hw/probe_commands.py`. On the real unit: `ZJX` returns a bare
+  `1.0.0` (no framing/OK); `ZUX` returns the sentinel `MEMORY EMPTY` for
+  a blank scratchpad. `ZSX` (write) was never fired. Simulator + parsers
+  updated to match; `MEMORY EMPTY` maps to `""`.
+
+- **Real queued-protocol bug fixed.** `QueuedWorkSession.submit()`
+  rejected `INPROCESS:<n>`, but real firmware uses that as a valid ZNX
+  accept ("n jobs in process") under load. cgminer's `isokerr()` treats
+  any reply without `ERR:` as OK; `submit()` now does the same. Same
+  family of artifact as the documented 42-limit. TDD'd with a stub
+  transport.
+
+- **Real-hardware protocol gotcha.** Driving the queued path needs an
+  input-buffer flush before every command — the firmware is chatty
+  (multi-line `ZCX`, `INPROCESS:0` result prefixes) and unflushed
+  sequential reads desync, so a stale status line gets read as the next
+  reply (surfaced as bogus `INPROCESS`/`QUEUE FULL`). `JOBS IN QUEUE`
+  reads ~0 even mid-scan, so it can't drive backpressure; bound in-flight
+  jobs by submitted-minus-drained instead. `characterize.py` drives the
+  protocol directly for these reasons.
+
+- **First silicon characterization** (fan AUTO, 30 min, model-free —
+  `docs/characterization/`). Determinism: **32/32 identical reps ->
+  identical nonces**, no compute errors at nominal cooling. Throughput:
+  2199 jobs, 0 errors, 2218 nonces, ~1.22 job/s (USB/protocol-bound).
+  Per-job winner count is **Poisson(λ≈1.01)** -> the device scans the
+  full 2³² space per job (diff-1). Thermal: 36 °C -> 45 °C plateau under
+  auto fan. VCC1 anomaly captured: 3.03 V idle first-read -> ~3.7 V under
+  load (ADC settling). The deliberate under-cooling error-vs-temperature
+  sweep was deferred to a supervised session.
+
 ## 2026-08-15 — ZCX device census + real-hardware topology discovery
 
 Reframed the device from "hash source" (settled: it only ever returns
@@ -496,7 +536,7 @@ _Point-in-time snapshot; live test/source totals are tracked in README.md and CL
 |--------|-------|
 | Source lines | 5,142 |
 | Test lines | 5,919 |
-| Test count | 800 |
+| Test count | 825 |
 | Source files | 31 |
 | Test files | 26 |
 | Test:source ratio | 1.15x |

@@ -48,6 +48,10 @@ bfl-asic -p COM3 temperature
 # per-processor topology, and any undocumented firmware fields
 bfl-asic -p COM3 device details
 
+# Undocumented probe commands (unverified in cgminer; real on hardware)
+bfl-asic -p COM3 device firmware        # ZJX -> bare version string
+bfl-asic -p COM3 device note            # ZUX -> read NVRAM scratch string
+
 # Benchmark work submission throughput
 bfl-asic -p COM3 benchmark --duration 10
 ```
@@ -175,6 +179,8 @@ bfl_asic/
     constants.py   # Baud rate, commands, timing, response tokens
     commands.py    # Build ZGX, ZLX, ZTX, ZDX, ZFX, ZPX byte sequences
     responses.py   # Parse identify, temperature, voltage, work results
+    queued.py      # SC queued protocol + ZCX DeviceDetails census
+    probe.py       # Undocumented ZJX/ZUX/ZSX builders + lenient parsers
     work.py        # SHA-256 midstate computation, synthetic work generation
   transport/       # I/O abstraction
     base.py        # BaseTransport ABC (sync + async)
@@ -229,9 +235,19 @@ bfl_asic/
 | Temperature | `ZLX` | `Temp1: 30, Temp2: 30\n` |
 | Voltages | `ZTX` | `3564,1011,11420\n` (mV: VCC1, VCC2, VMAIN) |
 | Device census | `ZCX` | multi-line `KEY: VALUE` block → `OK\n` (firmware, engines, frequency, per-processor topology, `JOBS IN QUEUE`, …) |
+| Firmware | `ZJX` | bare version string (e.g. `1.0.0`), no framing |
+| Load string | `ZUX` | NVRAM scratch string, or `MEMORY EMPTY` |
+| Save string | `ZSX` + `[len][payload]` | writes NVRAM scratch (`SaveString` struct) |
 | Submit work | `ZDX` + 60-byte packet | `OK\n` |
 | Poll result | `ZFX` | `IDLE\n` / `B\n` / `NONCE-FOUND:<hex>\n` / `NO-NONCE\n` |
 | Nonce range | `ZPX` + 68-byte packet | `OK\n` |
+
+`ZJX`/`ZUX`/`ZSX` are defined in cgminer's header but never sent by it;
+their behaviour here was recovered from a real device (`ZJX` returns a
+bare version, `ZUX` reports `MEMORY EMPTY` for a blank scratchpad). `ZSX`
+writes persistent NVRAM and is gated behind an explicit confirmation.
+Queued-job submit (`ZNX`) is acked with `OK` **or** `INPROCESS:<n>` under
+load — both are accepts (only an `ERR:` reply is a rejection).
 
 The `ZCX` census parses into a `DeviceDetails` with typed accessors —
 `firmware`, `engines`, `frequency` / `frequency_mhz`, `mining_speed`,
@@ -250,7 +266,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-800 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 798 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+825 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 823 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 
