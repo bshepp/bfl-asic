@@ -85,6 +85,45 @@ diff-1 expectation), rather than stopping at the first hit.
   settling/first-read effect rather than a real rail drop. VCC2 steady
   ~1.00 V; VMAIN ~11.0–11.6 V (12 V rail, noisy).
 
+## Engine-mapping collection — 4 h (2026-08-15)
+
+Ran `characterize.py --duration 14400 --bins 256` on auto fan to try to
+resolve the 27-engine / 2-processor structure. Raw data:
+[`engine-map.json`](engine-map.json).
+
+Reliability at scale (this is the headline):
+
+| Metric | Value |
+|--------|-------|
+| Duration | 4 h |
+| Jobs completed | 17 668 |
+| Submit errors | 0 |
+| Nonces | 17 726 |
+| Determinism (end of run) | TRUE (24/24 identical) |
+| Engines / frequency | steady 27 / 189 MHz |
+| Temperature | 38–47 °C (auto fan) |
+
+Four hours of continuous hashing with **zero submit errors and zero
+compute errors**, per-job winner count again **Poisson(≈1.0)** at 8× the
+30-minute sample. This is a very healthy 2013 miner.
+
+Engine mapping — **negative result, by construction.** The 256-bin nonce
+histogram is essentially uniform (coarse 16-bin view flat within ±7 %;
+CV 0.137 vs a Poisson-uniform 0.120). A few fine bins are hot outliers
+(one at ~+9σ), most plausibly an artifact of the low-entropy synthetic
+work submitted rather than engine structure.
+
+The deeper point: an **aggregate value-histogram cannot resolve engine
+partitions**. If the 27 engines each scan a different contiguous
+sub-range, their winning nonces still sum to a uniform whole — the
+partition is invisible in aggregate. A histogram can only expose a
+*dead* region (an under-represented band), and there are none. So this
+run confirms **all 27 engines are alive and collectively cover the nonce
+space**, but Phase-2 engine mapping needs a different signal — per-nonce
+timing (which engine reports when in the scan), selectively disabling
+engines, or high-entropy work with a per-engine tag (the v2 result format
+carries a CHIP field, but this SC 1.0 firmware is v1 and omits it).
+
 ## Temperature sweep (supervised, 2026-08-15)
 
 Ran `scripts/hw/temp_sweep.py` with a 65 °C hard ceiling, fan stepped
