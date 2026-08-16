@@ -293,3 +293,54 @@ class TestGetTransportAutoDetect:
         from bfl_asic.cli import get_transport
         from bfl_asic.transport.simulator import SimulatorTransport
         assert isinstance(get_transport(None, False, 115200), SimulatorTransport)
+
+
+# ======================================================================
+# report-issue
+# ======================================================================
+
+
+class TestReportIssue:
+    def test_builds_prefilled_url(self, runner: CliRunner) -> None:
+        r = runner.invoke(main, ["report-issue", "--title", "Test bug",
+                                  "--body", "details", "--no-open"])
+        assert r.exit_code == 0
+        assert "github.com/bshepp/bfl-asic/issues/new" in r.output
+        assert "labels=bug" in r.output
+
+    def test_feature_label(self, runner: CliRunner) -> None:
+        r = runner.invoke(main, ["report-issue", "--title", "Add X",
+                                  "--kind", "feature", "--no-open"])
+        assert r.exit_code == 0
+        assert "labels=feature" in r.output
+
+
+# ======================================================================
+# device note --verify  &  characterize
+# ======================================================================
+
+
+class TestNoteVerifyAndCharacterize:
+    def test_device_note_verify_reports(self, runner: CliRunner) -> None:
+        r = runner.invoke(main, ["--simulate", "device", "note",
+                                 "--verify", "hi"])
+        assert r.exit_code == 0
+        assert "Persisted:" in r.output
+
+    def test_characterize_simulator_runs(self, runner: CliRunner) -> None:
+        r = runner.invoke(main, ["--simulate", "characterize",
+                                 "--duration", "1", "--bins", "16"])
+        assert r.exit_code == 0
+        assert "nonce" in r.output.lower()
+
+
+def test_characterize_module_structure():
+    from bfl_asic.transport.simulator import SimulatorTransport
+    from bfl_asic.characterization import characterize
+    t = SimulatorTransport()
+    t.open()
+    res = characterize(t, duration=0.4, bins=16)
+    t.close()
+    assert set(res) >= {"throughput", "nonce_distribution", "health"}
+    assert res["throughput"]["jobs_completed"] >= 0
+    assert res["nonce_distribution"]["bins"] == 16

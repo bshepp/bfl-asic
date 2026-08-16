@@ -504,3 +504,25 @@ class TestTransportPackageExports:
     def test_discover_devices_importable(self):
         from bfl_asic.transport import discover_devices
         assert callable(discover_devices)
+
+
+# ---------------------------------------------------------------------------
+# flush_input
+# ---------------------------------------------------------------------------
+
+
+def test_simulator_flush_input_is_noop():
+    from bfl_asic.transport.simulator import SimulatorTransport
+    t = SimulatorTransport()
+    t.open()
+    t.flush_input()  # must not raise; no OS buffer to clear
+
+
+def test_serial_flush_input_resets_buffer():
+    from unittest.mock import MagicMock
+    from bfl_asic.transport.serial import SerialTransport
+    t = SerialTransport("COM3")
+    t._serial = MagicMock()
+    t._serial.is_open = True
+    t.flush_input()
+    t._serial.reset_input_buffer.assert_called_once()

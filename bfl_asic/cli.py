@@ -266,16 +266,24 @@ def device_firmware(ctx: click.Context) -> None:
 @click.option("--write", "write_text", default=None,
               help="Write TEXT to device NVRAM (ZSX). Requires "
                    "--confirm-nvram-write.")
+@click.option("--verify", "verify_text", default=None,
+              help="Read NVRAM and report whether TEXT is stored "
+                   "(prefix match) -- the persistence-check half of the "
+                   "round-trip test.")
 @click.option("--confirm-nvram-write", is_flag=True, default=False,
               help="Explicitly confirm the persistent NVRAM write.")
 @click.pass_context
 def device_note(ctx: click.Context, write_text: str | None,
+                verify_text: str | None,
                 confirm_nvram_write: bool) -> None:
-    """Read (`ZUX`) or write (`ZSX`) the device NVRAM scratch string.
+    """Read / write / verify the device NVRAM scratch string (ZUX/ZSX).
 
-    Reading is safe. Writing is a persistent on-device mutation and is
-    refused unless --confirm-nvram-write is passed. Both commands are
-    unverified against hardware.
+    Default reads the current value. ``--write`` stores a string
+    (persistent on-device mutation, gated by --confirm-nvram-write).
+    ``--verify TEXT`` reports whether TEXT is currently stored -- run it
+    after a power cycle to confirm persistence. The scratchpad is
+    non-volatile (survives power loss); the ZUX reply appends a stray
+    byte, so verification is a prefix match.
     """
     if write_text is not None and not confirm_nvram_write:
         raise click.UsageError(
@@ -288,8 +296,19 @@ def device_note(ctx: click.Context, write_text: str | None,
         if write_text is not None:
             ok = dev.write_note(write_text)
             readback = dev.read_note()
+            stored = readback.startswith(write_text)
             click.echo(f"Wrote NVRAM note (ack={ok}); read back: "
                        f"{readback!r}")
+            click.echo(f"Immediate write: {'CONFIRMED' if stored else 'MISMATCH'}")
+            if stored:
+                click.echo("Power-cycle the device, then: "
+                           f"device note --verify {write_text!r}")
+        elif verify_text is not None:
+            cur = dev.read_note()
+            persisted = cur.startswith(verify_text)
+            click.echo(f"Note: {cur!r}")
+            click.echo(f"Persisted: {'YES' if persisted else 'NO'} "
+                       f"(expected {verify_text!r})")
         else:
             note = dev.read_note()
             click.echo(f"Note: {note!r}" if note else "Note: (empty)")
@@ -436,6 +455,98 @@ def discover() -> None:
             vid_str = f"0x{dev.vid:04x}" if dev.vid is not None else "N/A"
             pid_str = f"0x{dev.pid:04x}" if dev.pid is not None else "N/A"
             click.echo(f"  {dev.port} - {dev.description} (VID:{vid_str}, PID:{pid_str})")
+
+
+# ======================================================================
+# report-issue
+# ======================================================================
+
+REPO_URL = "https://github.com/bshepp/bfl-asic"
+
+
+@main.command(name="report-issue")
+@click.option("--title", "-t", required=True, help="Issue title.")
+@click.option("--body", "-b", default="", help="Issue description.")
+@click.option("--kind", type=click.Choice(["bug", "feature"]), default="bug",
+              help="Label the issue as a bug or a feature request.")
+@click.option("--open/--no-open", "open_browser", default=True,
+              help="Open the prefilled issue page in a browser.")
+def report_issue(title: str, body: str, kind: str,
+                 open_browser: bool) -> None:
+    """Open a prefilled GitHub issue for a bug or feature request.
+
+    Builds a github.com/.../issues/new URL with the title, body, and a
+    bug/feature label prefilled, prints it, and (by default) opens it in
+    your browser. No GitHub auth needed — it just opens the new-issue
+    form for you to submit.
+    """
+    from urllib.parse import urlencode
+    url = (f"{REPO_URL}/issues/new?"
+           + urlencode({"title": title, "body": body, "labels": kind}))
+    click.echo(url)
+    if open_browser:
+        import webbrowser
+        try:
+            if webbrowser.open(url):
+                click.echo("Opened the prefilled issue in your browser.")
+        except Exception:
+            pass
+
+
+# ======================================================================
+# characterize
+# ======================================================================
+
+
+@main.command()
+@click.option("--duration", "-d", default=30.0, type=float,
+              help="Seconds of sustained work (default 30).")
+@click.option("--bins", default=256, type=int,
+              help="Nonce-value histogram bins (default 256).")
+@click.option("--engines", default=None, type=int,
+              help="Engine count for dead-core estimation "
+                   "(auto-read from the census if omitted).")
+@click.option("-o", "--output", default=None, type=click.Path(),
+              help="Write the full results as JSON.")
+@click.pass_context
+def characterize(ctx: click.Context, duration: float, bins: int,
+                 engines: int | None, output: str | None) -> None:
+    """Sustained-work characterization: throughput, nonce distribution,
+    and a dead-core health verdict.
+
+    Bounds in-flight jobs itself and reuses the flush-aware queued path,
+    so it runs cleanly on real hardware. For the deep variant (thermal
+    telemetry over time, determinism probe, checkpointing) use
+    scripts/hw/characterize.py.
+    """
+    from bfl_asic.characterization import characterize as run_char
+
+    transport = get_transport(
+        ctx.obj["port"], ctx.obj["simulate"], ctx.obj["baudrate"],
+    )
+    transport.open()
+    try:
+        if engines is None:
+            try:
+                engines = BFLDevice(transport).get_details().engines
+            except Exception:
+                engines = None
+        click.echo(f"Characterizing for {duration:.0f}s...")
+        results = run_char(transport, duration=duration, bins=bins,
+                           engines=engines)
+    finally:
+        transport.close()
+
+    tp = results["throughput"]
+    click.echo(f"Jobs: {tp['jobs_completed']} completed / "
+               f"{tp['jobs_submitted']} submitted, "
+               f"{tp['nonces_found']} nonces, "
+               f"{tp['nonces_per_s']} nonce/s, errors={tp['submit_errors']}")
+    click.echo(results["health"]["summary"])
+    if output:
+        p = unique_output_path(Path(output))
+        p.write_text(json.dumps(results, indent=2), encoding="utf-8")
+        click.echo(f"Wrote {p}")
 
 
 # ======================================================================

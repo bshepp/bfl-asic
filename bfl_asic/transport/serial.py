@@ -97,6 +97,11 @@ class SerialTransport(BaseTransport):
     # Properties
     # ------------------------------------------------------------------
 
+    def flush_input(self) -> None:
+        """Discard buffered inbound bytes (real serial port)."""
+        if self._serial is not None and self._serial.is_open:
+            self._serial.reset_input_buffer()
+
     @property
     def is_open(self) -> bool:
         """``True`` if the underlying serial port is open."""

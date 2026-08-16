@@ -51,6 +51,18 @@ class BaseTransport(ABC):
         """
         ...
 
+    def flush_input(self) -> None:
+        """Discard any buffered inbound bytes.
+
+        Default is a no-op (the in-process simulator has no OS buffer to
+        clear). Real serial hardware overrides this to reset the input
+        buffer, because the SC firmware is chatty (multi-line replies,
+        ``INPROCESS:n`` prefixes) and an unflushed read can pick up a
+        stale line as the next command's reply. Callers flush before a
+        command whose reply they will parse.
+        """
+        return None
+
     @property
     @abstractmethod
     def is_open(self) -> bool:

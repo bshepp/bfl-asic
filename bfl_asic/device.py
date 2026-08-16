@@ -77,6 +77,7 @@ class BFLDevice:
         lone ``readline()`` would truncate it at ``DEVICE:``.
         """
         from bfl_asic.protocol.queued import build_details, parse_details
+        self._transport.flush_input()
         self._transport.write(build_details())
         return parse_details(self._read_until_ok())
 
@@ -99,6 +100,7 @@ class BFLDevice:
         retained on the returned :class:`FirmwareInfo`.
         """
         from bfl_asic.protocol.probe import build_firmware, parse_firmware
+        self._transport.flush_input()
         self._transport.write(build_firmware())
         return parse_firmware(self._read_until_ok())
 
@@ -109,6 +111,7 @@ class BFLDevice:
         against hardware.
         """
         from bfl_asic.protocol.probe import build_loadstr, parse_loadstr
+        self._transport.flush_input()
         self._transport.write(build_loadstr())
         return parse_loadstr(self._read_until_ok())
 
@@ -130,6 +133,7 @@ class BFLDevice:
             category=NVRAMWriteWarning,
             stacklevel=2,
         )
+        self._transport.flush_input()
         self._transport.write(build_savestr(text))
         return parse_savestr_ack(self._transport.readline())
 
@@ -309,6 +313,7 @@ class QueuedWorkSession:
     def _jobs_in_queue(self) -> int:
         """ZCX -> device-reported JOBS IN QUEUE (backpressure signal)."""
         from bfl_asic.protocol.queued import build_details, parse_details
+        self._transport.flush_input()
         self._transport.write(build_details())
         return parse_details(self._read_until_terminator(16)).jobs_in_queue
 
@@ -324,6 +329,7 @@ class QueuedWorkSession:
         """
         from bfl_asic.exceptions import BFLProtocolError
         from bfl_asic.protocol.queued import build_queue_job
+        self._transport.flush_input()
         self._transport.write(build_queue_job(midstate, tail))
         ack = self._transport.readline().strip()
         if b"ERR:" in ack:
@@ -336,6 +342,7 @@ class QueuedWorkSession:
         """
         from bfl_asic.protocol.queued import (
             build_queue_results, parse_queue_results)
+        self._transport.flush_input()
         self._transport.write(build_queue_results())
         return parse_queue_results(self._read_until_terminator(64),
                                    version="v1")

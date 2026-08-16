@@ -57,6 +57,9 @@ class _AckStub:
     def readline(self, timeout=None) -> bytes:  # noqa: ANN001
         return self.ack
 
+    def flush_input(self) -> None:
+        pass
+
 
 def test_submit_accepts_inprocess_ack():
     # Real firmware answers ZNX with "INPROCESS:<n>" (n jobs in process)
@@ -196,6 +199,9 @@ def test_queued_session_no_busyspin_or_result_loss(monkeypatch):
 
         def open(self):
             self.is_open = True
+
+        def flush_input(self):
+            pass
 
         def write(self, data: bytes):
             if data[:3] == b"ZNX":
