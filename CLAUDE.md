@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 # Install with optional ML subsystem (adds PyTorch)
 pip install -e ".[ml]"
 
-# Run all tests (835 total, ~65s, no hardware required; 833 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
+# Run all tests (848 total, ~65s, no hardware required; 846 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
 pytest
 
 # Run a single test file
@@ -44,7 +44,8 @@ Four-layer design with strict separation of concerns:
 - `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization (including an animated bit-frequency convergence GIF for teaching the law of large numbers).
 - `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
 - `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
-- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`device details/firmware/note/health`, `stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`). `device details` renders the `ZCX` census via the pure `_render_census` helper; `device note --write` is gated behind `--confirm-nvram-write`; `device health` runs dead-core detection.
+- `bfl_asic/cli.py` — Click-based CLI: top-level `characterize`, `report-issue`, `benchmark`, `probe`, `discover`, `identify`, `temperature`, `hash`, `fan`; groups `device details/firmware/note/health`, `stats`, `dynamics`, `randomness`, `ml`. When neither `--port` nor `--simulate` is given, `get_transport` **auto-detects** the connected FTDI device (falls back to the simulator with a note). `device note --write` is gated behind `--confirm-nvram-write` (`--verify TEXT` checks persistence); `device health` runs dead-core detection; `characterize` wraps `bfl_asic/characterization.py`; `report-issue` opens a prefilled GitHub issue URL.
+- `bfl_asic/characterization.py` — library-level sustained-work characterization (throughput, nonce histogram, dead-core health), bounding in-flight jobs by submitted-minus-drained. `bfl_asic/transport/*.flush_input()` (no-op simulator, real serial buffer reset) is wired into all device read paths so the chatty firmware doesn't desync reads on hardware.
 - `bfl_asic/health.py` — dead-core detection from the winning-nonce histogram. Pure functions (`nonce_histogram`, `detect_dead_cores`, `detect_dead_cores_from_counts` → `EngineHealthReport`): a dead engine that scans a contiguous nonce sub-range leaves a cold band; a per-bin Poisson test flags contiguous cold runs and estimates dead-engine count. **Only** localizes dead cores if engines cover contiguous ranges (else a dead engine thins the histogram uniformly — the yield rate is the signal). CLI: `device health --from-run <json>` or `--demo [--inject-dead LO:HI]`.
 - `bfl_asic/nonce_source.py` — honest device nonce stream (`NonceSource`); wraps `QueuedWorkSession` for continuous drain via SC queued protocol. **Not** a `HashSource` — the device yields nonces (mining winners), not full digests.
 - `BFLDevice.set_fan_auto()` / `BFLDevice.set_fan(level)` / `fan_fixed(level)` context manager — thermal-safety-guarded fan control; low fixed levels during hashing risk ASIC damage; `fan_fixed` restores `auto` on exit.
@@ -116,11 +117,22 @@ Four-layer design with strict separation of concerns:
   live** between queries (26–27 engines, PROCESSOR 3 = 12–13 engines @
   198–199 MHz, MINIG SPEED 5.15–5.34 GH/s) — it is a live health readout,
   not a fixed spec.
-- Undocumented probe commands (recovered from real hardware, since
-  cgminer defines but never sends them): `ZJX` returns a bare firmware
-  version (`1.0.0`, no framing); `ZUX` returns the NVRAM scratch string
-  or the sentinel `MEMORY EMPTY`; `ZSX` writes NVRAM (`SaveString` =
-  length byte + payload), gated in the CLI. **The scratchpad is
+- **Provenance / novelty (checked 2026-08-15):** these commands are NOT
+  novel discoveries. `ZJX` (firmware) and `ZMX` (**Blink**, not "flash" —
+  cgminer's header mislabels it) are in BFL's official 2012 protocol spec
+  (`BitFORCE SC Communication Protocol Rev 1.0.0 DRAFT`). `ZSX`/`ZUX`
+  (save/load string, the NVRAM scratchpad) and `ZVX`/`ZKX` (set/get
+  frequency factor) are NOT in that published spec but ARE fully
+  implemented in BFL's open-source firmware (`github.com/luke-jr/
+  BitForce_SC`, e.g. `Protocol_save_string`/`load_string`, the literal
+  `"MEMORY EMPTY\n"`). We re-derived them from hardware because the
+  MINING software (cgminer) defines but never sends them. Frame all of
+  this as re-derivation/confirmation, never discovery.
+- Probe commands (what they do on real hardware): `ZJX` returns a bare
+  firmware version (`1.0.0`, no framing); `ZUX` returns the NVRAM scratch
+  string or `MEMORY EMPTY`; `ZSX` writes NVRAM (`SaveString` = length
+  byte + payload), gated in the CLI. `ZVX`/`ZKX` (frequency factor) are
+  the real lever for Phase 3 (set the clock) — not yet implemented here. **The scratchpad is
   non-volatile** — a `ZSX` marker survived a full power cycle (verified
   2026-08-15 via `nvram_roundtrip.py`). `ZUX` quirks on real hardware:
   no newline terminator, one stray trailing byte appended (match by

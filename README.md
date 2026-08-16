@@ -52,9 +52,18 @@ bfl-asic -p COM3 device details
 bfl-asic -p COM3 device firmware        # ZJX -> bare version string
 bfl-asic -p COM3 device note            # ZUX -> read NVRAM scratch string
 
+# Sustained-work characterization: throughput, nonce histogram, dead-core health
+bfl-asic characterize --duration 60 -o run.json   # auto-detects the port
+
 # Dead-core detection from a saved characterization run (no hardware)
 bfl-asic device health --from-run docs/characterization/engine-map.json
 bfl-asic device health --demo --inject-dead 0.3:0.4 --engines 27  # show it working
+
+# File a bug / feature request (opens a prefilled GitHub issue)
+bfl-asic report-issue --title "..." --kind feature
+
+# No --port needed: bfl-asic auto-detects a connected device, else uses the simulator
+bfl-asic device details
 
 # Benchmark work submission throughput
 bfl-asic -p COM3 benchmark --duration 10
@@ -275,12 +284,17 @@ histogram can expose a dead region but cannot *map* the healthy partition
 | Poll result | `ZFX` | `IDLE\n` / `B\n` / `NONCE-FOUND:<hex>\n` / `NO-NONCE\n` |
 | Nonce range | `ZPX` + 68-byte packet | `OK\n` |
 
-`ZJX`/`ZUX`/`ZSX` are defined in cgminer's header but never sent by it;
-their behaviour here was recovered from a real device (`ZJX` returns a
-bare version, `ZUX` reports `MEMORY EMPTY` for a blank scratchpad). `ZSX`
-writes persistent NVRAM and is gated behind an explicit confirmation.
-Queued-job submit (`ZNX`) is acked with `OK` **or** `INPROCESS:<n>` under
-load — both are accepts (only an `ERR:` reply is a rejection).
+**Provenance (not a discovery).** `ZJX` (firmware) is in BFL's official
+2012 protocol spec, and so is `ZMX` — which is **Blink**, not the "flash"
+that cgminer's header mislabels it. `ZSX`/`ZUX` (the NVRAM save/load
+string) aren't in the published spec but are fully implemented in BFL's
+open-source firmware ([`luke-jr/BitForce_SC`](https://github.com/luke-jr/BitForce_SC),
+`Protocol_save_string`/`load_string`, the literal `"MEMORY EMPTY\n"`). We
+re-derived them from hardware because the mining software (cgminer)
+defines but never sends them. So: re-derivation and confirmation, not
+discovery. The scratchpad is genuinely non-volatile (survives a power
+cycle). Queued-job submit (`ZNX`) is acked with `OK` **or** `INPROCESS:<n>`
+under load — both are accepts (only an `ERR:` reply is a rejection).
 
 The `ZCX` census parses into a `DeviceDetails` with typed accessors —
 `firmware`, `engines`, `frequency` / `frequency_mhz`, `mining_speed`,
@@ -299,7 +313,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-835 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), dead-core detection (injected nonce-space gaps), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 833 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+848 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), dead-core detection (injected nonce-space gaps), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 846 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 
