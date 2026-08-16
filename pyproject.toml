@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bfl-asic"
-version = "0.1.0"
+version = "0.2.0"
 description = "Communication layer for Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner"
 requires-python = ">=3.10"
 license = "MIT"
