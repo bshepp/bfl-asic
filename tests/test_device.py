@@ -302,3 +302,34 @@ class TestPackageExport:
     def test_importable_from_package(self):
         from bfl_asic import BFLDevice as Imported
         assert Imported is BFLDevice
+
+
+# ======================================================================
+# Frequency factor (ZVX/ZKX)
+# ======================================================================
+
+
+class TestFrequency:
+    def test_get_freq_factor_default(self, device: BFLDevice):
+        assert device.get_freq_factor() == 0
+
+    def test_set_known_word_roundtrips(self, device: BFLDevice):
+        assert device.set_freq_factor(0xD555) is True
+        assert device.get_freq_factor() == 0xD555
+
+    def test_set_rejects_arbitrary_word(self, device: BFLDevice):
+        import pytest
+        with pytest.raises(ValueError):
+            device.set_freq_factor(0x1234)
+
+    def test_set_arbitrary_with_override(self, device: BFLDevice):
+        assert device.set_freq_factor(0x1234, allow_arbitrary=True) is True
+
+    def test_set_warns_frequency_change(self, device: BFLDevice):
+        import warnings
+        from bfl_asic.exceptions import FrequencyChangeWarning
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            device.set_freq_factor(0xD555)
+        assert any(issubclass(c.category, FrequencyChangeWarning)
+                   for c in caught)

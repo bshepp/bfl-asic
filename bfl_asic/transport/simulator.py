@@ -85,6 +85,10 @@ class SimulatedDevice:
         self._uid = 0
         # NVRAM scratch string, exercised by the ZSX/ZUX probe commands.
         self._nvram: bytes = b""
+        # Frequency factor (ZVX/ZKX). ZVX is double-stage, so we latch a
+        # flag after the command and consume the next write as the payload.
+        self._freq_word: int = 0
+        self._awaiting_freq_payload: bool = False
         # Fan state
         self.fan_mode: str = "auto"
         self.fan_level: int | None = None
@@ -109,6 +113,17 @@ class SimulatedDevice:
 
     def _dispatch(self, data: bytes) -> bytes:
         """Route *data* to the appropriate handler."""
+        # ZVX second stage: the previous command was ZVX, so this write is
+        # the 4-byte frequency payload (checked before command prefixes).
+        if self._awaiting_freq_payload:
+            self._awaiting_freq_payload = False
+            self._freq_word = int.from_bytes(data[:4], "little") & 0xFFFF
+            return b"OK\n"
+        if data.startswith(b"ZKX"):
+            return b"FREQ:%d\n" % self._freq_word
+        if data.startswith(b"ZVX"):
+            self._awaiting_freq_payload = True
+            return b"OK\n"
         if data.startswith(b"ZGX"):
             return self._handle_identify()
         if data.startswith(b"ZLX"):

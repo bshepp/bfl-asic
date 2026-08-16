@@ -137,6 +137,54 @@ class BFLDevice:
         self._transport.write(build_savestr(text))
         return parse_savestr_ack(self._transport.readline())
 
+    def get_freq_factor(self) -> int | None:
+        """Read the ASIC frequency factor via `ZKX`.
+
+        NOTE: unimplemented in the reference firmware (returns 0), so the
+        real device generally reports 0 here — observe an actual
+        frequency change through the ZCX census ``frequency`` field.
+        """
+        from bfl_asic.protocol.freq import (
+            build_get_freq_factor, parse_freq_factor)
+        self._transport.flush_input()
+        self._transport.write(build_get_freq_factor())
+        return parse_freq_factor(self._read_until_ok())
+
+    def set_freq_factor(self, word: int, *,
+                        allow_arbitrary: bool = False) -> bool:
+        """Set the ASIC frequency via `ZVX` (double-stage).
+
+        DANGER: writes ASIC oscillator-control register 0x60. By default
+        only the firmware's known-good words (``ASIC_FREQUENCY_WORDS``)
+        are accepted; pass ``allow_arbitrary=True`` to override (an
+        untested PLL configuration). There is no read-back — restore by
+        power-cycling the device. Emits a :class:`FrequencyChangeWarning`.
+        Returns True on the final OK.
+        """
+        import warnings
+        from bfl_asic.exceptions import (
+            BFLProtocolError, FrequencyChangeWarning)
+        from bfl_asic.protocol.freq import build_set_freq_factor, is_known_word
+        if not allow_arbitrary and not is_known_word(word):
+            raise ValueError(
+                f"refusing to set unknown frequency word {word:#06x}; pass a "
+                f"firmware word (bfl_asic.protocol.freq.ASIC_FREQUENCY_WORDS) "
+                f"or allow_arbitrary=True")
+        warnings.warn(
+            f"set_freq_factor({word:#06x}): changes the ASIC clock via a raw "
+            f"oscillator-register write; only known-good firmware words are "
+            f"safe, and there is no read-back (restore by power-cycling).",
+            category=FrequencyChangeWarning, stacklevel=2)
+        cmd, payload = build_set_freq_factor(word)
+        self._transport.flush_input()
+        self._transport.write(cmd)
+        ack1 = self._transport.readline().strip()
+        if b"ERR:" in ack1:
+            raise BFLProtocolError(f"ZVX stage-1 rejected: {ack1!r}")
+        self._transport.write(payload)
+        ack2 = self._transport.readline().strip()
+        return b"OK" in ack2 or b"SUCCESS" in ack2
+
     def set_fan_auto(self) -> bool:
         """Hand the fan back to firmware thermal management (Z9X).
 

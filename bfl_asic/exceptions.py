@@ -41,3 +41,11 @@ class NVRAMWriteWarning(UserWarning):
     mutates on-device state and the command's handling is unverified
     against hardware, so the write is surfaced rather than silent.
     """
+
+
+class FrequencyChangeWarning(UserWarning):
+    """A ZVX command is about to change the ASIC clock by writing an
+    oscillator-control register. Only the firmware's known-good words are
+    safe; an arbitrary word is an untested PLL configuration. There is no
+    read-back, so restore by power-cycling. Surfaced, never silent.
+    """
