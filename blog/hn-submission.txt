@@ -1,0 +1,30 @@
+HACKER NEWS submission -- draft. Submit at https://news.ycombinator.com/submit
+(you must be logged in). One URL + one title. Submit once; don't resubmit.
+
+------------------------------------------------------------------------
+
+Recommended (story submission -- the writeup is the draw):
+
+  Title: I Thought I Found Hidden Commands in a 2013 Mining ASIC. They
+         Were in the Firmware All Along.
+  URL:   https://github.com/bshepp/bfl-asic/blob/master/blog/jalapeno-command-surface.md
+
+Alternative (Show HN -- foregrounds the toolkit instead of the story):
+
+  Title: Show HN: A Python toolkit for a dead 2013 Butterfly Labs mining ASIC
+  URL:   https://github.com/bshepp/bfl-asic
+
+------------------------------------------------------------------------
+
+Etiquette / expectations:
+- Use the honest title as-is. HN dislikes editorializing and clickbait;
+  this title is specific and self-deprecating, which is the good zone.
+- Best odds: a US weekday morning (Pacific time). Most submissions get no
+  traction -- that's normal and mostly luck (timing + who's online).
+- Do NOT ask for upvotes anywhere (fastest way to get flagged/penalized).
+- If it gets comments, engage genuinely. Expect at least one "this isn't
+  novel" -- the post already concedes that up front, so just agree and
+  point to what IS new (the empirical characterization + the dead-core
+  detector). Honesty is the whole brand here; keep it.
+- If you post "Show HN", HN guidelines want it to be something people can
+  try (the repo/toolkit qualifies) and you the author present.
