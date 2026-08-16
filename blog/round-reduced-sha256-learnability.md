@@ -16,7 +16,7 @@ Learnability Study on Repurposed Mining Hardware"; "What a Defunct
 Bitcoin Miner Taught Me About Negative Results".
 -->
 
-In 2013, Butterfly Labs shipped a small purple box called the Jalapeno: a 5 GH/s SHA-256 mining ASIC that was obsolete almost the moment it arrived. Mine sat dead for a decade. This project started as an attempt to resurrect it (a clean protocol layer, a serial transport, a device simulator) and then kept going, past "make the hardware talk" and into a question I actually cared about: **how much structure can a small, cheap model learn in SHA-256, and how would I know if I were fooling myself?**
+In 2013, Butterfly Labs shipped a small brushed-aluminum box called the Jalapeno: a 5 GH/s SHA-256 mining ASIC that was obsolete almost the moment it arrived. Mine sat dead for a decade. This project started as an attempt to resurrect it (a clean protocol layer, a serial transport, a device simulator) and then kept going, past "make the hardware talk" and into a question I actually cared about: **how much structure can a small, cheap model learn in SHA-256, and how would I know if I were fooling myself?**
 
 This post is about the second part. Three findings came out of it, and the most useful one is a negative result that my own measurement caught itself getting wrong.
 

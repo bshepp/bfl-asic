@@ -14,7 +14,7 @@ hardware plus empirical characterization plus a small new instrument.
 Keep it that way.
 -->
 
-There is a specific kind of fun in bringing a dead machine back to life, and a specific kind of humility in discovering that everything you "found" was written down years before you were looking. This post is about both, on the same little purple box.
+There is a specific kind of fun in bringing a dead machine back to life, and a specific kind of humility in discovering that everything you "found" was written down years before you were looking. This post is about both, on the same little brushed-aluminum box.
 
 The box is a Butterfly Labs Jalapeño: a 5 GH/s SHA-256 mining ASIC from 2013, obsolete almost the moment it shipped, that sat on a shelf as a paperweight for the better part of a decade. An [earlier post](round-reduced-sha256-learnability.md) used it as the origin story for a software learnability study. This one is about the hardware itself — and about a research reflex I'm glad I have: **before you claim a discovery, go check whether someone already documented it.**
 
