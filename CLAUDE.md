@@ -76,21 +76,24 @@ Four-layer design with strict separation of concerns:
   (12 Mbps) regardless, ~100x the 115200-baud serial, so the interface is
   NOT the serial-throughput limiter (~1.2 jobs/s is serial baud +
   round-trip latency).
-- **USB 3.0 is NOT the problem (tested 2026-08-15).** A suspected "won't
-  work on USB 3.0" was checked and could **not** be reproduced: the bare
-  Jalapeno plugged DIRECTLY into a good USB 3.0 port enumerated (COM3,
-  FT232H serial `FTWLK8HJ`, status OK), identified, ran sustained work
-  (0 errors, deterministic), and read/wrote NVRAM — identical to the
-  isolated path. Throughput matched within noise: **1.232 jobs/s direct
-  3.0 vs 1.227 jobs/s isolated 2.0** (nonce/s looks lower on short direct
-  runs only because the Poisson ~1-nonce/job yield is noisy over a small
-  sample; jobs/s is the clean metric). No speed/behavior change between
-  paths — expected, since the limiter is the 115200-baud serial +
-  round-trip latency, not USB bandwidth. The historical
-  failure almost certainly had another cause (marginal port/cable, the
-  miner's 12V not powered, or a ground/noise issue the isolator happened
-  to fix). The user distinguishes "good" vs "bad" ports, so port quality
-  is a likelier variable than USB 3.0 vs 2.0.
+- **Direct USB 3.0 is UNSTABLE for the bare device (tested 2026-08-15).**
+  Plugged DIRECTLY into a host USB 3.0 (xHCI) jack the Jalapeno
+  enumerates and works INITIALLY — identify, census, sustained work
+  (0 errors, deterministic), and NVRAM all fine, and throughput while up
+  is identical to the isolated path (**1.232 jobs/s direct vs 1.227
+  isolated**). But it is **not reliable**: after several minutes on
+  direct 3.0 the FTDI (`FTWLK8HJ`) was observed **faulting into Device
+  Manager Code 10 "This device cannot start" (ProblemStatus 0xC0000001),
+  the COM port vanishing** (`comports()` then returns nothing). The
+  **isolated path** (host 3.0 -> ADuM3160 isolator -> USB 2.0 -> device)
+  ran 4 h + 30 min with zero drops. So the isolator is **NOT optional**
+  for reliable use here — it provides a stable, re-clocked full-speed
+  link (plus clean power and galvanic isolation), not merely nice-to-have
+  protection. This matches the operator's long-standing "doesn't work on
+  USB 3.0" experience: it's intermittent instability, not immediate
+  failure. Recovery from the Code 10 state: unplug/replug (into the
+  isolator). [Earlier commits in this repo over-corrected to "USB 3.0
+  works fine" after only a short direct test — that was premature.]
 
 - The naive `ZDX`/`ZFX` work path stalls after **42 submissions per power
   cycle** — but this is an artifact of never draining the firmware queue,

@@ -23,23 +23,24 @@ host USB 3.0 port -> ADuM3160 isolator -> isolated, shielded
 USB 2.0 downstream -> Jalapeno
 ```
 
-> **USB 3.0 is fine — tested.** A suspected "the Jalapeno won't work on
-> USB 3.0" was checked (2026-08-15) and could **not** be reproduced: the
-> bare device plugged directly into a good USB 3.0 port enumerated as
-> COM3, identified, ran sustained work, and read/wrote NVRAM — identical
-> to the isolated path (throughput **1.232 jobs/s direct vs 1.227
-> isolated**, 0 errors both; no speed or behavior change). If it "doesn't
-> work," suspect a **marginal port/cable, the miner's 12V not being
-> powered, or a ground/noise issue** — not USB 3.0 per se. (The operator
-> distinguishes "good" vs "bad" ports, so port quality is the likelier
-> variable.)
+> **Direct USB 3.0 is unstable — keep the isolator (tested 2026-08-15).**
+> Plugged directly into a host USB 3.0 jack the bare Jalapeno works *at
+> first* (identify, census, sustained work, NVRAM — throughput identical
+> to the isolated path, **1.232 vs 1.227 jobs/s**), but after several
+> minutes the FTDI was seen **faulting into Device Manager Code 10 "This
+> device cannot start," the COM port vanishing** (`bfl-asic discover` /
+> `comports()` then find nothing). The isolated path ran **4 h + 30 min
+> without a single drop**. Recovery from the Code 10 state: unplug/replug
+> (into the isolator).
 
-Keep the isolator anyway: its value is the **2.5 kV signal / 1.5 kV
-voltage galvanic isolation** (from an onboard 2W 5V regulated supply),
-which protects the host from the miner's 12V power domain while poking at
-undocumented commands — not any USB-speed requirement. The link runs at
-USB Full Speed (12 Mbps) either way, far above the 115200-baud serial, so
-it does not bound the ~1.2 jobs/s throughput.
+So the isolator is **not optional** for reliable use on this host — it
+gives a stable, re-clocked full-speed link (and clean power + **2.5 kV /
+1.5 kV galvanic isolation** off a 2W 5V supply) that the bare device on
+direct 3.0 does not get. The link runs at USB Full Speed (12 Mbps) either
+way, far above 115200 baud, so it never bounds the ~1.2 jobs/s
+throughput; the isolator's benefit is **stability**, not speed. This is
+almost certainly what was behind the long-standing "won't work on USB
+3.0" — intermittent drop-outs, not an immediate failure.
 
 ## Safety tiers
 
