@@ -135,7 +135,18 @@ Four-layer design with strict separation of concerns:
   firmware version (`1.0.0`, no framing); `ZUX` returns the NVRAM scratch
   string or `MEMORY EMPTY`; `ZSX` writes NVRAM (`SaveString` = length
   byte + payload), gated in the CLI. `ZVX`/`ZKX` (frequency factor) are
-  the real lever for Phase 3 (set the clock) — not yet implemented here. **The scratchpad is
+  the real lever for Phase 3 (set the clock). Implemented in the toolkit
+  (`protocol/freq.py`, `BFLDevice.get_freq_factor`/`set_freq_factor`,
+  guarded to the firmware's 10 known-good words). **Hardware status
+  (2026-08-15): the frequency SET does not yet land.** `ZKX` works but
+  returns 0 (firmware `ASIC_GetFrequencyFactor` unimplemented). `ZVX`
+  stage 1 acks `OK`, but the stage-2 **4-byte payload is rejected with
+  `ERR:INVALID DATA`** (firmware `USB_wait_stream` read a byte count != 4).
+  A safe underclock attempt therefore left the clock unchanged at 189 MHz
+  (0 compute errors throughout — no harm). OPEN PROBLEM: host-side
+  delivery of the tiny 4-byte second-stage payload to the FTDI (suspect
+  latency-timer/framing); needs investigation before the frequency sweep
+  is possible. `scripts/hw/freq_underclock.py` is the supervised probe. **The scratchpad is
   non-volatile** — a `ZSX` marker survived a full power cycle (verified
   2026-08-15 via `nvram_roundtrip.py`). `ZUX` quirks on real hardware:
   no newline terminator, one stray trailing byte appended (match by
