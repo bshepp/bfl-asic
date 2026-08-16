@@ -14,28 +14,31 @@ install is not strictly required.
 
 ## Physical interface
 
-The reference rig chains the Jalapeno's FTDI (FT232H, 115200 8N1) behind
-a **4-port USB isolator based on the Analog Devices ADuM3160**:
+The reference rig normally chains the Jalapeno's FTDI (FT232H, 115200
+8N1) behind a **4-port USB isolator based on the Analog Devices
+ADuM3160**:
 
 ```
-host USB 3.0 port -> ADuM3160 isolator (upstream) -> isolated, shielded
+host USB 3.0 port -> ADuM3160 isolator -> isolated, shielded
 USB 2.0 downstream -> Jalapeno
 ```
 
-> **The Jalapeno does not work plugged directly into USB 3.0.** It has to
-> sit behind the isolator's full-speed USB 2.0 downstream (a plain USB 2.0
-> hub/port works too). The isolator's *upstream* on the 3.0 port is fine —
-> it presents a clean full-speed link the device is happy with; a bare
-> Jalapeno on an xHCI 3.0 jack is not. If `bfl-asic discover` finds
-> nothing, check this first.
+> **USB 3.0 is fine — tested.** A suspected "the Jalapeno won't work on
+> USB 3.0" was checked (2026-08-15) and could **not** be reproduced: the
+> bare device plugged directly into a good USB 3.0 port enumerated as
+> COM3, identified, ran sustained work (0 errors, ~1.1 nonce/s), and
+> read/wrote NVRAM — identical to the isolated path. If it "doesn't
+> work," suspect a **marginal port/cable, the miner's 12V not being
+> powered, or a ground/noise issue** — not USB 3.0 per se. (The operator
+> distinguishes "good" vs "bad" ports, so port quality is the likelier
+> variable.)
 
-The ADuM3160 is a Full/Low-speed isolator, so the USB link runs at
-**USB Full Speed (12 Mbps)** — still far above the 115200-baud serial, so
-it does not bound the ~1.2 jobs/s throughput (serial baud + per-command
-round-trip latency do). The isolator provides **2.5 kV signal / 1.5 kV
-voltage galvanic isolation** from an onboard 2W 5V regulated supply,
-protecting the host from the miner's 12V power domain — worth having in
-place before poking at undocumented commands.
+Keep the isolator anyway: its value is the **2.5 kV signal / 1.5 kV
+voltage galvanic isolation** (from an onboard 2W 5V regulated supply),
+which protects the host from the miner's 12V power domain while poking at
+undocumented commands — not any USB-speed requirement. The link runs at
+USB Full Speed (12 Mbps) either way, far above the 115200-baud serial, so
+it does not bound the ~1.2 jobs/s throughput.
 
 ## Safety tiers
 

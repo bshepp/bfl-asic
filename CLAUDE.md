@@ -67,17 +67,25 @@ Four-layer design with strict separation of concerns:
 
 ## Hardware Notes
 
-- **Physical interface (this rig):** host USB 3.0 port -> **4-port
-  ADuM3160 USB isolator** (upstream sits on the 3.0 port; onboard 2W 5V
-  regulated supply; 2.5 kV signal / 1.5 kV voltage galvanic isolation) ->
-  clean shielded, isolated **USB 2.0** downstream -> Jalapeno FT232H.
-  **The Jalapeno does NOT work plugged DIRECTLY into a host USB 3.0
-  (xHCI) jack** — it needs the full-speed USB 2.0 link the isolator
-  presents (a plain USB 2.0 hub/port also works). The isolator itself is
-  happy on the 3.0 port. Link runs at **USB Full Speed (12 Mbps)**,
-  ~100x the 115200-baud serial, so it is NOT the serial-throughput
-  limiter (the measured ~1.2 jobs/s is serial baud + round-trip latency).
-  The isolation protects the host from the miner's 12V power domain.
+- **Physical interface (this rig):** normally host USB 3.0 port ->
+  **4-port ADuM3160 USB isolator** (onboard 2W 5V regulated supply;
+  2.5 kV signal / 1.5 kV voltage galvanic isolation) -> isolated shielded
+  **USB 2.0** downstream -> Jalapeno FT232H. The reason to keep the
+  isolator is the **galvanic isolation** (protects the host from the
+  miner's 12V power domain), not USB speed. Link runs at USB Full Speed
+  (12 Mbps) regardless, ~100x the 115200-baud serial, so the interface is
+  NOT the serial-throughput limiter (~1.2 jobs/s is serial baud +
+  round-trip latency).
+- **USB 3.0 is NOT the problem (tested 2026-08-15).** A suspected "won't
+  work on USB 3.0" was checked and could **not** be reproduced: the bare
+  Jalapeno plugged DIRECTLY into a good USB 3.0 port enumerated (COM3,
+  FT232H serial `FTWLK8HJ`, status OK), identified, ran sustained work
+  (25 jobs, 22 nonces, 0 errors, deterministic, ~1.1 nonce/s), and
+  read/wrote NVRAM — identical to the isolated path. The historical
+  failure almost certainly had another cause (marginal port/cable, the
+  miner's 12V not powered, or a ground/noise issue the isolator happened
+  to fix). The user distinguishes "good" vs "bad" ports, so port quality
+  is a likelier variable than USB 3.0 vs 2.0.
 
 - The naive `ZDX`/`ZFX` work path stalls after **42 submissions per power
   cycle** — but this is an artifact of never draining the firmware queue,
