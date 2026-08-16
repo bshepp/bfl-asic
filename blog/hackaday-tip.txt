@@ -1,0 +1,34 @@
+HACKADAY TIP -- draft. Send to tips@hackaday.com or via
+https://hackaday.com/submit-a-tip/ . Tweak the voice to yours before
+sending; it reads better as genuinely you.
+
+------------------------------------------------------------------------
+
+Subject: Reviving a dead 2013 Butterfly Labs "Jalapeno" mining ASIC as a research instrument (and finding its persistent NVRAM)
+
+I pulled a decade-dead 5 GH/s Butterfly Labs "Jalapeno" Bitcoin-mining
+ASIC off a shelf and built a modern Python toolkit for it, then
+characterized the silicon. A few things the Hackaday crowd might like:
+
+- It still works flawlessly. Four hours of continuous work, zero compute
+  errors, fully deterministic. The winning-nonce count comes out textbook
+  Poisson, which shows the chip scans the whole 2^32 nonce space per job.
+  It is so thermally over-built it won't error even with the fan off.
+
+- It has a persistent NVRAM scratchpad the mining software never used. I
+  wrote my name and the repo URL into it; the message survives power
+  cycles. It is still in there.
+
+- The honest twist: I "found" a set of undocumented serial commands, then
+  discovered they were in Butterfly Labs' own 2012 spec and open-source
+  firmware all along. I even almost filed a bug against cgminer before a
+  last look at its code showed it was right and I had misread it. I wrote
+  the whole thing up, corrections included.
+
+- I also built one small new instrument: a dead-core detector that spots
+  dead engines as cold bands in the winning-nonce histogram.
+
+Code (MIT), the characterization data, and the full writeup:
+https://github.com/bshepp/bfl-asic
+
+Happy to answer questions.
