@@ -1,5 +1,34 @@
 # Development Log
 
+## 2026-08-15 (Phase 3) — frequency lever: ZVX handshake solved, firmware overrides the clock
+
+Attempted the frequency-set lever (`ZVX`/`ZKX`, found in the open
+firmware). Built the commands (`bfl_asic/protocol/freq.py`, guarded to
+the firmware's 10 known-good words `ASIC_FREQUENCY_WORDS`) and hit, then
+solved, a real host-side protocol bug.
+
+- **`ZKX` (get) is unimplemented in firmware** — always returns `FREQ:0`.
+  Observe frequency via the `ZCX` census `FREQUENCY` field instead.
+- **`ZVX` (set) second stage is length-prefixed.** Early attempts got
+  `ERR:INVALID DATA`. Root cause, found by reading the firmware's
+  `USB_wait_stream` (USBProtocol_Module.c): the first payload byte is a
+  **length indicator**, not data. A bare 4 bytes was read as "expect
+  255", never reached end-of-stream -> `invalid_data`. Fixed: payload is
+  `[0x04][4 LE bytes]`. Verified on hardware -> `ZVX` returns `OK`,
+  `set_freq_factor` True.
+- **But the firmware overrides the setting.** Even the slowest word
+  (0x0000) left the census pinned at 189 MHz with zero compute errors.
+  The firmware's own thermal-hover frequency management re-asserts its
+  word (or the raw 0x60 register write needs a PLL-reinit trigger `ZVX`
+  doesn't issue). So a frequency sweep is **not achievable via `ZVX` on
+  this unit's firmware** — the chip keeps itself at 189 MHz regardless.
+
+**Still planned:** the frequency / error-rate sweep on the **sacrificial
+unit (05794, ~Aug 22)**. A different unit may run different firmware, and
+it is the safe target for the more invasive approaches real clock control
+would need (disabling the firmware frequency loop, or a reflash). No harm
+to the original unit — it is unchanged at 189 MHz.
+
 ## 2026-08-15 (pm) — probe commands, a queued-protocol bug, first silicon characterization
 
 Phase 1 increment 2 plus the first real characterization run.
@@ -536,7 +565,7 @@ _Point-in-time snapshot; live test/source totals are tracked in README.md and CL
 |--------|-------|
 | Source lines | 5,142 |
 | Test lines | 5,919 |
-| Test count | 825 |
+| Test count | 857 |
 | Source files | 31 |
 | Test files | 26 |
 | Test:source ratio | 1.15x |
@@ -554,6 +583,7 @@ Remaining applications from the seed document not yet implemented:
 - **App 9:** Research test harness
 
 Next priorities to consider:
+- **Frequency sweep / max-stable-clock (Phase 3):** the `ZVX` command works (length-prefixed second stage), but this unit's firmware overrides manual settings — the clock stays pinned at 189 MHz. **Still planned on the sacrificial unit (05794):** try there (different firmware may behave differently), and/or bypass the firmware frequency loop / reflash for real clock control. `ZKX` (get) is unimplemented in firmware (returns 0).
 - ASIC-accelerated hash source (swap `SoftwareHashEngine` for device-backed `HashSource` — the randomness battery is already wired to accept it)
 - Direct ASIC bus tapping for full hash throughput (bypasses USB bottleneck)
 - Firmware work limit workaround (USB power relay for automated power cycling, or direct FPGA/ASIC reset via GPIO)
