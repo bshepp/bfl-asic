@@ -26,8 +26,9 @@ USB 2.0 downstream -> Jalapeno
 > **USB 3.0 is fine — tested.** A suspected "the Jalapeno won't work on
 > USB 3.0" was checked (2026-08-15) and could **not** be reproduced: the
 > bare device plugged directly into a good USB 3.0 port enumerated as
-> COM3, identified, ran sustained work (0 errors, ~1.1 nonce/s), and
-> read/wrote NVRAM — identical to the isolated path. If it "doesn't
+> COM3, identified, ran sustained work, and read/wrote NVRAM — identical
+> to the isolated path (throughput **1.232 jobs/s direct vs 1.227
+> isolated**, 0 errors both; no speed or behavior change). If it "doesn't
 > work," suspect a **marginal port/cable, the miner's 12V not being
 > powered, or a ground/noise issue** — not USB 3.0 per se. (The operator
 > distinguishes "good" vs "bad" ports, so port quality is the likelier

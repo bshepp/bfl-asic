@@ -80,8 +80,13 @@ Four-layer design with strict separation of concerns:
   work on USB 3.0" was checked and could **not** be reproduced: the bare
   Jalapeno plugged DIRECTLY into a good USB 3.0 port enumerated (COM3,
   FT232H serial `FTWLK8HJ`, status OK), identified, ran sustained work
-  (25 jobs, 22 nonces, 0 errors, deterministic, ~1.1 nonce/s), and
-  read/wrote NVRAM — identical to the isolated path. The historical
+  (0 errors, deterministic), and read/wrote NVRAM — identical to the
+  isolated path. Throughput matched within noise: **1.232 jobs/s direct
+  3.0 vs 1.227 jobs/s isolated 2.0** (nonce/s looks lower on short direct
+  runs only because the Poisson ~1-nonce/job yield is noisy over a small
+  sample; jobs/s is the clean metric). No speed/behavior change between
+  paths — expected, since the limiter is the 115200-baud serial +
+  round-trip latency, not USB bandwidth. The historical
   failure almost certainly had another cause (marginal port/cable, the
   miner's 12V not powered, or a ground/noise issue the isolator happened
   to fix). The user distinguishes "good" vs "bad" ports, so port quality
