@@ -7,9 +7,12 @@ Grounded in BFL's open-source firmware (``luke-jr/BitForce_SC``):
   current factor is generally NOT readable — observe the effect of a
   change through the ``ZCX`` census ``FREQUENCY`` field instead.
 * **ZVX** (set) is a **double-stage** command: send ``ZVX``, read ``OK``,
-  send **4 payload bytes little-endian**, read ``OK``. The firmware masks
-  the value to 16 bits and writes it to ASIC oscillator-control register
-  ``0x60`` on every engine.
+  send a **length-prefixed payload** ``[0x04][4 data bytes little-endian]``,
+  read ``OK``. The firmware's ``USB_wait_stream`` treats the first byte as
+  a length indicator (bytes-to-follow), NOT data — sending a bare 4 bytes
+  is read as "expect 255 bytes" and rejected with ``ERR:INVALID DATA``. The
+  4 data bytes are masked to 16 bits and written to ASIC oscillator-control
+  register ``0x60`` on every engine.
 
 SAFETY: register ``0x60`` is a raw clock/PLL control word. The firmware
 itself only ever writes the 10 known-good words in
@@ -42,14 +45,17 @@ def build_set_freq_factor(word: int) -> tuple[bytes, bytes]:
     """Return ``(command, payload)`` for the ZVX double-stage exchange.
 
     The caller writes ``command`` (``ZVX``), reads ``OK``, writes
-    ``payload`` (4 bytes LE), then reads ``OK``. ``word`` must be a 16-bit
-    value; the firmware masks to 16 bits. This does NOT validate that the
-    word is a known-good one — see :func:`is_known_word`.
+    ``payload``, then reads ``OK``. ``payload`` is length-prefixed:
+    ``[0x04][word as 4 bytes LE]`` (the firmware reads the first byte as
+    the data length). ``word`` must be a 16-bit value; the firmware masks
+    to 16 bits. This does NOT validate that the word is a known-good one —
+    see :func:`is_known_word`.
     """
     if not (0 <= word <= 0xFFFF):
         raise ValueError(f"frequency word must be 16-bit (0..0xFFFF), "
                          f"got {word}")
-    return CMD_SET_FREQ, word.to_bytes(4, "little")
+    data = word.to_bytes(4, "little")
+    return CMD_SET_FREQ, bytes([len(data)]) + data
 
 
 def is_known_word(word: int) -> bool:

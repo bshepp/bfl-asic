@@ -117,7 +117,10 @@ class SimulatedDevice:
         # the 4-byte frequency payload (checked before command prefixes).
         if self._awaiting_freq_payload:
             self._awaiting_freq_payload = False
-            self._freq_word = int.from_bytes(data[:4], "little") & 0xFFFF
+            # Length-prefixed: data[0] = byte count, data[1:] = LE word.
+            length = data[0] if data else 0
+            word = data[1:1 + length].ljust(4, b"\x00")
+            self._freq_word = int.from_bytes(word[:4], "little") & 0xFFFF
             return b"OK\n"
         if data.startswith(b"ZKX"):
             return b"FREQ:%d\n" % self._freq_word

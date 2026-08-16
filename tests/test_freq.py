@@ -22,12 +22,13 @@ def test_get_freq_is_bare_zkx():
     assert build_get_freq_factor() == b"ZKX"
 
 
-def test_set_freq_returns_command_and_le_payload():
+def test_set_freq_returns_command_and_length_prefixed_payload():
     cmd, payload = build_set_freq_factor(0xD555)
     assert cmd == b"ZVX"
-    # firmware reads 4 bytes LE and masks to 16 bits
-    assert payload == bytes([0x55, 0xD5, 0x00, 0x00])
-    assert len(payload) == 4
+    # length-prefixed: [0x04][4 bytes LE]; firmware masks to 16 bits
+    assert payload == bytes([0x04, 0x55, 0xD5, 0x00, 0x00])
+    assert len(payload) == 5
+    assert payload[0] == 4  # length indicator
 
 
 def test_set_freq_rejects_out_of_range_word():

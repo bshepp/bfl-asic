@@ -138,15 +138,21 @@ Four-layer design with strict separation of concerns:
   the real lever for Phase 3 (set the clock). Implemented in the toolkit
   (`protocol/freq.py`, `BFLDevice.get_freq_factor`/`set_freq_factor`,
   guarded to the firmware's 10 known-good words). **Hardware status
-  (2026-08-15): the frequency SET does not yet land.** `ZKX` works but
-  returns 0 (firmware `ASIC_GetFrequencyFactor` unimplemented). `ZVX`
-  stage 1 acks `OK`, but the stage-2 **4-byte payload is rejected with
-  `ERR:INVALID DATA`** (firmware `USB_wait_stream` read a byte count != 4).
-  A safe underclock attempt therefore left the clock unchanged at 189 MHz
-  (0 compute errors throughout — no harm). OPEN PROBLEM: host-side
-  delivery of the tiny 4-byte second-stage payload to the FTDI (suspect
-  latency-timer/framing); needs investigation before the frequency sweep
-  is possible. `scripts/hw/freq_underclock.py` is the supervised probe. **The scratchpad is
+  (2026-08-15): ZVX handshake SOLVED, but the firmware overrides the
+  setting.** Root cause of the earlier `ERR:INVALID DATA` (found by
+  reading `USB_wait_stream`): the double-stage payload is
+  **length-prefixed** — first byte = data length, then the data. A bare 4
+  bytes was read as "expect 255", never reached EOS -> invalid. Fixed:
+  payload is now `[0x04][4 LE bytes]`; `ZVX` returns `OK` and
+  `set_freq_factor` returns True. **BUT the clock does not change** — even
+  the slowest word (0x0000) left the census at 189 MHz. So the setting is
+  accepted but neutralized, most likely by the firmware's thermal-hover
+  loop re-asserting its own frequency word (or the raw 0x60 write not
+  reconfiguring the live PLL without a trigger the command doesn't issue).
+  `ZKX` returns 0 (unimplemented). **Conclusion: the frequency sweep is
+  NOT achievable via ZVX on this firmware** — controlling the clock would
+  need to bypass/disable the firmware's own frequency management, which
+  isn't exposed over serial. `scripts/hw/freq_underclock.py` is the probe. **The scratchpad is
   non-volatile** — a `ZSX` marker survived a full power cycle (verified
   2026-08-15 via `nvram_roundtrip.py`). `ZUX` quirks on real hardware:
   no newline terminator, one stray trailing byte appended (match by
