@@ -274,6 +274,73 @@ def device_note(ctx: click.Context, write_text: str | None,
             click.echo(f"Note: {note!r}" if note else "Note: (empty)")
 
 
+@device.command(name="health")
+@click.option("--from-run", "from_run", type=click.Path(exists=True),
+              default=None,
+              help="Analyze the nonce histogram in a characterization JSON "
+                   "(from `characterize.py`).")
+@click.option("--demo", is_flag=True, default=False,
+              help="Analyze synthetic nonces (no hardware needed).")
+@click.option("--inject-dead", default=None,
+              help="Demo only: kill a nonce-space fraction band LO:HI "
+                   "(e.g. 0.3:0.4) to show detection.")
+@click.option("--n", "n_demo", default=20000, type=int,
+              help="Demo synthetic nonce count.")
+@click.option("--bins", default=256, type=int, help="Histogram bins.")
+@click.option("--engines", default=None, type=int,
+              help="Engine count, to estimate how many are dead.")
+@click.option("--z-threshold", "z_threshold", default=4.0, type=float,
+              help="Coldness threshold in sigma (default 4.0).")
+def device_health(from_run, demo, inject_dead, n_demo, bins, engines,
+                  z_threshold):
+    """Detect dead engines/cores from the winning-nonce distribution.
+
+    A dead engine that scans a contiguous nonce sub-range leaves a cold
+    (under-represented) band in the histogram. Analyze a saved run with
+    --from-run, or --demo synthetic nonces (optionally --inject-dead to
+    show detection). Only localizes dead cores if engines cover
+    contiguous ranges; see docs/characterization/README.md.
+    """
+    from bfl_asic.health import (
+        detect_dead_cores, detect_dead_cores_from_counts)
+
+    if from_run:
+        data = json.loads(Path(from_run).read_text(encoding="utf-8"))
+        nd = data.get("nonce_distribution") or {}
+        counts = nd.get("counts")
+        if not counts:
+            raise click.UsageError(
+                "no nonce_distribution.counts in that run JSON")
+        if engines is None:
+            engines = (data.get("baseline") or {}).get("engines")
+        rep = detect_dead_cores_from_counts(
+            counts, nd.get("n", sum(counts)),
+            engines=engines, z_threshold=z_threshold)
+    elif demo:
+        import random
+        rng = random.Random(0)
+        ns = 1 << 32
+        dead = None
+        if inject_dead:
+            try:
+                lo, hi = (float(x) for x in inject_dead.split(":"))
+            except ValueError:
+                raise click.UsageError("--inject-dead must be LO:HI fractions")
+            dead = (int(lo * ns), int(hi * ns))
+        nonces = []
+        while len(nonces) < n_demo:
+            v = rng.randrange(ns)
+            if dead and dead[0] <= v < dead[1]:
+                continue
+            nonces.append(v)
+        rep = detect_dead_cores(nonces, bins=bins, engines=engines,
+                                z_threshold=z_threshold)
+    else:
+        raise click.UsageError("provide --from-run PATH or --demo")
+
+    click.echo(rep.summary())
+
+
 # ======================================================================
 # probe
 # ======================================================================

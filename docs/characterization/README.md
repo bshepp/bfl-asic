@@ -124,6 +124,15 @@ timing (which engine reports when in the scan), selectively disabling
 engines, or high-entropy work with a per-engine tag (the v2 result format
 carries a CHIP field, but this SC 1.0 firmware is v1 and omits it).
 
+The *usable* half of this insight — dead-region detection — is now a
+shipped feature, `bfl_asic/health.py` (`bfl-asic device health`). Run it
+against this file to confirm all cores alive:
+
+```
+bfl-asic device health --from-run docs/characterization/engine-map.json
+# -> verdict: HEALTHY (no dead cores detected)
+```
+
 ## Temperature sweep (supervised, 2026-08-15)
 
 Ran `scripts/hw/temp_sweep.py` with a 65 °C hard ceiling, fan stepped

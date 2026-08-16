@@ -116,6 +116,34 @@ class TestDeviceDetails:
         assert result.exit_code == 0
         assert "hi" in result.output
 
+    def test_device_health_demo_healthy(self, runner: CliRunner) -> None:
+        result = runner.invoke(
+            main, ["device", "health", "--demo", "--n", "20000"])
+        assert result.exit_code == 0
+        assert "healthy" in result.output.lower()
+
+    def test_device_health_demo_inject_dead(self, runner: CliRunner) -> None:
+        result = runner.invoke(
+            main, ["device", "health", "--demo", "--n", "20000",
+                   "--inject-dead", "0.3:0.4", "--engines", "27"])
+        assert result.exit_code == 0
+        assert "dead core" in result.output.lower()
+
+    def test_device_health_from_run(self, runner: CliRunner, tmp_path) -> None:
+        import json
+        counts = [70] * 64
+        for i in range(20, 26):
+            counts[i] = 0
+        p = tmp_path / "run.json"
+        p.write_text(json.dumps({
+            "baseline": {"engines": 27},
+            "nonce_distribution": {"counts": counts, "n": sum(counts)},
+        }))
+        result = runner.invoke(
+            main, ["device", "health", "--from-run", str(p)])
+        assert result.exit_code == 0
+        assert "dead core" in result.output.lower()
+
 
 # ======================================================================
 # probe

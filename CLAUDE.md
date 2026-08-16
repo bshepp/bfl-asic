@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 # Install with optional ML subsystem (adds PyTorch)
 pip install -e ".[ml]"
 
-# Run all tests (825 total, ~65s, no hardware required; 823 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
+# Run all tests (835 total, ~65s, no hardware required; 833 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
 pytest
 
 # Run a single test file
@@ -44,7 +44,8 @@ Four-layer design with strict separation of concerns:
 - `bfl_asic/stats/` — SHA-256 statistical analysis: 7 numpy-vectorized accumulators, FFT spectral analysis, pipeline orchestrator, matplotlib visualization (including an animated bit-frequency convergence GIF for teaching the law of large numbers).
 - `bfl_asic/dynamics/` — Iterated hash orbit/cycle analysis: Floyd's and Brent's cycle detection (O(1) memory), multi-seed convergence analysis.
 - `bfl_asic/randomness/` — NIST SP 800-22 randomness test battery over any `HashSource`. Six tests as pure numpy functions: frequency (monobit), block frequency, runs, longest-run-in-block, DFT spectral, cumulative sums (forward + reverse). Designed to plug an ASIC-backed hash source in unchanged when one exists.
-- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`device details/firmware/note`, `stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`). `device details` renders the `ZCX` census via the pure `_render_census` helper; `device note --write` is gated behind `--confirm-nvram-write`.
+- `bfl_asic/cli.py` — Click-based CLI with subcommand groups (`device details/firmware/note/health`, `stats run/report/animate-convergence`, `dynamics run/plot`, `randomness run/report`, `fan auto|0-4`). `device details` renders the `ZCX` census via the pure `_render_census` helper; `device note --write` is gated behind `--confirm-nvram-write`; `device health` runs dead-core detection.
+- `bfl_asic/health.py` — dead-core detection from the winning-nonce histogram. Pure functions (`nonce_histogram`, `detect_dead_cores`, `detect_dead_cores_from_counts` → `EngineHealthReport`): a dead engine that scans a contiguous nonce sub-range leaves a cold band; a per-bin Poisson test flags contiguous cold runs and estimates dead-engine count. **Only** localizes dead cores if engines cover contiguous ranges (else a dead engine thins the histogram uniformly — the yield rate is the signal). CLI: `device health --from-run <json>` or `--demo [--inject-dead LO:HI]`.
 - `bfl_asic/nonce_source.py` — honest device nonce stream (`NonceSource`); wraps `QueuedWorkSession` for continuous drain via SC queued protocol. **Not** a `HashSource` — the device yields nonces (mining winners), not full digests.
 - `BFLDevice.set_fan_auto()` / `BFLDevice.set_fan(level)` / `fan_fixed(level)` context manager — thermal-safety-guarded fan control; low fixed levels during hashing risk ASIC damage; `fan_fixed` restores `auto` on exit.
 - `bfl_asic/ml/` — Optional ML learnability instrument (PyTorch behind the

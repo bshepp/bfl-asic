@@ -63,6 +63,19 @@ Engine mapping is the open Phase-2 question: the 30-minute baseline
 histogram was broadly uniform, so resolving the 26–27 engine / 2-processor
 structure needs a much larger nonce sample and finer bins.
 
+**Dead-core detection** on a run's histogram is a shipped feature (no
+hardware needed to analyze):
+
+```
+bfl-asic device health --from-run docs/characterization/engine-map.json
+# or demonstrate detection on synthetic data:
+bfl-asic device health --demo --inject-dead 0.3:0.4 --engines 27
+```
+
+It flags cold (under-represented) nonce bands as suspected dead engines.
+It localizes them only if engines cover contiguous ranges; see
+[`characterization/README.md`](characterization/README.md).
+
 ## nvram_roundtrip.py — ZSX/ZUX persistence (GUARDED write)
 
 Finds out what the `ZSX`/`ZUX` scratch buffer is and whether it survives a

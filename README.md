@@ -52,6 +52,10 @@ bfl-asic -p COM3 device details
 bfl-asic -p COM3 device firmware        # ZJX -> bare version string
 bfl-asic -p COM3 device note            # ZUX -> read NVRAM scratch string
 
+# Dead-core detection from a saved characterization run (no hardware)
+bfl-asic device health --from-run docs/characterization/engine-map.json
+bfl-asic device health --demo --inject-dead 0.3:0.4 --engines 27  # show it working
+
 # Benchmark work submission throughput
 bfl-asic -p COM3 benchmark --duration 10
 ```
@@ -212,6 +216,7 @@ bfl_asic/
     snapshot.py     # JSON-serializable results
     visualization.py # Learnability curve + saliency map
     publish.py      # Optional HF model-card upload
+  health.py        # Dead-core detection from the winning-nonce histogram
   device.py        # BFLDevice — sync high-level API
   async_device.py  # AsyncBFLDevice — async API with stream iterators
   cli.py           # Click CLI: identify, temperature, device details,
@@ -226,6 +231,34 @@ bfl_asic/
 - **Transport** abstracts serial vs simulator vs future backends
 - **Device** combines transport + protocol into a clean API
 - **Applications** (stats, dynamics, randomness) are independent of the device layer
+
+## Dead-core detection (`bfl_asic/health.py`)
+
+The device only ever returns winning *nonces*, so its health leaks
+through *where* in the 32-bit nonce space those winners land. A working
+engine that scans a contiguous sub-range contributes winners across that
+range; a **dead** engine leaves a cold (under-represented) band. The
+detector histograms winning nonces and flags contiguous runs of bins that
+sit far below the mean (a per-bin Poisson test), estimating how many
+engines are dead from the cold fraction:
+
+```python
+from bfl_asic.health import detect_dead_cores_from_counts
+import json
+run = json.load(open("docs/characterization/engine-map.json"))
+nd = run["nonce_distribution"]
+print(detect_dead_cores_from_counts(nd["counts"], nd["n"], engines=27).summary())
+# -> Engine health: 17726 nonces over 256 bins (mean 69.2/bin)
+#    verdict: HEALTHY (no dead cores detected)
+```
+
+**Key limitation, stated plainly:** this localizes a dead engine only if
+engines cover *contiguous* nonce ranges. If they interleave the space, a
+dead engine thins the whole histogram uniformly and is invisible here —
+the overall nonce *yield rate* is the signal instead. An aggregate
+histogram can expose a dead region but cannot *map* the healthy partition
+(healthy engines sum to uniform). See
+[`docs/characterization/README.md`](docs/characterization/README.md).
 
 ## Protocol Reference
 
@@ -266,7 +299,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-825 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 823 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+835 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), dead-core detection (injected nonce-space gaps), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 833 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 
