@@ -255,3 +255,41 @@ class TestHelp:
         assert "hash" in result.output
         assert "stats" in result.output
         assert "dynamics" in result.output
+
+
+# ======================================================================
+# get_transport auto-detection
+# ======================================================================
+
+
+class TestGetTransportAutoDetect:
+    def test_simulate_forces_simulator(self) -> None:
+        from bfl_asic.cli import get_transport
+        from bfl_asic.transport.simulator import SimulatorTransport
+        assert isinstance(get_transport(None, True, 115200), SimulatorTransport)
+
+    def test_explicit_port_uses_serial(self) -> None:
+        from bfl_asic.cli import get_transport
+        from bfl_asic.transport.serial import SerialTransport
+        tr = get_transport("COM7", False, 115200)
+        assert isinstance(tr, SerialTransport)
+        assert tr.port == "COM7"
+
+    def test_no_port_autodetects_connected_device(self, monkeypatch) -> None:
+        import bfl_asic.transport.discovery as disc
+        from bfl_asic.transport.discovery import DevicePort
+        monkeypatch.setattr(disc, "discover_devices", lambda: [
+            DevicePort(port="COM9", description="USB Serial Port",
+                       vid=0x0403, pid=0x6014)])
+        from bfl_asic.cli import get_transport
+        from bfl_asic.transport.serial import SerialTransport
+        tr = get_transport(None, False, 115200)
+        assert isinstance(tr, SerialTransport)
+        assert tr.port == "COM9"
+
+    def test_no_port_no_device_falls_back_to_simulator(self, monkeypatch) -> None:
+        import bfl_asic.transport.discovery as disc
+        monkeypatch.setattr(disc, "discover_devices", lambda: [])
+        from bfl_asic.cli import get_transport
+        from bfl_asic.transport.simulator import SimulatorTransport
+        assert isinstance(get_transport(None, False, 115200), SimulatorTransport)

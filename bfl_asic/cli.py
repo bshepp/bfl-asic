@@ -22,18 +22,39 @@ from bfl_asic.protocol.work import build_synthetic_work
 def get_transport(port: str | None, simulate: bool, baudrate: int):
     """Create the appropriate transport based on CLI options.
 
-    If *simulate* is ``True`` or *port* is ``None``, returns a
-    :class:`~bfl_asic.transport.simulator.SimulatorTransport`.
-    Otherwise returns a :class:`~bfl_asic.transport.serial.SerialTransport`.
+    Resolution order:
+
+    * ``--simulate`` -> always the in-process simulator.
+    * ``--port X``   -> that serial port.
+    * neither        -> **auto-detect** a connected FTDI/BFL device via
+      :func:`~bfl_asic.transport.discovery.discover_devices`; use it if
+      exactly one is found (the first, with a note, if several), else
+      fall back to the simulator so the CLI still works with no hardware.
     """
-    if simulate or port is None:
+    if simulate:
         from bfl_asic.transport.simulator import SimulatorTransport
-
         return SimulatorTransport()
-    else:
-        from bfl_asic.transport.serial import SerialTransport
 
-        return SerialTransport(port=port, baudrate=baudrate)
+    if port is None:
+        from bfl_asic.transport.discovery import discover_devices
+        found = discover_devices()
+        if found:
+            port = found[0].port
+            if len(found) > 1:
+                others = ", ".join(d.port for d in found)
+                click.echo(f"Auto-detected device on {port} "
+                           f"(multiple found: {others}; use --port to pick)")
+            else:
+                click.echo(f"Auto-detected device on {port}")
+            from bfl_asic.transport.serial import SerialTransport
+            return SerialTransport(port=port, baudrate=baudrate)
+        click.echo("No BFL device found; using simulator "
+                   "(pass --port or --simulate to be explicit).")
+        from bfl_asic.transport.simulator import SimulatorTransport
+        return SimulatorTransport()
+
+    from bfl_asic.transport.serial import SerialTransport
+    return SerialTransport(port=port, baudrate=baudrate)
 
 
 def unique_output_path(path: Path) -> Path:
