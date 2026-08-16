@@ -591,3 +591,26 @@ Next priorities to consider:
 - Work result polling strategy (test faster polling to catch BUSY→NO-NONCE transition)
 - Avalanche side-by-side visualiser — show two near-identical inputs producing wildly different outputs (paired pedagogy with the convergence animation)
 - Round-by-round SHA-256 internals viewer — instrument the pure-Python compression in `protocol/work.py` to expose the 8 working variables across all 64 rounds
+
+## Deeper reverse-engineering roadmap
+
+Explicitly **for fun and learning** — no objective, no goals, no deliverables, no ROI test. Some of what follows is not "worth it" by any practical measure; it is here anyway, because the point is the doing and the knowing. (The owner has been called "bloody minded" more than once. This section leans into that.)
+
+**The framing that orders everything:** the interesting limits live in the *firmware*, not the silicon. The BF0005G is a fixed-function SHA-256d engine — there is nothing hidden in the die to unlock. It only ever emits *winning* nonces (never full digests) and it overrides a manual clock, and both are firmware policy. So the deep work is not "find secret powers"; it is **"take total, documented control of a machine built to only ever tell you it won."** Because BFL open-sourced the AVR32 firmware (`luke-jr/BitForce_SC`), most of this is read-the-source-then-confirm, not blind guessing. All invasive steps run on the **sacrificial unit `05794`**; the signed/characterized original `002659` stays pristine.
+
+### Tier 0 — non-invasive (no case opening)
+- **FTDI EEPROM dump/analysis** — FT232H carries its own EEPROM (serial `FTWLK8HJ`, VID/PID, strings). Read over USB with `ftdi_eeprom` / FT_Prog. Low payoff (see what BFL programmed), zero risk.
+- **The `ZBX` "Custom Command"** — firmware `PROTOCOL_REQ_TEST_COMMAND` (`"B"`, commented *Custom Command*), never exercised. Read the handler, then poke it. The last unexamined corner of the *serial* surface — everything else is fully documented by the firmware source, so there are no unknown serial commands.
+
+### Tier 1 — open the case, read-only
+- **Dump the real MCU firmware** — the unit runs an AVR32 (Atmel UC3) controller whose firmware reports fields absent from the 2012 spec, so a later/custom build than the public source. Pull via JTAG or bootloader and **diff against `luke-jr/BitForce_SC`**. Obstacle: the flash-readout fuse may be locked (hard stop — or an excuse to learn voltage glitching). Payoff: know exactly what this silicon runs.
+- **Logic-analyzer the MCU↔ASIC SPI bus** — the goldmine. Sniff the SPI between the AVR32 and the ASIC (`0x60` = oscillator control is our one known landmark). Recover the real register / work-load / nonce-readback interface empirically, cross-checked against the source. This reveals *how to drive the clock directly* and how the firmware re-asserts its own word — the reconnaissance that unlocks Tier 2.
+
+### Tier 2 — the payoff tier (sacrificial unit)
+- **Custom firmware** — build a modified AVR32 image that (a) disables the thermal-hover frequency override → the max-stable-clock sweep we couldn't reach via `ZVX`, and (b) reports full hash output / exposes raw ASIC access → the actual **hardware hash source** the stats/randomness subsystems always wanted (the winner-only limit is firmware, not silicon). One move, both walls gone.
+- **Replace the controller / direct ASIC drive** — bypass the controller entirely: drive the ASIC's SPI from a Pi or FPGA, supplying its power (~1.0 V core / 12 V VMAIN) and clock. Full throughput (no 115200-baud bottleneck), arbitrary difficulty, every hash out — the miner as a raw SHA-256d coprocessor. Serious embedded build; the open firmware provides the interface spec. ("Drop in a faster USB bridge" is the small version; replacing the whole controller is the real one.)
+
+### Tier 3 — the bloody-minded floor
+- **Decap and image the die** — by every practical measure, *not worth it*: you destroy the chip and learn nothing the firmware doesn't already tell you (it's a known SHA-256d core). Included precisely **because** it isn't worth it — rosin/acetone or fuming-nitric decap, then a microscope, then a die-shot for the sheer craft of it. If the sacrificial unit ends up truly dead, this is its dignified end: a photograph of the actual silicon that started all of this.
+
+**North star (there isn't one, and that's the point):** no deliverable gates any of this. It runs on curiosity and the pleasure of understanding a machine all the way down — from the serial byte, through the firmware, down the SPI bus, into the register map, and (if the mood strikes) onto a microscope slide.
