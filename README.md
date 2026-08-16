@@ -286,8 +286,10 @@ histogram can expose a dead region but cannot *map* the healthy partition
 | Nonce range | `ZPX` + 68-byte packet | `OK\n` |
 
 **Provenance (not a discovery).** `ZJX` (firmware) is in BFL's official
-2012 protocol spec, and so is `ZMX` — which is **Blink**, not the "flash"
-that cgminer's header mislabels it. `ZSX`/`ZUX` (the NVRAM save/load
+2012 protocol spec, and so is `ZMX` — **Blink** (an LED identify). cgminer
+calls it `bflsc_flash_led` ("flash the LED"), which is correct — that name
+initially misled us into thinking `ZMX` was a firmware-flash command; it
+is not, and there is no serial firmware-flash command. `ZSX`/`ZUX` (the NVRAM save/load
 string) aren't in the published spec but are fully implemented in BFL's
 open-source firmware ([`luke-jr/BitForce_SC`](https://github.com/luke-jr/BitForce_SC),
 `Protocol_save_string`/`load_string`, the literal `"MEMORY EMPTY\n"`). We

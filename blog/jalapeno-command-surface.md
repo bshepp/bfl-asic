@@ -7,9 +7,11 @@ authors:
 <!--
 Long-form CANONICAL writeup, meant to render as Markdown on GitHub
 (linked from the README). Companion to the round-reduced SHA-256
-learnability post. Honest reframe: nothing here is a novel protocol
-discovery — it's re-derivation from hardware plus empirical
-characterization plus a small new instrument. Keep it that way.
+learnability post. For the HF Posts surface, post the short plain-text
+version `blog/hf-post-jalapeno.txt` (links back here). Honest reframe:
+nothing here is a novel protocol discovery — it's re-derivation from
+hardware plus empirical characterization plus a small new instrument.
+Keep it that way.
 -->
 
 There is a specific kind of fun in bringing a dead machine back to life, and a specific kind of humility in discovering that everything you "found" was written down years before you were looking. This post is about both, on the same little purple box.
@@ -47,7 +49,7 @@ USB_send_string("MEMORY EMPTY\n");
 
 `Protocol_save_string()`. `Protocol_load_string()`. The literal string `"MEMORY EMPTY\n"` I'd been treating as a discovered sentinel. All of it, implemented and commented, in publicly available firmware.
 
-And then I found BFL's *official* 2012 protocol document — "BitFORCE SC Communication Protocol, Rev 1.0.0, DRAFT" — and it documents `ZJX` (§8.6, Get Firmware Version) outright. It also documents `ZMX` as **Blink** ("respond with OK and blink for ~2 seconds; visually identify the device") — which is notable because cgminer's header mislabels `ZMX` as "FLASH," a scary name for a harmless LED command. So even my one genuinely useful correction — *cgminer got a command's name wrong* — was really just reading the vendor's own spec more carefully than the driver author did.
+And then I found BFL's *official* 2012 protocol document — "BitFORCE SC Communication Protocol, Rev 1.0.0, DRAFT" — and it documents `ZJX` (§8.6, Get Firmware Version) outright. It also documents `ZMX` as **Blink** ("respond with OK and blink for ~2 seconds; visually identify the device"). For a while I'd half-convinced myself `ZMX` might be a dangerous firmware-flash command to keep away from, because cgminer's header names its constant `BFLSC_FLASH`. That dissolved on a closer read too: cgminer uses it in a function called `bflsc_flash_led` — "flash" as in *flash the LED*. It blinks. There is no firmware-flash command over the serial link, and cgminer wasn't wrong; I'd almost filed a bug report against a project that had it right, and only a last-second look at the actual code stopped me. (Twice now, the "gotcha" was me not reading carefully.)
 
 So let me state it plainly, because the whole point of the previous post was intellectual honesty and I'm not going to abandon it here: **none of these commands are undiscovered. They are documented in the vendor's spec and/or the vendor's open-source firmware. I re-derived them from hardware because I didn't know the spec existed and the mining software never used them.**
 
@@ -56,7 +58,7 @@ The layers, precisely:
 | Command | Official 2012 spec | Open firmware | Used by cgminer |
 |---|---|---|---|
 | `ZJX` firmware | ✅ documented | ✅ | defines, never sends |
-| `ZMX` = Blink | ✅ documented | ✅ | **mislabeled "FLASH"** |
+| `ZMX` = Blink | ✅ documented | ✅ | `bflsc_flash_led` (blink; correct) |
 | `ZSX`/`ZUX` NVRAM | ❌ not in spec | ✅ implemented | defines, never sends |
 | `ZVX`/`ZKX` clock | ❌ not in spec | ✅ implemented | not used |
 

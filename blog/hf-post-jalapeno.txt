@@ -1,0 +1,17 @@
+I pulled a dead 2013 Butterfly Labs "Jalapeno" SHA-256 mining ASIC out of a drawer and built a modern Python toolkit for it. Then I hit the wall every honest hardware project should.
+
+I "found" undocumented serial commands the mining software (cgminer) defines but never sends -- including a persistent NVRAM scratchpad that survives power cycles. I wrote my name and the repo URL into the silicon; it's still there.
+
+Then I checked prior art. All of it is in Butterfly Labs' own 2012 protocol spec and their open-source firmware. Re-derivation, not discovery. I even almost filed a "bug" against cgminer before a last look at its code showed it was right and I'd misread it. Twice, the "gotcha" was me not reading carefully.
+
+Why it was still worth it -- the firmware source can't tell you the chip still works. So I measured it, model-free:
+
+1. Four hours of continuous work, zero compute errors, fully deterministic.
+2. The winning-nonce count is Poisson(~1) -- the chip scans the whole 2^32 nonce space per job.
+3. Thermally over-built: it won't error even with the fan off (~41C max on a desk).
+
+The one genuinely new thing: a dead-core detector. It flags a dead engine as a cold band in the nonce histogram. It can't map the healthy engine partitions (they sum to uniform) -- only localize the dead ones.
+
+The honest move -- go check whether it's already known -- costs you a discovery and gives you the truth. Better trade every time.
+
+Code (MIT), data, and the full writeup: https://github.com/bshepp/bfl-asic

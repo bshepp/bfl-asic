@@ -60,7 +60,9 @@ ZTX — Get temperature
 > firmware-estimated hashrate, and a critical-temp field. Still open:
 > the genuinely-unused `ZJX`/`ZSX`/`ZUX` commands (defined in the
 > cgminer header but never sent), queued for a probe increment; blind
-> `Z?X` scanning and `ZMX` flash are reserved for a **sacrificial** unit.
+> blind `Z?X` scanning is reserved for a **sacrificial** unit. (`ZMX` is
+> just Blink/LED-identify, not firmware-flash as once assumed — there is
+> no serial firmware-flash command; flashing is bootloader/JTAG.)
 > **Task 5 (output modes):** settled — the firmware returns only winning
 > *nonces*, never full digests, and difficulty is fixed at diff-1 in
 > firmware. Full-digest capture would require a controller reflash

@@ -118,8 +118,11 @@ Four-layer design with strict separation of concerns:
   198–199 MHz, MINIG SPEED 5.15–5.34 GH/s) — it is a live health readout,
   not a fixed spec.
 - **Provenance / novelty (checked 2026-08-15):** these commands are NOT
-  novel discoveries. `ZJX` (firmware) and `ZMX` (**Blink**, not "flash" —
-  cgminer's header mislabels it) are in BFL's official 2012 protocol spec
+  novel discoveries. `ZJX` (firmware) and `ZMX` (**Blink** — an LED
+  identify; cgminer names it `BFLSC_FLASH`/`bflsc_flash_led` = "flash the
+  LED", which is CORRECT — do NOT claim cgminer mislabels it; we initially
+  misread the name as firmware-flash, there is no serial flash command)
+  are in BFL's official 2012 protocol spec
   (`BitFORCE SC Communication Protocol Rev 1.0.0 DRAFT`). `ZSX`/`ZUX`
   (save/load string, the NVRAM scratchpad) and `ZVX`/`ZKX` (set/get
   frequency factor) are NOT in that published spec but ARE fully

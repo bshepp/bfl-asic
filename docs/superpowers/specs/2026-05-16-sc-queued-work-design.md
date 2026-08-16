@@ -27,7 +27,8 @@ This spec adds, additively and opt-in: the queued path (sustained work like a re
 
 **Non-goals**
 - The naive `submit_work`/`submit_and_wait`/`poll_result`/`hash_data` path is **not modified** (it stays the honest demonstration of the 42-wall).
-- **No** `ZMX` firmware-flash (bricking-capable; excluded).
+- **No** `ZMX` (out of scope). [Correction 2026-08-15: `ZMX` is Blink /
+  LED-identify, NOT firmware-flash as assumed here — it is harmless.]
 - **No** XLINK daisy-chain support (single-device only).
 - **No** device-backed `HashSource` (device yields nonces, never digests — physically impossible; documented).
 - `ZJX` firmware string, `ZUX`/`ZSX` load/save strings: out of scope, recorded as future (§8).
@@ -93,7 +94,7 @@ Reuses the `BFLError` hierarchy. Queue-full → backpressure (expected, not an e
 | `Z9X`,`Z0X`–`Z4X` | fan auto / 5 fixed levels | **In scope** — `Z9X`/`Z4X` reference-validated; `Z0X`–`Z3X` exposed, per-level behavior hardware-unconfirmed |
 | `ZJX` | firmware version string | Future (cheap; not now) |
 | `ZUX`/`ZSX` | load/save persistent string | Future, semantics under-specified even in cgminer |
-| `ZMX` | firmware FLASH | **Excluded** — bricking-capable |
+| `ZMX` | Blink (LED identify) | Out of scope — harmless (not firmware-flash; corrected 2026-08-15) |
 | XLINK (`@` chain) | multi-device daisy chain | **Excluded** — single-device toolkit |
 
 ## 9. Build order (one spec, incremental)
