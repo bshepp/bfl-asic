@@ -28,9 +28,49 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+
+def _flush(t) -> None:
+    ser = getattr(t, "_serial", None)
+    if ser is not None:
+        try:
+            ser.reset_input_buffer()
+        except Exception:
+            pass
+
+
+def _read_scratch(t) -> str:
+    """Read the ZUX scratch value robustly.
+
+    This firmware's ZUX reply has no newline terminator and appends a
+    stray trailing byte, and reading too soon after a prior command
+    desyncs -- so flush, settle, then grab the raw bytes and strip
+    framing. Returns "" for the MEMORY EMPTY sentinel.
+    """
+    _flush(t)
+    t.write(b"ZUX")
+    time.sleep(0.3)
+    raw = t.read(256, timeout=0.6)
+    text = raw.decode("ascii", errors="replace").strip()
+    # drop trailing framing (stray high byte / replacement char / NUL)
+    text = text.rstrip("\x80\x00�\r\n ")
+    if text.upper().startswith("MEMORY EMPTY"):
+        return ""
+    return text
+
+
+def _write_scratch(t, marker: str) -> bool:
+    """ZSX write: ZSX + payloadSize byte + payload. Returns ack bool."""
+    payload = marker.encode("ascii")
+    _flush(t)
+    t.write(b"ZSX" + bytes([len(payload)]) + payload)
+    time.sleep(0.3)
+    ack = t.read(64, timeout=0.6)
+    return b"OK" in ack or b"SUCCESS" in ack
 
 
 def main() -> int:
@@ -55,10 +95,9 @@ def main() -> int:
     t = SerialTransport(port=args.port)
     t.open()
     try:
-        dev = BFLDevice(t)
-        print(f"[hw] {dev.identify().model}")
+        print(f"[hw] {BFLDevice(t).identify().model}")
 
-        current = dev.read_note()
+        current = _read_scratch(t)
         print(f"[hw] current scratch: {current!r}"
               + ("  (empty)" if current == "" else ""))
 
@@ -66,9 +105,11 @@ def main() -> int:
             return 0
 
         if args.verify is not None:
-            persisted = (current == args.verify)
+            # The ZUX reply appends a stray trailing byte, so match by
+            # prefix rather than exact equality.
+            persisted = current.startswith(args.verify)
             print(f"[hw] expected marker: {args.verify!r}")
-            print(f"[hw] PERSISTENCE: {'CONFIRMED (survived power cycle)' if persisted else 'NOT persisted (volatile or not written)'}")
+            print(f"[hw] PERSISTENCE: {'CONFIRMED (survived power cycle)' if persisted else 'NOT persisted (volatile / cleared / not written)'}")
             return 0 if persisted else 2
 
         # --write path
@@ -77,13 +118,13 @@ def main() -> int:
                   file=sys.stderr)
             return 3
         print(f"[hw] writing marker {args.write!r} via ZSX ...")
-        ok = dev.write_note(args.write)
-        readback = dev.read_note()
+        ok = _write_scratch(t, args.write)
+        readback = _read_scratch(t)
         print(f"[hw] write ack={ok}; immediate read-back: {readback!r}")
-        if readback == args.write:
-            print("[hw] IMMEDIATE WRITE: CONFIRMED")
+        if readback.startswith(args.write):
+            print("[hw] IMMEDIATE WRITE: CONFIRMED (marker stored)")
         else:
-            print("[hw] IMMEDIATE WRITE: read-back does not match marker "
+            print("[hw] IMMEDIATE WRITE: read-back does not contain the marker "
                   "(unexpected ZSX/ZUX semantics)")
         print("[hw] ---")
         print("[hw] NEXT: power-cycle the device (unplug USB + power, wait a")

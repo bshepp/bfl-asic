@@ -92,7 +92,13 @@ Four-layer design with strict separation of concerns:
   cgminer defines but never sends them): `ZJX` returns a bare firmware
   version (`1.0.0`, no framing); `ZUX` returns the NVRAM scratch string
   or the sentinel `MEMORY EMPTY`; `ZSX` writes NVRAM (`SaveString` =
-  length byte + payload), gated in the CLI.
+  length byte + payload), gated in the CLI. **The scratchpad is
+  non-volatile** — a `ZSX` marker survived a full power cycle (verified
+  2026-08-15 via `nvram_roundtrip.py`). `ZUX` quirks on real hardware:
+  no newline terminator, one stray trailing byte appended (match by
+  prefix), and reads need an input-buffer flush + ~0.3 s settle or they
+  desync (the library `read_note`/`write_note` are simulator-clean; the
+  hw script handles the real-device quirks).
 - Queued submit acks: real firmware answers `ZNX` with `OK` **or**
   `INPROCESS:<n>` under load — both are accepts. Only a reply containing
   `ERR:` is a rejection (matches cgminer's `isokerr`); `QueuedWorkSession.submit`

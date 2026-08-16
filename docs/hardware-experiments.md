@@ -99,6 +99,17 @@ C:/Python313/python.exe scripts/hw/nvram_roundtrip.py --port COM3 \
 persisted marker confirms the buffer is non-volatile; a lost marker means
 it is volatile. Either result is a real finding.
 
+**Result (2026-08-15): the scratchpad is non-volatile.** A marker written
+with `ZSX` survived a full power cycle (USB + power removed and replugged)
+and read back intact via `ZUX` — so this is a real persistent store
+(EEPROM/flash on the controller), not RAM. Two firmware quirks worth
+knowing: the `ZUX` reply has **no newline terminator and appends one
+stray trailing byte** (so match by prefix, not exact equality), and
+reading too soon after a command desyncs — the script flushes the input
+buffer and settles ~0.3 s before each read. The write is genuinely
+functional; an earlier "empty read-back" was purely a read-timing
+artifact, since fixed.
+
 ## temp_sweep.py — error rate vs temperature (HARDWARE-DANGEROUS)
 
 **Only run this with a human watching, ready to pull power.** It lowers

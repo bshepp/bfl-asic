@@ -269,8 +269,8 @@ histogram can expose a dead region but cannot *map* the healthy partition
 | Voltages | `ZTX` | `3564,1011,11420\n` (mV: VCC1, VCC2, VMAIN) |
 | Device census | `ZCX` | multi-line `KEY: VALUE` block → `OK\n` (firmware, engines, frequency, per-processor topology, `JOBS IN QUEUE`, …) |
 | Firmware | `ZJX` | bare version string (e.g. `1.0.0`), no framing |
-| Load string | `ZUX` | NVRAM scratch string, or `MEMORY EMPTY` |
-| Save string | `ZSX` + `[len][payload]` | writes NVRAM scratch (`SaveString` struct) |
+| Load string | `ZUX` | NVRAM scratch string (or `MEMORY EMPTY`); no newline, one stray trailing byte |
+| Save string | `ZSX` + `[len][payload]` | writes **non-volatile** NVRAM scratch (survives power cycle) |
 | Submit work | `ZDX` + 60-byte packet | `OK\n` |
 | Poll result | `ZFX` | `IDLE\n` / `B\n` / `NONCE-FOUND:<hex>\n` / `NO-NONCE\n` |
 | Nonce range | `ZPX` + 68-byte packet | `OK\n` |
