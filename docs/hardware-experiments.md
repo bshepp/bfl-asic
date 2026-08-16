@@ -12,6 +12,19 @@ C:/Python313/python.exe scripts/hw/<script>.py --port COM3
 Each script self-bootstraps the repo root onto `sys.path`, so an editable
 install is not strictly required.
 
+## Physical interface
+
+The reference rig connects the Jalapeno's FTDI (FT232H, 115200 8N1)
+through a **4-port USB isolator based on the Analog Devices ADuM3160**
+into a host USB 3.0 jack. The ADuM3160 is a Full/Low-speed isolator, so
+the USB link runs at **USB Full Speed (12 Mbps)** even on a 3.0 port —
+still far above the 115200-baud serial, so it does not bound the ~1.2
+jobs/s throughput (serial baud + per-command round-trip latency do). The
+isolator provides **2.5 kV signal / 1.5 kV voltage galvanic isolation**
+from an onboard 2W 5V regulated supply, protecting the host from the
+miner's 12V power domain — worth having in place before poking at
+undocumented commands.
+
 ## Safety tiers
 
 | Script | Writes device state? | Cooling | Supervision |
