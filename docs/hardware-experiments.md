@@ -14,14 +14,20 @@ install is not strictly required.
 
 ## Physical interface
 
-The reference rig connects the Jalapeno's FTDI (FT232H, 115200 8N1)
-through a **4-port USB isolator based on the Analog Devices ADuM3160**.
+The reference rig chains the Jalapeno's FTDI (FT232H, 115200 8N1) behind
+a **4-port USB isolator based on the Analog Devices ADuM3160**:
 
-> **Must use a USB 2.0 port.** The isolator does **not** work plugged
-> into the host's USB 3.0 jacks — the device does not come up. This is a
-> known full-speed-isolator vs. USB 3.0 (xHCI) incompatibility; use a
-> native USB 2.0 port, or put a USB 2.0 hub between the 3.0 port and the
-> isolator. If `bfl-asic discover` finds nothing, check this first.
+```
+host USB 3.0 port -> ADuM3160 isolator (upstream) -> isolated, shielded
+USB 2.0 downstream -> Jalapeno
+```
+
+> **The Jalapeno does not work plugged directly into USB 3.0.** It has to
+> sit behind the isolator's full-speed USB 2.0 downstream (a plain USB 2.0
+> hub/port works too). The isolator's *upstream* on the 3.0 port is fine —
+> it presents a clean full-speed link the device is happy with; a bare
+> Jalapeno on an xHCI 3.0 jack is not. If `bfl-asic discover` finds
+> nothing, check this first.
 
 The ADuM3160 is a Full/Low-speed isolator, so the USB link runs at
 **USB Full Speed (12 Mbps)** — still far above the 115200-baud serial, so

@@ -67,18 +67,17 @@ Four-layer design with strict separation of concerns:
 
 ## Hardware Notes
 
-- **Physical interface (this rig):** the Jalapeno connects to the host
-  through a **4-port USB isolator (Analog Devices ADuM3160)**. **It must
-  go into a USB 2.0 port — it does NOT work through the host's USB 3.0
-  (xHCI) jacks** (a known incompatibility class between full-speed
-  isolators/hubs and xHCI; use a USB 2.0 port, or a USB 2.0 hub in front
-  of a 3.0 port). The ADuM3160 is a Full/Low-speed part, so the link runs
-  at **USB Full Speed (12 Mbps)** — still ~100x the FT232H's 115200-baud
-  serial, so the isolator is NOT the serial-throughput limiter (the
-  measured ~1.2 jobs/s is serial baud + round-trip latency, not USB
-  bandwidth). The board gives **galvanic isolation (2.5 kV signal /
-  1.5 kV voltage)** off an onboard 2W 5V regulated supply, protecting the
-  host from the miner's 12V power domain.
+- **Physical interface (this rig):** host USB 3.0 port -> **4-port
+  ADuM3160 USB isolator** (upstream sits on the 3.0 port; onboard 2W 5V
+  regulated supply; 2.5 kV signal / 1.5 kV voltage galvanic isolation) ->
+  clean shielded, isolated **USB 2.0** downstream -> Jalapeno FT232H.
+  **The Jalapeno does NOT work plugged DIRECTLY into a host USB 3.0
+  (xHCI) jack** — it needs the full-speed USB 2.0 link the isolator
+  presents (a plain USB 2.0 hub/port also works). The isolator itself is
+  happy on the 3.0 port. Link runs at **USB Full Speed (12 Mbps)**,
+  ~100x the 115200-baud serial, so it is NOT the serial-throughput
+  limiter (the measured ~1.2 jobs/s is serial baud + round-trip latency).
+  The isolation protects the host from the miner's 12V power domain.
 
 - The naive `ZDX`/`ZFX` work path stalls after **42 submissions per power
   cycle** — but this is an artifact of never draining the firmware queue,
