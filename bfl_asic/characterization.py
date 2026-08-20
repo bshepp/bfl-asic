@@ -118,3 +118,78 @@ def characterize(
             "summary": health.summary(),
         },
     }
+
+
+def characterize_source(
+    source,
+    *,
+    duration: float | None = None,
+    count: int | None = None,
+    bins: int = 256,
+    engines: int | None = None,
+) -> dict:
+    """Characterise any :class:`~bfl_asic.nonce_source.NonceSource`.
+
+    The device-neutral "common core": consumes the source's result stream and
+    computes throughput, the per-result winner-count distribution, a
+    nonce-value histogram, and a dead-core health verdict -- all from the
+    nonces alone, so it works for the BFL queued path and the Icarus path
+    (Block Erupter) alike. Device-specific numbers (e.g. an Icarus source's
+    linear-scan hashrate) are merged in from ``source.extra_metrics()`` under
+    ``"extras"``.
+
+    Bound the run with *count* and/or *duration* (passed to the source).
+    """
+    import time
+
+    from bfl_asic.health import (
+        detect_dead_cores_from_counts, nonce_histogram)
+
+    nonce_values: list[int] = []
+    per_job_counts: list[int] = []
+    completed = 0
+
+    start = time.monotonic()
+    for r in source.results(count=count, duration=duration):
+        completed += 1
+        per_job_counts.append(len(r.nonces))
+        nonce_values.extend(r.nonces)
+    elapsed = time.monotonic() - start
+
+    yield_hist: dict[int, int] = {}
+    for c in per_job_counts:
+        yield_hist[c] = yield_hist.get(c, 0) + 1
+    counts = nonce_histogram(nonce_values, bins)
+    health = detect_dead_cores_from_counts(
+        counts, len(nonce_values), engines=engines)
+
+    return {
+        "source": source.name(),
+        "throughput": {
+            "elapsed_s": round(elapsed, 2),
+            "jobs_completed": completed,
+            "nonces_found": len(nonce_values),
+            "jobs_per_s": round(completed / elapsed, 3) if elapsed else None,
+            "nonces_per_s": round(len(nonce_values) / elapsed, 3)
+            if elapsed else None,
+            "per_job_nonce_count_hist": {str(k): v
+                                         for k, v in sorted(yield_hist.items())},
+        },
+        "nonce_distribution": {
+            "n": len(nonce_values), "bins": bins, "counts": counts,
+            "min": min(nonce_values) if nonce_values else None,
+            "max": max(nonce_values) if nonce_values else None,
+        },
+        "health": {
+            "healthy": health.healthy,
+            "dead_regions": [
+                {"start_bin": r.start_bin, "end_bin": r.end_bin,
+                 "observed": r.observed, "expected": round(r.expected, 1)}
+                for r in health.dead_regions
+            ],
+            "cold_fraction": round(health.cold_fraction, 4),
+            "estimated_dead_engines": health.estimated_dead_engines,
+            "summary": health.summary(),
+        },
+        "extras": source.extra_metrics(),
+    }

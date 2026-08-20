@@ -33,6 +33,17 @@ class NonceSource(ABC):
     def name(self) -> str:
         ...
 
+    def extra_metrics(self) -> dict:
+        """Device-specific metrics from the consumed stream (default: none).
+
+        The Option-B hook: the common characteriser computes device-agnostic
+        metrics (throughput, nonce histogram, dead-core health); a source
+        overrides this to add its own natural numbers -- e.g. an Icarus
+        source's linear-scan hashrate. Meaningful only after ``results()``
+        has been consumed.
+        """
+        return {}
+
 
 class SimulatedNonceSource(NonceSource):
     """In-process nonce stream backed by the simulator queued path."""
@@ -83,3 +94,61 @@ class DeviceNonceSource(NonceSource):
 
     def name(self) -> str:
         return "device-nonce-source"
+
+
+class IcarusNonceSource(NonceSource):
+    """Nonce stream from an Icarus device (Block Erupter class) over
+    *transport*, driving the write-64-byte-work / read-4-byte-nonce loop.
+
+    ``work_iter`` yields ``(midstate, data)`` pairs (32 B, 12 B); each is
+    turned into a 64-byte Icarus work unit. The caller owns *transport* (this
+    class opens it if needed but does not close it). The linear-scan hashrate
+    is accumulated as the stream is consumed and exposed via
+    :meth:`extra_metrics`.
+    """
+
+    def __init__(self, transport, work_iter) -> None:
+        self._transport = transport
+        self._work = work_iter
+        self._pairs: list[tuple[int, float]] = []  # (nonce, arrival dt)
+
+    def results(self, count: int | None = None,
+                duration: float | None = None) -> Iterator[QueuedResult]:
+        import time
+        from bfl_asic.protocol.icarus import (
+            NONCE_SIZE, build_work, parse_nonce)
+        t = self._transport
+        if not t.is_open:
+            t.open()
+        start = time.monotonic()
+        n = 0
+        for midstate, data in self._work:
+            if count is not None and n >= count:
+                break
+            if duration is not None and time.monotonic() - start >= duration:
+                break
+            work = build_work(midstate, data)
+            t.flush_input()
+            w0 = time.monotonic()
+            t.write(work)
+            raw = t.read(NONCE_SIZE)
+            dt = time.monotonic() - w0
+            nonces: list[int] = []
+            if len(raw) == NONCE_SIZE:
+                nonce = parse_nonce(raw)
+                nonces.append(nonce)
+                self._pairs.append((nonce, dt))
+            n += 1
+            yield QueuedResult(uid="icarus", nonces=nonces, raw=raw)
+
+    def extra_metrics(self) -> dict:
+        from bfl_asic.protocol.icarus import linear_scan_hashrate
+        hr = linear_scan_hashrate(self._pairs)
+        return {
+            "hashrate_mhps": (hr / 1e6) if hr is not None else None,
+            "samples": len(self._pairs),
+            "linear_scan": True,
+        }
+
+    def name(self) -> str:
+        return "icarus-nonce-source"

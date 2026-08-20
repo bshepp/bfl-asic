@@ -3,6 +3,39 @@
 All notable changes to this project are documented here. This project
 adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+The "second device family" work — the toolkit begins generalizing from the
+BFL Jalapeno alone toward a model-free instrument for retro mining silicon,
+with the ASICMiner Block Erupter (Icarus protocol) as device #2.
+
+### Added
+- **Icarus protocol module** (`bfl_asic/protocol/icarus.py`) — pure
+  builders/parsers for the work-in (64 B) / nonce-out (4 B) protocol spoken
+  by the Block Erupter, Antminer U-series, and the BM1384 GekkoScience
+  Compac: `build_work`, `parse_nonce`, cgminer's golden self-test vector,
+  and `linear_scan_hashrate` (the Erupter's position÷time hashrate method).
+- **Simulated Icarus device/transport**
+  (`bfl_asic/transport/icarus_simulator.py`) — headless testing with no
+  Block Erupter attached.
+- **`IcarusNonceSource`** (`bfl_asic/nonce_source.py`) — drives the Icarus
+  loop over a transport; exposes its linear-scan hashrate through a new
+  `NonceSource.extra_metrics()` hook (device-specific numbers layered on top
+  of a common core).
+- **`characterize_source()`** (`bfl_asic/characterization.py`) — a
+  device-neutral characteriser that consumes any `NonceSource` (the BFL
+  queued path or Icarus) for the common core (throughput, winner-count
+  distribution, nonce histogram, dead-core health) and merges each source's
+  device-specific extras.
+
+### Notes
+- The Block Erupter was characterized on real hardware (2026-08-19):
+  determinism TRUE, ~335 MH/s (dead-on the ~336 spec), and its command space
+  falsified (a genuine dumb pipe — CP2102 → fixed-function ASIC, no MCU).
+- The existing `characterize(transport)` and CLI are unchanged; the BFL path
+  is not yet re-pointed through `characterize_source` (a deliberate follow-up
+  — kept the hardware-tested path untouched for now).
+
 ## [0.2.0] — 2026-08-15
 
 The "protocol surface + silicon forensics" release: a batch of work that
