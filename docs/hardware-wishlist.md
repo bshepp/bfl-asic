@@ -21,10 +21,10 @@ Open experiments driving the list:
 
 | Device | Role | Chip / protocol | Status |
 |---|---|---|---|
-| BFL Jalapeño | device #1 | BF0005G / BFL SC | ✅ owned (`002659`); sacrificial `05794` inbound |
+| BFL Jalapeño ×2 | device #1 | BF0005G / BFL SC | ✅ reference `002659` + sacrificial `005794` (arrived + characterized 2026-08) |
 | Block Erupter USB | device #2 | BE100 / Icarus | ✅ owned (`berbil-14`); **more on the way (mixed colors)** |
-| GekkoScience *(model TBD)* | sweep + maybe per-chip | BM1384 **or** BM1387 | ✅ **owned — identify the model to place it** |
-| Antminer U1 / U2 | the sweep, cheaply | BM1380 / Icarus | 🛒 next purchase (~2 wk + shipping) |
+| GekkoScience NewPac | per-chip attribution + sweep | BM1387 (gekko) | 🛒 ordered — ETA 2026-08-29 |
+| Antminer U1 / U2 | the sweep, cheaply | BM1380 / Icarus | 🛒 U1 on the way; U2 next month |
 
 Legend: ✅ owned · 🛒 on order · ⭐ future target
 
@@ -70,7 +70,9 @@ Legend: ✅ owned · 🛒 on order · ⭐ future target
 ### Skip
 
 Antminer U3 (box, 12 V, fussier), anything Ethernet/rackmount, PinIdea DU-1
-(X11 — a curiosity too far afield). Not "USB-dongle" class.
+(X11 — a curiosity too far afield). Not "USB-dongle" class. (These are
+near-term, SHA-256-focus calls; the broader multi-algorithm case — X11 and
+Scrypt included — is made in [`future-directions.md`](future-directions.md).)
 
 ## Notes
 
@@ -80,13 +82,15 @@ Antminer U3 (box, 12 V, fussier), anything Ethernet/rackmount, PinIdea DU-1
   (no unique ID — that's why `berbil-14` says "label physically"), so a mix of
   colors is a **free built-in bench label**. Avoid "for parts / untested"
   listings unless you *want* a decap victim.
-- **Identify the owned GekkoScience before planning the sweep** — BM1384
-  (Compac/2Pac, icarus path) vs BM1387 (NewPac, gekko driver + per-chip
-  attribution) changes both the protocol module and which experiments it
-  unlocks.
-- Priorities respect a tight budget: none of this is urgent. The Erupter
-  already gave a full clean characterization; the owned Gekko is the next real
-  step whenever it's identified.
+- **GekkoScience: NewPac ordered (BM1387, ETA 2026-08-29).** The prior "owned"
+  Gekko was lost in a move; the NewPac was chosen over a Compac because BM1387's
+  per-chip nonce attribution is the dead-core *ground truth* (its `gekko`
+  protocol spec is already researched and ready to build).
+- Priorities respect a tight budget: none of this is urgent. The Erupter and
+  both Jalapeños are fully characterized; the NewPac and the Antminer U (for the
+  frequency sweep) are the next real steps as they arrive.
 
 *See also: [`usb-miner-field-guide.md`](usb-miner-field-guide.md) — the full
-catalog of this hardware generation.*
+catalog of this hardware generation — and
+[`future-directions.md`](future-directions.md) — the speculative expansion map
+(algorithm coverage, BFL Single/Double + XLINK, the living catalog).*

@@ -41,6 +41,8 @@ winning *nonces*, never full digests — so the device-agnostic core
   <br><sub><em>The rig in situ — the BF0005G Jalapeno (left). The sourdough starter really does live right next to it. Click to enlarge.</em></sub>
 </p>
 
+*Where the fleet could grow: [`docs/future-directions.md`](docs/future-directions.md) (speculative expansion map), [`docs/hardware-wishlist.md`](docs/hardware-wishlist.md) (near-term gear), and [`docs/usb-miner-field-guide.md`](docs/usb-miner-field-guide.md) (the full 2011–2018 catalog).*
+
 ## Installation
 
 ```bash
