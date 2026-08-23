@@ -1,0 +1,9 @@
+{
+  "note": "Model-free sustained-work characterization via scripts/hw/characterize.py (fan on firmware AUTO). Metrics distilled from each run's JSON; the raw runs live in the bfl-asic repo (docs/characterization/) and are regenerable. 'health' is the bfl_asic.health dead-core verdict on the winning-nonce histogram. 'winner_mean_per_job' near 1.0 => a full 2^32 diff-1 scan per job (Poisson(~1)).",
+  "runs": [
+    {"board_serial": "002659", "run": "30min", "duration_s": 1800, "jobs_completed": 2194, "nonces": 2218, "submit_errors": 0, "jobs_per_s": 1.22, "winner_mean_per_job": 1.011, "determinism_reps": 32, "deterministic": true, "thermal_start_c": 36, "thermal_peak_c": 45, "engines_steady": 27, "health": "HEALTHY", "pending": false, "provenance": "docs/characterization/run-2026-08-15.json"},
+    {"board_serial": "002659", "run": "4h", "duration_s": 14400, "jobs_completed": 17668, "nonces": 17726, "submit_errors": 0, "jobs_per_s": 1.23, "winner_mean_per_job": 1.00, "determinism_reps": 24, "deterministic": true, "thermal_start_c": 38, "thermal_peak_c": 47, "engines_steady": 27, "health": "HEALTHY", "pending": false, "provenance": "docs/characterization/engine-map.json"},
+    {"board_serial": "005794", "run": "30min", "duration_s": 1800, "jobs_completed": 2543, "nonces": 2600, "submit_errors": 0, "jobs_per_s": 1.41, "winner_mean_per_job": 1.022, "determinism_reps": 32, "deterministic": true, "thermal_start_c": 32, "thermal_peak_c": 52, "engines_steady": 29, "health": "HEALTHY", "pending": false, "provenance": "05794-30min.json"},
+    {"board_serial": "005794", "run": "4h", "duration_s": 14400, "jobs_completed": 20240, "nonces": 20455, "submit_errors": 0, "jobs_per_s": 1.41, "winner_mean_per_job": 1.011, "determinism_reps": 24, "deterministic": true, "thermal_start_c": 32, "thermal_peak_c": 53, "engines_steady": 29, "health": "HEALTHY", "pending": false, "provenance": "05794-4h-engine-map.json (Run B, 2026-08-22)"}
+  ]
+}

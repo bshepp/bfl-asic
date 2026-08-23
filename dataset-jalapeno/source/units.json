@@ -1,0 +1,38 @@
+{
+  "units": [
+    {
+      "board_serial": "002659",
+      "ftdi_serial": "FTWLK8HJ",
+      "role": "reference (protagonist)",
+      "firmware": "1.0.0",
+      "identify": "BitForce SHA256 SC 1.0",
+      "engines_typical": 27,
+      "engines_range": "26-28",
+      "frequency_top_mhz": 189,
+      "processor_3_engines": 13,
+      "processor_3_mhz": 199,
+      "processor_7_engines": 14,
+      "processor_7_mhz": 200,
+      "mining_speed_ghs": 5.34,
+      "mining_speed_range_ghs": "5.15-5.34",
+      "provenance": "docs/characterization/ (30-min + 4-h + temp-sweep runs, 2026-08-15)"
+    },
+    {
+      "board_serial": "005794",
+      "ftdi_serial": "FTWVUCS9A",
+      "role": "sacrificial (Phase-4 target)",
+      "firmware": "1.0.0",
+      "identify": "BitForce SHA256 SC 1.0",
+      "engines_typical": 29,
+      "engines_range": "29",
+      "frequency_top_mhz": 189,
+      "processor_3_engines": 15,
+      "processor_3_mhz": 214,
+      "processor_7_engines": 14,
+      "processor_7_mhz": 214,
+      "mining_speed_ghs": 6.17,
+      "mining_speed_range_ghs": "6.11-6.17",
+      "provenance": "first-contact + 30-min + 4-h runs, 2026-08-22"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+Two dead Bitcoin miners, pulled from drawers 13 years after they were built, agree on the exact same three winning nonces.
+
+I have two 2013 Butterfly Labs "Jalapeno" SHA-256 ASICs -- board serials 002659 and 005794. I fed both the identical work and both returned the identical winning-nonce set, bit for bit. That's not luck: which nonces win is a property of the work, so it's ground-truth proof both chips still compute SHA-256 correctly, 13 years on. One reports 27 engines, the other 29 -- same silicon, different factory bin. Both run for hours with zero compute errors.
+
+Then I got curious about a different question: how many Jalapenos did Butterfly Labs actually build?
+
+BFL is infamous. The FTC shut them down in 2014 for taking ~$50M in pre-orders and largely not shipping -- they allegedly mined with customers' hardware instead ($38.6M settlement). Their production claims were found to be undocumented.
+
+So I estimated it from serial numbers. Nine confirmed serials (mine, plus ones visible in eBay listing photos) and the classic German-tank estimator: the highest I can confirm is 25,327, and the math puts the total around ~28,000 units built. Serials count units *manufactured* -- so the gap between ~28,000 built and the few the FTC says shipped is the scandal, quantified.
+
+It's a serial-indexed production census of a discontinued 2013 ASIC that the company itself never documented -- and anyone can add a data point: spot a Jalapeno serial in a listing (especially one above 25,327) and it sharpens the estimate.
+
+The funny part: the deep zero-error silicon characterization is the soul of this project, but the thing that might actually escape its extreme niche is a photo search on eBay.
+
+Data (measured, honest, MIT), the two-unit characterization, and the method:
+[HF dataset link on publish] / https://github.com/bshepp/bfl-asic

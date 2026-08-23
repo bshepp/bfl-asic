@@ -1,0 +1,9 @@
+{
+  "fixed_work": "characterize.py _fixed_work(): midstate = bytes((i*37+11)&0xFF for i in range(32)), tail = bytes((i*53+7)&0xFF for i in range(12))",
+  "cross_unit_agreement": true,
+  "note": "Identical fixed work yields the identical winning-nonce set on both physical units. Which nonces win is a property of the WORK, not the device, so bit-for-bit agreement across two independent units is ground-truth proof both compute SHA-256d correctly and scan the full 2^32 nonce space. The extra engines on 005794 just get there faster.",
+  "observations": [
+    {"board_serial": "002659", "reps": 32, "distinct_nonce_sets": 1, "nonce_set": [143194809, 743894015, 2919571808], "deterministic": true, "provenance": "docs/characterization/run-2026-08-15.json"},
+    {"board_serial": "005794", "reps": 32, "distinct_nonce_sets": 1, "nonce_set": [143194809, 743894015, 2919571808], "deterministic": true, "provenance": "05794-30min.json"}
+  ]
+}

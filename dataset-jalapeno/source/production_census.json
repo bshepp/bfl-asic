@@ -1,0 +1,26 @@
+{
+  "method": "German tank problem -- estimate a total population from a sample of serial numbers (the true maximum sits about one average inter-sample gap beyond the largest observed serial).",
+  "confirmed_serials": [
+    {"serial": "002659", "status": "held", "note": "reference unit (lowest held)"},
+    {"serial": "005794", "status": "held", "note": "sacrificial unit"},
+    {"serial": "007857", "status": "observed", "note": ""},
+    {"serial": "010216", "status": "observed", "note": "near-consecutive with 010265"},
+    {"serial": "010265", "status": "observed", "note": "near-consecutive with 010216 (49 apart)"},
+    {"serial": "013626", "status": "observed", "note": ""},
+    {"serial": "022662", "status": "observed", "note": ""},
+    {"serial": "024992", "status": "observed", "note": "from a multi-unit lot"},
+    {"serial": "025327", "status": "observed", "note": "highest confirmed serial"}
+  ],
+  "estimate": {
+    "k_confirmed": 9,
+    "min_serial": 2659,
+    "max_serial": 25327,
+    "avg_gap": 2833.5,
+    "estimate_units_built": 28160,
+    "mvue_cross_check": 28140,
+    "floor_units_built": 25327,
+    "std_error_approx": 3000,
+    "detail": "avg gap = (25327-2659)/(9-1) = 2833.5; estimate ~ 25327 + 2834 = 28160; MVUE = 25327*(k+1)/k - 1 = 28140; standard error ~ N/k ~ 3000."
+  },
+  "context": "Serials count units MANUFACTURED, not shipped. The FTC found Butterfly Labs built machines and largely did not deliver them (allegedly self-mined; ~$50M in orders; $38.6M settlement, 2016). BFL's disputed public claim was 50,000+ machines across five product generations; the FTC found no documentation for it."
+}
