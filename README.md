@@ -9,6 +9,7 @@ Beyond the hardware, it also provides statistical analysis of SHA-256 hash outpu
 - **Writeup:** [Teaching a Dead Mining ASIC to Measure Nothing, Carefully — the story & the negative results](blog/round-reduced-sha256-learnability.md) (also published as a Hugging Face Article — link added on publish)
 - **Writeup:** [I Thought I Found Hidden Commands in a 2013 Mining ASIC. They Were in the Firmware All Along.](blog/jalapeno-command-surface.md) — re-deriving the command surface, characterizing the silicon, and one new instrument
 - **Dataset:** [`bshepp/round-reduced-sha256-learnability`](https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability)
+- **Study:** [BFL Jalapeño production census](docs/production-census.md) — how many were built, estimated from serial numbers (~28,000; the German-tank method + the FTC "built-not-shipped" angle)
 
 ## Devices
 
