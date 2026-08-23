@@ -1,5 +1,47 @@
 # Development Log
 
+## 2026-08-22 — second unit, cross-validation, firmware source truth, broader scope
+
+The project's second physical Jalapeno arrived, the frequency-override mystery
+got a source-level correction, and the toolkit formally broadened past the
+Jalapeno.
+
+- **Second unit (board `005794`, the sacrificial one) — first contact.** Alive,
+  deterministic (24/24 and 32/32 identical-work reps, zero compute errors), and
+  by its own census a *healthier bin* than the reference unit (29 engines @
+  ~214 MHz / ~6.17 GH/s vs 27 @ ~200 MHz / ~5.3). It arrived physically opened
+  (feared a repair job); first contact refutes that. **Cross-unit ground
+  truth:** its determinism nonce set `[143194809, 743894015, 2919571808]` is
+  bit-for-bit identical to the reference unit's for the same work — two
+  independent units agree exactly. Matched 30-min and 4-hour characterizations
+  run; NVRAM signed and power-cycle persistence confirmed.
+
+- **CORRECTION — the frequency override was mis-explained.** Reading the open
+  firmware (`luke-jr/BitForce_SC`) overturns the earlier "thermal-hover loop"
+  story (see the 2026-08-15 Phase 3 entry below). A `ZVX` write looked inert
+  for three real reasons: (1) the census `FREQUENCY:` field is a **compile-time
+  constant** — it can never show a live change, so "stayed 189 MHz" was no
+  evidence at all; (2) the `ZVX` "all chips" broadcast (`0xFF`) masks to the
+  3-bit chip-address field → reaches **chip 7 only, never chip 3**; (3) a bare
+  `0x60` write omits the reg-`0x61` clock-enable relatch. There is event-driven
+  re-assert (low engine count / thermal recovery), but no continuous hover.
+  **So the sweep is not closed — it needs custom firmware,** and the patch
+  points are now known (freq table `std_defs.c:15`, kill the boot auto-OC ramp,
+  fix the broadcast, add the relatch). Route: JTAG dump + reflash on 005794
+  (MCU confirmed **AT32UC3A1256**, JTAG-only, no security fuse set in source).
+
+- **Scope broadened (name kept).** The device-agnostic core
+  (`characterize_source`, `health`, `NonceSource`) now spans a fleet. Added the
+  **Icarus protocol module** (Block Erupter = device #2;
+  `build_work`/`parse_nonce`/`linear_scan_hashrate`), the **Antminer U ANU
+  frequency command** (`build_anu_set_freq` + `crc5` + the PLL search,
+  byte-exact from cgminer — the clock lever the Jalapeno denied us), and a
+  **Govee H5075 ambient decoder** (independent room temperature for the thermal
+  work). GekkoScience NewPac (BM1387, per-chip nonce attribution) protocol spec
+  researched and ready to build for its arrival. README / CLAUDE / pyproject /
+  GitHub framing updated to the broader "retro mining silicon characterization
+  lab."
+
 ## 2026-08-15 (Phase 3) — frequency lever: ZVX handshake solved, firmware overrides the clock
 
 Attempted the frequency-set lever (`ZVX`/`ZKX`, found in the open

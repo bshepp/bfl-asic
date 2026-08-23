@@ -1,20 +1,37 @@
 # bfl-asic
 
-Communication layer and statistical analysis tools for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner.
+**A model-free characterization lab for retro mining silicon.** It began as a toolkit for a single device — a 2013 Butterfly Labs BF0005G "Jalapeño" SHA-256 ASIC, resurrected from a decade as a paperweight into a hardware research platform — and has grown into a small lab for characterizing retro mining hardware generally. The Jalapeño is still the protagonist, but the device-agnostic core (nonce-source characterization, dead-core health, thermal/throughput profiling) now spans a fleet.
 
-This project repurposes a Butterfly Labs BitForce SHA-256 ASIC cryptocurrency miner as a general-purpose cryptographic research platform. Rather than mining, it provides tools for statistical analysis of SHA-256 hash output, iterated hash dynamics exploration, and direct hardware interaction through a layered Python API.
+> **On the name:** `bfl-asic` is where this started and it stays for continuity — the published dataset, two blog posts, and the release all point at it. The *scope* is deliberately broader than the name; think of it as "the BFL toolkit, grown up."
+
+Beyond the hardware, it also provides statistical analysis of SHA-256 hash output, iterated-hash dynamics exploration, NIST SP 800-22 randomness validation, and an optional round-reduced-SHA-256 ML learnability instrument — all through a layered Python API.
 
 - **Writeup:** [Teaching a Dead Mining ASIC to Measure Nothing, Carefully — the story & the negative results](blog/round-reduced-sha256-learnability.md) (also published as a Hugging Face Article — link added on publish)
 - **Writeup:** [I Thought I Found Hidden Commands in a 2013 Mining ASIC. They Were in the Firmware All Along.](blog/jalapeno-command-surface.md) — re-deriving the command surface, characterizing the silicon, and one new instrument
 - **Dataset:** [`bshepp/round-reduced-sha256-learnability`](https://huggingface.co/datasets/bshepp/round-reduced-sha256-learnability)
 
-## Hardware
+## Devices
 
-- **Device:** Butterfly Labs BF0005G Jalapeno (5 GH/s)
-- **ASIC:** BitForce SHA256 SC 1.0 (Single Chip)
+The lab characterizes a growing fleet of retro mining ASICs. Each speaks a
+different serial protocol, but they share one honest trait — they emit only
+winning *nonces*, never full digests — so the device-agnostic core
+(`characterize_source`, dead-core `health`) profiles them all the same way.
+
+| # | Device | ASIC | Protocol | Status |
+|---|--------|------|----------|--------|
+| 1 | **BFL Jalapeño** (BF0005G, ~5 GH/s) | BitForce SC — AVR32 MCU + fixed SHA die | BitForce SC (`Z_X` ASCII) | Protagonist; fully characterized (a 2nd, sacrificial unit backs the invasive work) |
+| 2 | **ASICMiner Block Erupter** (~336 MH/s) | BE100 — dumb pipe, no MCU | Icarus (64B work → 4B nonce) | Characterized |
+| — | **Antminer U1 / U2** | BM1380 | Icarus + ANU frequency control | Incoming — the clock-sweep lever the Jalapeño denied us |
+| — | **GekkoScience NewPac** | BM1387 ×2 | gekko chain (per-chip nonce attribution) | Incoming — dead-core ground truth |
+| — | **Govee H5075** (BLE) | — | ambient temp/humidity advertisement | Incoming — independent ambient reference |
+
+### Device #1 — BFL Jalapeño (the origin)
+
+- **ASIC:** BitForce SHA256 SC 1.0 (Single Chip), ~5 GH/s
 - **Interface:** USB serial via FTDI (VID `0x0403`, PID `0x6014`), 115200 8N1
-- **Protocol:** ASCII commands (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX) with 60-byte binary work packets
-- **Power:** 13V DC adapter
+- **Protocol:** ASCII commands (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX; SC queued ZNX/ZOX/ZCX) with 60-byte binary work packets
+- **MCU:** Atmel AVR32 `AT32UC3A1256` running the open `luke-jr/BitForce_SC` firmware (JTAG-debuggable)
+- **Power:** 12V DC brick for the miner; USB data through a required ADuM3160 isolator
 
 <p>
   <a href="docs/images/jalapeno-rig.jpg">
@@ -29,7 +46,7 @@ This project repurposes a Butterfly Labs BitForce SHA-256 ASIC cryptocurrency mi
 pip install -e .
 ```
 
-Requires Python 3.10+. Dependencies: `pyserial`, `pyserial-asyncio`, `click`, `numpy`, `scipy`, `matplotlib`.
+Requires Python 3.10+. Dependencies: `pyserial`, `pyserial-asyncio`, `click`, `numpy`, `scipy`, `matplotlib`. Optional extras: `pip install -e ".[ml]"` (PyTorch, for the learnability instrument) and `pip install -e ".[ambient]"` (bleak, for the Govee H5075 BLE reader).
 
 ## Quick Start
 
@@ -196,10 +213,13 @@ bfl_asic/
     queued.py      # SC queued protocol + ZCX DeviceDetails census
     probe.py       # Undocumented ZJX/ZUX/ZSX builders + lenient parsers
     work.py        # SHA-256 midstate computation, synthetic work generation
+    freq.py        # ZVX/ZKX frequency-factor commands (Jalapeno)
+    icarus.py      # Icarus protocol (Block Erupter / Antminer U): 64B work -> 4B nonce + ANU frequency
   transport/       # I/O abstraction
     base.py        # BaseTransport ABC (sync + async)
     serial.py      # Real hardware via pyserial
     simulator.py   # In-process simulated device with thermal model
+    icarus_simulator.py # Headless simulated Icarus device (Block Erupter)
     discovery.py   # FTDI device scanning
   stats/           # SHA-256 statistical analysis pipeline
     engine.py      # HashSource ABC, SoftwareHashEngine
@@ -227,6 +247,9 @@ bfl_asic/
     visualization.py # Learnability curve + saliency map
     publish.py      # Optional HF model-card upload
   health.py        # Dead-core detection from the winning-nonce histogram
+  characterization.py # Device-neutral sustained-work characterizer (any NonceSource)
+  nonce_source.py  # Honest nonce streams — BFL queued path + Icarus
+  ambient.py       # Govee H5075 BLE ambient temp/humidity decoder
   device.py        # BFLDevice — sync high-level API
   async_device.py  # AsyncBFLDevice — async API with stream iterators
   cli.py           # Click CLI: identify, temperature, device details,
@@ -316,7 +339,7 @@ Work packet format (60 bytes): `>>>>>>>> [32-byte midstate] [12-byte tail] >>>>>
 python -m pytest tests/ -q
 ```
 
-848 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), dead-core detection (injected nonce-space gaps), transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 846 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
+890 tests. All tests run against the simulator — no hardware needed. Test coverage includes protocol encoding/decoding, the `ZCX` device-details census parser (with a real captured hardware reply as a regression fixture), dead-core detection (injected nonce-space gaps), the Icarus protocol (work/nonce + ANU frequency control, byte-exact from cgminer) and the H5075 ambient decoder, transport lifecycle, simulator state machine, device API round-trips, CLI smoke tests, statistical accumulators, dynamics algorithms, NIST SP 800-22 tests (with reference p-values from the spec as regression anchors), and visualization. Heavy ML training tests are marked `slow`; the default fast run (`pytest -m "not slow"`, 888 tests) excludes them. The ML subsystem requires `pip install -e ".[ml]"`; its tests skip cleanly when torch is absent.
 
 ## Python API
 

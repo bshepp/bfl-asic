@@ -5,7 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bfl-asic"
 version = "0.2.0"
-description = "Communication layer for Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner"
+description = "A model-free characterization lab for retro mining silicon — began as a Butterfly Labs Jalapeno (BF0005G) SHA-256 ASIC toolkit, now spans the Icarus family (Block Erupter, Antminer U, GekkoScience)."
+keywords = [
+    "sha256", "asic", "bitcoin", "mining", "reverse-engineering",
+    "icarus", "block-erupter", "avr32", "hardware", "cryptography",
+]
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
@@ -25,6 +29,9 @@ dev = [
 ml = [
     "torch",
     "huggingface_hub",
+]
+ambient = [
+    "bleak",   # BLE listener for Govee H5075 ambient sensors (bfl_asic.ambient)
 ]
 
 [project.scripts]

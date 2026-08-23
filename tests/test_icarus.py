@@ -165,3 +165,74 @@ def test_characterize_source_generalises_to_a_bfl_source():
     assert rep["source"] == "simulated-nonce-source"
     assert rep["throughput"]["jobs_completed"] == 20
     assert rep["extras"] == {}   # a BFL source exposes no device-specific extras
+
+
+# --- Antminer U1/U2 (ANU) frequency control -----------------------------
+# Ported from cgminer driver-icarus.c (set_anu_freq / crc5 / anu_find_freqhex).
+# Verified by round-trip + structure; byte-exactness confirmed against the U1
+# when it arrives.
+
+def test_crc5_is_deterministic_and_5_bits():
+    from bfl_asic.protocol.icarus import crc5
+    a = crc5(bytes([0x82, 0x03, 0x80, 0x00]), 27)
+    b = crc5(bytes([0x82, 0x03, 0x80, 0x00]), 27)
+    assert a == b
+    assert 0 <= a <= 0x1F           # 5-bit result
+
+
+def test_crc5_changes_with_input():
+    from bfl_asic.protocol.icarus import crc5
+    assert crc5(bytes([0x82, 0x00, 0x00, 0]), 27) != \
+        crc5(bytes([0x82, 0x0F, 0xF0, 0]), 27)
+
+
+def test_anu_freq_reg_roundtrips():
+    from bfl_asic.protocol.icarus import anu_freq_to_reg, anu_reg_to_freq
+    for target in (150, 200, 250, 300, 400, 500):
+        reg = anu_freq_to_reg(target)
+        assert 0 <= reg <= 0xFFFF
+        # PLL can't hit every MHz exactly, but should land within a few MHz.
+        assert abs(anu_reg_to_freq(reg) - target) < 5
+
+
+def test_anu_200mhz_is_exact():
+    from bfl_asic.protocol.icarus import anu_freq_to_reg, anu_reg_to_freq
+    reg = anu_freq_to_reg(200)
+    assert reg == 0x0380           # od=0, n=0, m=7 -> 25*8/1 = 200
+    assert anu_reg_to_freq(reg) == 200.0
+
+
+def test_build_anu_set_freq_layout():
+    from bfl_asic.protocol.icarus import build_anu_set_freq, crc5, anu_freq_to_reg
+    cmd = build_anu_set_freq(250)
+    assert len(cmd) == 4
+    assert cmd[0] == 0x82          # write reg 2 (2 | 0x80)
+    reg = anu_freq_to_reg(250)
+    assert cmd[1] == (reg & 0xFF00) >> 8
+    assert cmd[2] == reg & 0x00FF
+    # CRC covers the three data bytes + a zero placeholder byte, 27 bits.
+    assert cmd[3] == crc5(bytes([cmd[0], cmd[1], cmd[2], 0]), 27)
+
+
+def test_build_anu_set_freq_defaults_to_u1_default():
+    from bfl_asic.protocol.icarus import (
+        build_anu_set_freq, anu_reg_to_freq, ANT_U1_DEFFREQ)
+    cmd = build_anu_set_freq()     # no target -> ANT_U1_DEFFREQ (200)
+    reg = (cmd[1] << 8) | cmd[2]
+    assert anu_reg_to_freq(reg) == float(ANT_U1_DEFFREQ)
+
+
+def test_build_anu_read_freq_layout():
+    from bfl_asic.protocol.icarus import build_anu_read_freq, crc5
+    cmd = build_anu_read_freq()
+    assert len(cmd) == 4
+    assert cmd[0] == 0x84          # read reg 4 (4 | 0x80)
+    assert cmd[1] == 0x00
+    assert cmd[2] == 0x04
+    assert cmd[3] == crc5(bytes([0x84, 0x00, 0x04, 0]), 27)
+
+
+def test_build_anu_set_freq_accepts_raw_reg():
+    from bfl_asic.protocol.icarus import build_anu_set_freq
+    cmd = build_anu_set_freq(reg=0x0380)
+    assert cmd[0] == 0x82 and cmd[1] == 0x03 and cmd[2] == 0x80

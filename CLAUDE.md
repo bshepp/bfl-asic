@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Communication layer and analysis tools for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner. Provides protocol encoding/decoding, serial transport, device simulation, statistical analysis of hash output, iterated-hash dynamics research, and NIST SP 800-22 randomness validation.
+Started as a communication layer and analysis toolkit for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner; now a **model-free characterization lab for retro mining silicon**. The Jalapeno stays the protagonist (protocol encoding/decoding, serial transport, device simulation, ZCX census, dead-core detection, sustained-work characterization), and the device-agnostic core (`characterize_source`, `health`, `NonceSource`) extends to a growing fleet — the ASICMiner Block Erupter (device #2, Icarus protocol), with the Antminer U-series and GekkoScience NewPac incoming. Plus statistical analysis of hash output, iterated-hash dynamics research, NIST SP 800-22 randomness validation, an optional ML learnability instrument, and a Govee H5075 BLE ambient decoder. The `bfl-asic` name is kept for continuity (dataset/blog/release links); the scope is deliberately broader.
 
 ## Common Commands
 
@@ -15,7 +15,7 @@ pip install -e ".[dev]"
 # Install with optional ML subsystem (adds PyTorch)
 pip install -e ".[ml]"
 
-# Run all tests (848 total, ~65s, no hardware required; 846 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
+# Run all tests (890 total, ~65s, no hardware required; 888 pass in the fast suite — 2 slow ML training tests excluded by -m "not slow")
 pytest
 
 # Run a single test file
@@ -145,14 +145,26 @@ Four-layer design with strict separation of concerns:
   bytes was read as "expect 255", never reached EOS -> invalid. Fixed:
   payload is now `[0x04][4 LE bytes]`; `ZVX` returns `OK` and
   `set_freq_factor` returns True. **BUT the clock does not change** — even
-  the slowest word (0x0000) left the census at 189 MHz. So the setting is
-  accepted but neutralized, most likely by the firmware's thermal-hover
-  loop re-asserting its own frequency word (or the raw 0x60 write not
-  reconfiguring the live PLL without a trigger the command doesn't issue).
-  `ZKX` returns 0 (unimplemented). **Conclusion: the frequency sweep is
-  NOT achievable via ZVX on this firmware** — controlling the clock would
-  need to bypass/disable the firmware's own frequency management, which
-  isn't exposed over serial. `scripts/hw/freq_underclock.py` is the probe. **The scratchpad is
+  the slowest word (0x0000) left the census at 189 MHz. **CORRECTION
+  (2026-08-22, from reading `luke-jr/BitForce_SC`):** the earlier
+  "thermal-hover loop" explanation was wrong. Three source-level facts
+  explain "OK but nothing changes": (1) the census `FREQUENCY:` field is a
+  compile-time **constant** (`sprintf` of a fixed table value) — it can
+  never reflect a live write, so "stayed 189 MHz" proved nothing (watch the
+  per-`PROCESSOR @ N MHz` line instead, which IS a live measurement); (2)
+  `ZVX`'s "all chips" broadcast writes chip `0xFF`, but the ASIC's
+  chip-address field is only 3 bits, so `0xFF` masks to 7 — it reaches chip
+  7 only, never chip 3 (the Jalapeno's two live dies are processors 3 & 7);
+  (3) a bare `0x60` write omits the reg-0 reset / reg-`0x61` clock-enable
+  relatch the boot path performs. (There is *also* event-driven re-assert —
+  `init_ASIC()` re-runs on sustained low engine count and on thermal
+  recovery after >90 C — but not a continuous hover.) `ZKX` returns 0
+  (unimplemented). **Conclusion: the sweep is NOT achievable via the stock
+  `ZVX` handler, but it is NOT fundamentally closed** — custom firmware
+  (JTAG/DFU reflash on the sacrificial unit) can drive the clock, and the
+  exact patch points are known (freq table `std_defs.c:15`, disable the boot
+  auto-OC ramp, fix the `0xFF` broadcast to loop real chips, add the
+  reg-`0x61` relatch). `scripts/hw/freq_underclock.py` is the ZVX probe. **The scratchpad is
   non-volatile** — a `ZSX` marker survived a full power cycle (verified
   2026-08-15 via `nvram_roundtrip.py`). `ZUX` quirks on real hardware:
   no newline terminator, one stray trailing byte appended (match by

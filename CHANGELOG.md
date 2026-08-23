@@ -27,6 +27,19 @@ with the ASICMiner Block Erupter (Icarus protocol) as device #2.
   queued path or Icarus) for the common core (throughput, winner-count
   distribution, nonce histogram, dead-core health) and merges each source's
   device-specific extras.
+- **Antminer U1/U2 (ANU) frequency control** in `bfl_asic/protocol/icarus.py`
+  — `crc5`, `anu_freq_to_reg` / `anu_reg_to_freq` (the PLL-divider search,
+  ported from cgminer's `anu_find_freqhex`: `fout = 25·nf/(nr·no)`), and
+  `build_anu_set_freq` / `build_anu_read_freq` (the `[0x82,hi,lo,crc5]` /
+  `[0x84,0,0x04,crc5]` register commands). This is the clock lever the BFL
+  Jalapeno firmware denied us — the actual frequency-sweep enabler for the
+  incoming Antminer U-series. Byte-exact from cgminer source; unverified
+  against hardware until a U1 is in hand.
+- **Govee H5075 ambient decoder** (`bfl_asic/ambient.py`) — pure decode of the
+  H5075 BLE temperature/humidity/battery advertisement (24-bit packed value,
+  sign-bit negative handling) plus a lazy-`bleak` listener. Gives an
+  independent ambient reference for the thermal work, which until now had only
+  the device's own on-die sensor.
 
 ### Notes
 - The Block Erupter was characterized on real hardware (2026-08-19):

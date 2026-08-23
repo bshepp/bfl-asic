@@ -7,8 +7,9 @@ Ranked by **what experiment each unlocks**, not by hashrate or collectibility.
 Open experiments driving the list:
 
 1. **Frequency sweep** (clock-vs-error-rate cliff) — the Phase-3 experiment the
-   Jalapeño's firmware denied us (it overrides manual clock words). Needs a
-   device whose clock control actually *takes*.
+   Jalapeño's stock firmware denied us (its `ZVX` clock-set doesn't take — a
+   masked broadcast + no PLL relatch; real control needs a reflash). Needs a
+   device whose clock control actually *takes* out of the box.
 2. **Per-chip nonce attribution** — ground truth to validate the dead-core
    detector, turning its histogram *inference* into a *measurement*. Needs a
    chip chain that tags which chip found each nonce.
