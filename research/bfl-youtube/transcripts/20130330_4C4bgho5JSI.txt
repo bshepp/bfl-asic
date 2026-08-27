@@ -1,0 +1,84 @@
+# Butterfly Labs (BFL) Bitforce SC ASIC Test
+# https://www.youtube.com/watch?v=4C4bgho5JSI
+# uploaded 20130330  |  duration 118s
+
+hey guys I'm going to show you a real
+hey guys I'm going to show you a real quick test here of one of our SC boards
+quick test here of one of our SC boards
+quick test here of one of our SC boards this is one of the first pre-production
+this is one of the first pre-production
+this is one of the first pre-production boards so the uh power usage is a little
+boards so the uh power usage is a little
+boards so the uh power usage is a little wonky at the moment uh as I said in the
+wonky at the moment uh as I said in the
+wonky at the moment uh as I said in the post we'll be uh working on
+post we'll be uh working on
+post we'll be uh working on that so I'm just plugging in the power
+here and you'll see the idle power right
+here and you'll see the idle power right now is about 42 Watts which will should
+now is about 42 Watts which will should
+now is about 42 Watts which will should come down um once we get our new boards
+come down um once we get our new boards
+come down um once we get our new boards in
+in
+in and we'll open the port here on the test
+and we'll open the port here on the test
+and we'll open the port here on the test bench it's open now pull an info
+bench it's open now pull an info
+bench it's open now pull an info request that shows us right here that
+request that shows us right here that
+request that shows us right here that shows us some random nonces that just
+shows us some random nonces that just
+shows us some random nonces that just basically junk in the
+basically junk in the
+basically junk in the queue um so we'll go back here we'll run
+queue um so we'll go back here we'll run
+queue um so we'll go back here we'll run the test which will execute nonces with
+the test which will execute nonces with
+the test which will execute nonces with known
+known
+known results and we'll let that run
+results and we'll let that run
+results and we'll let that run you see the power kicking in all the way
+you see the power kicking in all the way
+you see the power kicking in all the way up to 160 Watts the power regulator on
+up to 160 Watts the power regulator on
+up to 160 Watts the power regulator on this board is at almost three times its
+this board is at almost three times its
+this board is at almost three times its capacity so it's kind of buckling Under
+capacity so it's kind of buckling Under
+capacity so it's kind of buckling Under The Strain once we get the new Boards
+The Strain once we get the new Boards
+The Strain once we get the new Boards out they'll have actually two power
+out they'll have actually two power
+out they'll have actually two power regulators and that will alleviate quite
+regulators and that will alleviate quite
+regulators and that will alleviate quite a bit okay the test is done and we go
+a bit okay the test is done and we go
+a bit okay the test is done and we go back look at the emper request we will
+back look at the emper request we will
+back look at the emper request we will see if you look here you'll see all the
+see if you look here you'll see all the
+see if you look here you'll see all the es there except with the exception of
+es there except with the exception of
+es there except with the exception of the final 16 engine they all have the
+the final 16 engine they all have the
+the final 16 engine they all have the same answer which is good cuz that
+same answer which is good cuz that
+same answer which is good cuz that indicates they came up with the correct
+indicates they came up with the correct
+indicates they came up with the correct answer and they all agree that the
+answer and they all agree that the
+answer and they all agree that the answer is the same so that's what I got
+answer is the same so that's what I got
+answer is the same so that's what I got for you today I should have more
+for you today I should have more
+for you today I should have more probably with BFG minor hopefully
+probably with BFG minor hopefully
+probably with BFG minor hopefully tomorrow um we're still working on the
+tomorrow um we're still working on the
+tomorrow um we're still working on the communication protocol there and I'll
+communication protocol there and I'll
+communication protocol there and I'll post another video as soon as we got
+post another video as soon as we got
+post another video as soon as we got that talk to you guys later

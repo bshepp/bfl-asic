@@ -33,3 +33,9 @@ hf_results/
 # Third-party GPLv3 reference (cgminer BFL driver, driver-bflsc.c/.h) — facts-only reference, never committed
 /cgminer-ref/
 docs/characterization/*.log
+
+# BFL YouTube research archive — the video/thumbnail/raw files stay LOCAL
+# (primary sources from a defunct, court-shuttered company, kept for research;
+# re-hosting them publicly would be redistribution). Only the manifest +
+# transcripts under research/bfl-youtube/ are committed; media/ never is.
+/research/bfl-youtube/media/
