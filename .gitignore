@@ -39,3 +39,7 @@ docs/characterization/*.log
 # re-hosting them publicly would be redistribution). Only the manifest +
 # transcripts under research/bfl-youtube/ are committed; media/ never is.
 /research/bfl-youtube/media/
+
+# Session cookie files (live YouTube/Google session tokens) — NEVER commit
+cookies.txt
+*cookies*.txt
