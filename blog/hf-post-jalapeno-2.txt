@@ -6,7 +6,7 @@ Then I got curious about a different question: how many Jalapenos did Butterfly 
 
 BFL is infamous. The FTC shut them down in 2014 for taking ~$50M in pre-orders and largely not shipping -- they allegedly mined with customers' hardware instead ($38.6M settlement). Their production claims were found to be undocumented.
 
-So I estimated it from serial numbers. Nine confirmed serials (mine, plus ones visible in eBay listing photos) and the classic German-tank estimator: the highest I can confirm is 25,327, and the math puts the total around ~28,000 units built. Serials count units *manufactured* -- so the gap between ~28,000 built and the few the FTC says shipped is the scandal, quantified.
+So I estimated it from serial numbers. Ten confirmed serials (mine, plus ones visible in eBay listing photos) and the classic German-tank estimator: the highest I can confirm is 25,327, and the math puts the total around ~28,000 units built. Serials count units *manufactured* -- so the gap between ~28,000 built and the few the FTC says shipped is the scandal, quantified.
 
 It's a serial-indexed production census of a discontinued 2013 ASIC that the company itself never documented -- and anyone can add a data point: spot a Jalapeno serial in a listing (especially one above 25,327) and it sharpens the estimate.
 

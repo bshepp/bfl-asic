@@ -40,9 +40,9 @@ measured model-free in 2026. Fed identical work, both units return the
 years on — yet they **bin differently** (27 engines @ ~200 MHz vs 29 @ ~214).
 Both are error-free and fully deterministic over hours of sustained work.
 
-Separately, a **serial-number production census**: from nine confirmed serials
+Separately, a **serial-number production census**: from ten confirmed serials
 (highest = `025327`), the German-tank estimator puts total production at
-**~28,000 units built ± ~3,000** (floor ≥ 25,327). Serials count units
+**~28,000 units built ± ~2,800** (floor ≥ 25,327). Serials count units
 *manufactured* — so the gap between that and what Butterfly Labs actually
 shipped is the FTC fraud case, quantified.
 
@@ -59,7 +59,7 @@ toolkit (MIT). Four small tables:
 | `units` | 2 | Per-unit `ZCX` census + identity (engines, per-processor topology, clock, firmware) |
 | `characterization` | 3–4 | Per sustained-work run: throughput, determinism, thermal plateau, dead-core verdict |
 | `cross_unit_determinism` | 2 | The identical fixed work → identical winning nonces on both units |
-| `production_census` | 9 | The confirmed serial numbers behind the German-tank estimate |
+| `production_census` | 10 | The confirmed serial numbers behind the German-tank estimate |
 
 The raw characterization runs live in the toolkit repo
 (`docs/characterization/`) and are regenerable via
@@ -85,10 +85,11 @@ this dataset adds is the *curated, cross-checked* distillation.
    4-hour, and a supervised temperature sweep); per-job winner count Poisson(~1)
    throughout; thermally over-built (won't error even fan-off on a desk). Both
    units read HEALTHY on dead-core detection.
-4. **~28,000 units built.** German-tank estimate over 9 confirmed serials
-   (min 2,659, max 25,327): `25,327 + (25,327−2,659)/8 ≈ 28,160` (MVUE
-   cross-check ≈ 28,140), floor ≥ 25,327, standard error ≈ ±3,000. Serials count
-   units manufactured, not shipped.
+4. **~28,000 units built.** German-tank estimate over 10 confirmed serials
+   (min 2,659, max 25,327): `25,327 + (25,327−2,659)/9 ≈ 27,846` (MVUE
+   cross-check ≈ 27,859), floor ≥ 25,327, standard error ≈ ±2,800. Serials count
+   units manufactured, not shipped. A consecutive pair (024991/024992, one
+   apart) confirms multi-unit lots were numbered consecutively.
 
 ## Quick start
 

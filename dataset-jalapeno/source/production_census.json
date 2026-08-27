@@ -4,23 +4,24 @@
     {"serial": "002659", "status": "held", "note": "reference unit (lowest held)"},
     {"serial": "005794", "status": "held", "note": "sacrificial unit"},
     {"serial": "007857", "status": "observed", "note": ""},
-    {"serial": "010216", "status": "observed", "note": "near-consecutive with 010265"},
-    {"serial": "010265", "status": "observed", "note": "near-consecutive with 010216 (49 apart)"},
+    {"serial": "010216", "status": "observed", "note": "near-consecutive with 010265 (49 apart)"},
+    {"serial": "010265", "status": "observed", "note": "near-consecutive with 010216"},
     {"serial": "013626", "status": "observed", "note": ""},
     {"serial": "022662", "status": "observed", "note": ""},
-    {"serial": "024992", "status": "observed", "note": "from a multi-unit lot"},
+    {"serial": "024991", "status": "held", "note": "consecutive with 024992 (1 apart); acquired as a pair from one lot (2026-08)"},
+    {"serial": "024992", "status": "held", "note": "consecutive with 024991; same lot -- confirms multi-unit lots were numbered consecutively"},
     {"serial": "025327", "status": "observed", "note": "highest confirmed serial"}
   ],
   "estimate": {
-    "k_confirmed": 9,
+    "k_confirmed": 10,
     "min_serial": 2659,
     "max_serial": 25327,
-    "avg_gap": 2833.5,
-    "estimate_units_built": 28160,
-    "mvue_cross_check": 28140,
+    "avg_gap": 2518.7,
+    "estimate_units_built": 27846,
+    "mvue_cross_check": 27859,
     "floor_units_built": 25327,
-    "std_error_approx": 3000,
-    "detail": "avg gap = (25327-2659)/(9-1) = 2833.5; estimate ~ 25327 + 2834 = 28160; MVUE = 25327*(k+1)/k - 1 = 28140; standard error ~ N/k ~ 3000."
+    "std_error_approx": 2800,
+    "detail": "avg gap = (25327-2659)/(10-1) = 2518.7; estimate ~ 25327 + 2519 = 27846; MVUE = 25327*(k+1)/k - 1 = 27859; standard error ~ N/k ~ 2800. The 024991/024992 consecutive pair confirms multi-unit lots were numbered consecutively; both new serials landed in the high cluster, so the 13,626->22,662 mid-range gap stayed empty as k grew (a mild nudge toward a real gap, still far from conclusive)."
   },
   "context": "Serials count units MANUFACTURED, not shipped. The FTC found Butterfly Labs built machines and largely did not deliver them (allegedly self-mined; ~$50M in orders; $38.6M settlement, 2016). BFL's disputed public claim was 50,000+ machines across five product generations; the FTC found no documentation for it."
 }

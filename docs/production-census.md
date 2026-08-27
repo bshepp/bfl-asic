@@ -9,9 +9,10 @@ Federal Trade Commission found their production claims unsupported).
 
 ## The confirmed serials
 
-Nine board serials confirmed from photographs — units held by this project,
-plus serials visible in online listings. **Prices and sources are intentionally
-omitted:** this is a production study, not a market survey.
+Ten board serials confirmed — units held by this project (including the
+consecutive `024991`/`024992` pair) plus serials visible in online listings.
+**Prices and sources are intentionally omitted:** this is a production study,
+not a market survey.
 
 | Serial | Status |
 |--------|--------|
@@ -22,7 +23,8 @@ omitted:** this is a production study, not a market survey.
 | `010265` | observed — near-consecutive with `010216` |
 | `013626` | observed |
 | `022662` | observed |
-| `024992` | observed — from a multi-unit lot |
+| `024991` | **held** — consecutive with `024992` (1 apart) |
+| `024992` | **held** — consecutive with `024991`; same lot |
 | **`025327`** | observed — **highest confirmed serial** |
 
 ## The estimate (German tank problem)
@@ -32,12 +34,12 @@ the classic way to estimate a total population from a sample of serial numbers:
 the true maximum sits, on average, about one "average gap" beyond the largest
 serial you've actually seen.
 
-- `k = 9` confirmed serials, `min = 2,659`, `max = 25,327`
-- average gap ≈ `(25,327 − 2,659) / (9 − 1)` ≈ **2,834**
-- estimated top ≈ `25,327 + 2,834` ≈ **~28,160**
-- MVUE cross-check: `25,327 × (k+1)/k − 1` ≈ **~28,140**
+- `k = 10` confirmed serials, `min = 2,659`, `max = 25,327`
+- average gap ≈ `(25,327 − 2,659) / (10 − 1)` ≈ **2,519**
+- estimated top ≈ `25,327 + 2,519` ≈ **~27,846**
+- MVUE cross-check: `25,327 × (k+1)/k − 1` ≈ **~27,859**
 
-**Estimate: ~28,000 units built (± ~3,000)**, with a hard floor of **≥ 25,327**
+**Estimate: ~28,000 units built (± ~2,800)**, with a hard floor of **≥ 25,327**
 — you cannot have built fewer units than the highest serial that demonstrably
 exists.
 
@@ -51,6 +53,11 @@ exists.
   possibly sampling sparseness, possibly a **batch boundary or production
   pause**. The units above it are the late-production cohort most likely to
   differ (for example, a later firmware build).
+- **An even tighter pair — `024991` / `024992`, *one* apart.** Acquired
+  together from a single lot, which proves multi-unit lots were numbered
+  **consecutively**. Both landed in the high cluster, so the 13.6k→22.7k gap
+  *stayed empty* as the sample grew — a mild nudge toward a real numbering gap,
+  though still far from conclusive.
 - **Real binning drift is already visible** between our two units: `002659`
   self-reports 27 engines at ~200 MHz; `005794` reports 29 engines at ~214 MHz
   (and a higher estimated hashrate). Same architecture, different bin.
