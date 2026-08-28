@@ -72,6 +72,40 @@ That is the "the name doesn't constrain us" direction, extended.
   miners that does not exist anywhere else. Arguably what this project is
   quietly becoming.
 
+## Environmental coupling — the milieu joint study
+
+The one direction here that is **more than speculative**: an intended joint run
+with the sibling [milieu](https://github.com/bshepp/milieu) project — the fleet's
+ambient-telemetry instrument layer (passive-BLE Govee/RuuviTag decoders). It
+answers question 3 directly: *a measurement we cannot make yet.*
+
+Put a milieu **ambient sensor** (an offset-calibrated Govee H5075) **right next to
+a unit** and log it against the unit's own thermal telemetry. Here "unit sensor"
+means the Jalapeño's `ZLX` reading (`bfl-asic temperature`) — but the point is to
+**record the whole device surface**, timestamp-aligned with ambient, not just
+temperature:
+
+- `ZLX` temperature, `ZTX` voltage / VCC1 (mind the post-`ZTX` ~1.2 V settling
+  artifact);
+- the *live* `ZCX` census — engine-count wobble (26 ↔ 27), per-processor
+  frequency (198–199 MHz), self-reported MINIG SPEED (5.15–5.34 GH/s);
+- health / nonce yield, throughput, error count, nonce-set determinism, fan state.
+
+Two questions fall out. The **expected** one: quantify self-heating — how far the
+die runs above true ambient, idle vs. under load, now that ambient is a
+*calibrated* number rather than a guess. The **interesting** one: does ambient
+move anything *other* than die temp — voltage, the engine/frequency wobble, yield,
+determinism? Any such coupling would be a genuinely novel readout, and the whole
+reason to log everything is that you cannot find a linkage you did not record.
+
+**Sequence:** ambient sensor next to the unit first (baseline), then repeated
+across other ranges. Two items are intentionally still open: the cross-project run
+**coordination** with milieu (milieu owns the sensor schedule and runs concurrently
+with its consumers when it can), and whether "other ranges" means *temperature*
+ranges (drive the pair hot/cold) or *spatial* ranges (sensors stepped away to map
+the unit's heat plume) — probably both, in time. The instrument side is tracked
+from [milieu's roadmap](https://github.com/bshepp/milieu#roadmap).
+
 ---
 
 *Speculative directions only. The trunk stays the BFL Jalapeño; everything here
