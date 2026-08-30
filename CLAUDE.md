@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Started as a communication layer and analysis toolkit for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner; now a **model-free characterization lab for retro mining silicon**. The Jalapeno stays the protagonist (protocol encoding/decoding, serial transport, device simulation, ZCX census, dead-core detection, sustained-work characterization), and the device-agnostic core (`characterize_source`, `health`, `NonceSource`) extends to a growing fleet — the ASICMiner Block Erupter (device #2, Icarus protocol), with the Antminer U-series and GekkoScience NewPac incoming. Plus statistical analysis of hash output, iterated-hash dynamics research, NIST SP 800-22 randomness validation, an optional ML learnability instrument, and a Govee H5075 BLE ambient decoder. The `bfl-asic` name is kept for continuity (dataset/blog/release links); the scope is deliberately broader.
+Started as a communication layer and analysis toolkit for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner; now a **model-free characterization lab for retro mining silicon**. The Jalapeno stays the protagonist (protocol encoding/decoding, serial transport, device simulation, ZCX census, dead-core detection, sustained-work characterization), and the device-agnostic core (`characterize_source`, `health`, `NonceSource`) extends to a growing fleet — the ASICMiner Block Erupter (device #2, Icarus protocol) and the **Antminer U1** (device #3, Icarus; first-contacted and fingerprinted at ~1.5 GH/s, and the first device in this project with **working live clock control** — the ANU frequency lever verified on hardware 2026-08-28), with the GekkoScience NewPac incoming. Plus statistical analysis of hash output, iterated-hash dynamics research, NIST SP 800-22 randomness validation, an optional ML learnability instrument, and a Govee H5075 BLE ambient decoder. The `bfl-asic` name is kept for continuity (dataset/blog/release links); the scope is deliberately broader.
 
 ## Common Commands
 
@@ -36,7 +36,7 @@ Four-layer design with strict separation of concerns:
 
 **Protocol layer** (`bfl_asic/protocol/`) — Pure functions, no I/O. Builds command byte sequences (ZGX, ZLX, ZTX, ZDX, ZFX, ZPX; SC queued ZNX/ZWX/ZOX/ZQX/ZCX), parses responses into dataclasses, computes SHA-256 midstates. `queued.parse_details` turns the multi-line `ZCX` reply into a `DeviceDetails` census with typed, case-/dash-insensitive accessors (`firmware`, `engines`, `frequency`/`frequency_mhz`, `mining_speed`, `critical_temperature`, `processors` → `list[Processor]`, `jobs_in_queue`); unrecognised firmware fields are preserved verbatim in `.fields`. `protocol/probe.py` holds the undocumented probe commands `ZJX`/`ZUX`/`ZSX` (firmware / load-string / save-string) with lenient parsers. All protocol logic is independently testable.
 
-**Transport layer** (`bfl_asic/transport/`) — I/O abstraction via `BaseTransport` ABC. `SerialTransport` wraps pyserial for real hardware (FTDI VID 0x0403, PID 0x6014, 115200 8N1). `SimulatorTransport` provides an in-process fake device with thermal model and real SHA-256d computation — all tests run against the simulator. Async methods default to `asyncio.to_thread()` wrapping of sync implementations.
+**Transport layer** (`bfl_asic/transport/`) — I/O abstraction via `BaseTransport` ABC. `SerialTransport` wraps pyserial for real BFL hardware (FTDI VID 0x0403, PID 0x6014, 115200 8N1). `IcarusSerialTransport` is its Icarus-protocol sibling for the fleet (CP210x/FTDI USB-UART, write-64B-work / read-4B-nonce, long Icarus read timeout, `serial_factory` DI seam); `SimulatedIcarusTransport` is its headless double. `SimulatorTransport` provides an in-process fake device with thermal model and real SHA-256d computation — all tests run against the simulators. Async methods default to `asyncio.to_thread()` wrapping of sync implementations.
 
 **Device layer** (`bfl_asic/device.py`, `async_device.py`) — High-level API. `BFLDevice` (sync) and `AsyncBFLDevice` (async with stream iterators). Both are context managers that own transport lifecycle.
 
@@ -182,3 +182,19 @@ Four-layer design with strict separation of concerns:
   per-command flushes for this reason; `JOBS IN QUEUE` reads ~0 even
   mid-scan, so it is not usable for backpressure (bound in-flight jobs by
   submitted-minus-drained instead).
+- **Antminer U1 (device #3, Icarus).** Enumerates as a **Silicon Labs CP210x
+  USB-UART bridge** (VID `0x10C4`, PID `0xEA60`) — not FTDI, so the BFL
+  auto-detect doesn't see it; the COM number is not stable across replug
+  (re-detect by VID/PID). First contact via the golden-work self-test
+  (`GOLDEN_WORK` → `GOLDEN_NONCE` `0x000187A2`, big-endian on the wire).
+  Fingerprinted at **~1.5 GH/s** (linear-scan hashrate; nominal ~1.6 @
+  200 MHz), healthy, ~1/e of random works yield no nonce (diff-1 Poisson).
+  Driven by `IcarusSerialTransport` + `IcarusNonceSource` + `characterize_source`.
+  **The ANU frequency lever WORKS** (unlike the Jalapeño): `build_anu_set_freq`
+  physically moves the clock — a 200/150/100 MHz underclock sweep scaled
+  hashrate linearly at ~7.9 MH/s per MHz, with the read-reg echoing the PLL
+  multiplier. The U1 has **no serial temperature readout** (Icarus has no temp
+  command), so an *overclock* (above stock) needs an **external** thermal probe
+  — e.g. a milieu ambient sensor beside the unit. Underclock verification is
+  thermally safe (cooler than stock) and reversible; ANU freq is not persistent
+  (a power cycle resets to default). `scripts/hw/icarus.py` is the driver.

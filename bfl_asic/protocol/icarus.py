@@ -72,8 +72,11 @@ def linear_scan_hashrate(nonce_time_pairs) -> float | None:
 # ``anu_find_freqhex``). Unlike the Block Erupter, this is a real command; it
 # is identity-gated in cgminer and must only be sent to an ANU device.
 #
-# UNVERIFIED against hardware (no U1 in hand yet, 2026-08-22) -- byte-exact
-# from source; validate the round-trip when the U1 arrives.
+# VERIFIED on hardware (Antminer U1, device #3, 2026-08-28): an underclock
+# sweep 200/150/100 MHz over IcarusSerialTransport scaled hashrate linearly at
+# ~7.9 MH/s per MHz (the clock physically moves) and the read-reg command
+# echoed back the exact PLL multiplier written. build_anu_set_freq drives a
+# real U1 clock change; byte-exact from cgminer.
 
 ANU_REF_MHZ = 25.0          # on-board reference crystal
 ANT_U1_DEFFREQ = 200        # cgminer's U1 default target (MHz)

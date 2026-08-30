@@ -1,5 +1,45 @@
 # Development Log
 
+## 2026-08-28 — device #3 (Antminer U1): real Icarus transport + first live clock control
+
+An **Antminer U1** arrived (device #3, on the isolated USB 2.0 hub). In one
+evening it went from unplugged to the first device in this whole project whose
+mining clock we can actually **move** — the frequency control the Jalapeño
+firmware denied us.
+
+- **First contact.** Enumerated as a **Silicon Labs CP210x** USB-UART bridge
+  (VID `0x10C4` / PID `0xEA60`, on `COM4`, healthy). The Icarus golden-work
+  self-test returned `GOLDEN_NONCE` (`0x000187A2`, big-endian) — alive, speaking
+  Icarus, and the **first hardware validation of `protocol/icarus.py`** (pure +
+  simulator only until now).
+
+- **Real Icarus transport (TDD, committed).** Built
+  `bfl_asic/transport/icarus_serial.py` `IcarusSerialTransport` — the live-port
+  counterpart to `SimulatedIcarusTransport` (pyserial, 8N1, long Icarus read
+  timeout, `serial_factory` DI seam for headless tests). 9 behavioral tests
+  (`tests/test_icarus_transport.py`) incl. a golden-nonce contract through
+  `IcarusNonceSource`; full fast suite 897 pass, 0 regressions. The device-neutral
+  `characterize_source` now drives the U1 unchanged — one rig, two protocols.
+
+- **Fingerprint = Antminer U1.** A sustained run measured **~1.52 GH/s**
+  (linear-scan hashrate) — squarely U1 (BM1380, ~1.6 GH/s @ 200 MHz), not U2 or a
+  Block Erupter. Healthy; nonces spread clean across 2^32; ~1/e of random works
+  yield no nonce (textbook diff-1 Poisson).
+
+- **The ANU frequency lever WORKS — verified on hardware.** `build_anu_set_freq`
+  (shipped flagged *UNVERIFIED, no U1 in hand*) drives a real clock change. A
+  **safe underclock sweep** (200 → 150 → 100 MHz, all at/below stock, restore-on-
+  exit) scaled hashrate linearly: 1580 / 1185 / 798 MH/s = **7.90 / 7.90 / 7.98
+  MH/s per MHz**. A 2.00× frequency change gave a 1.98× hashrate change — the clock
+  physically moves, proven by direct measurement (no compile-time-constant trap
+  like the Jalapeño census `FREQUENCY`). **Double-confirmed:** the read-reg echoed
+  the exact PLL multiplier written (`rdreg 8007/8005/8003` = m 7/5/3 = 200/150/100).
+
+- **Next frontier — overclock.** Going *above* stock needs a thermal watch, but
+  the U1 has **no serial temperature readout**, so it needs an **external** probe
+  — a natural convergence with milieu's ambient×unit study (a Govee beside the
+  unit as the thermal watch). A deliberate, guarded session for another day.
+
 ## 2026-08-22 — second unit, cross-validation, firmware source truth, broader scope
 
 The project's second physical Jalapeno arrived, the frequency-override mystery
