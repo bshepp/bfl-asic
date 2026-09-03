@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Started as a communication layer and analysis toolkit for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner; now a **model-free characterization lab for retro mining silicon**. The Jalapeno stays the protagonist (protocol encoding/decoding, serial transport, device simulation, ZCX census, dead-core detection, sustained-work characterization), and the device-agnostic core (`characterize_source`, `health`, `NonceSource`) extends to a growing fleet — the ASICMiner Block Erupter (device #2, Icarus protocol) and the **Antminer U1** (device #3, Icarus; first-contacted and fingerprinted at ~1.5 GH/s, and the first device in this project with **working live clock control** — the ANU frequency lever verified on hardware 2026-08-28), with the GekkoScience NewPac incoming. Plus statistical analysis of hash output, iterated-hash dynamics research, NIST SP 800-22 randomness validation, an optional ML learnability instrument, and a Govee H5075 BLE ambient decoder. The `bfl-asic` name is kept for continuity (dataset/blog/release links); the scope is deliberately broader.
+Started as a communication layer and analysis toolkit for the Butterfly Labs BF0005G Jalapeno SHA-256 ASIC miner; now a **model-free characterization lab for retro mining silicon**. The Jalapeno stays the protagonist (protocol encoding/decoding, serial transport, device simulation, ZCX census, dead-core detection, sustained-work characterization), and the device-agnostic core (`characterize_source`, `health`, `NonceSource`) extends to a growing fleet — the ASICMiner Block Erupter (device #2, Icarus protocol) and the **Antminer U1** (device #3, Icarus; first-contacted and fingerprinted at ~1.5 GH/s, and the first device in this project with **working live clock control** — the ANU frequency lever verified on hardware 2026-08-28), the **GekkoScience 2Pac** (device #4, 2× BM1384; arrived 2026-09-02, under repair for a lifted USB data pad) and the GekkoScience NewPac (2× BM1387) still incoming (device #5); a **second Jalapeño** (`024992`, firmware **1.2.9**) is also online — richer than the 1.0.0 primary: it speaks the **v2** queued-result format (per-nonce CHIP column ⇒ per-die nonce attribution, validated against the per-die `MAP` fuse bitmap). Plus statistical analysis of hash output, iterated-hash dynamics research, NIST SP 800-22 randomness validation, an optional ML learnability instrument, and a Govee H5075 BLE ambient decoder. The `bfl-asic` name is kept for continuity (dataset/blog/release links); the scope is deliberately broader.
 
 ## Common Commands
 
@@ -198,3 +198,35 @@ Four-layer design with strict separation of concerns:
   — e.g. a milieu ambient sensor beside the unit. Underclock verification is
   thermally safe (cooler than stock) and reversible; ANU freq is not persistent
   (a power cycle resets to default). `scripts/hw/icarus.py` is the driver.
+
+- **Second Jalapeño `024992` (firmware 1.2.9) — a richer BFL SC than the 1.0.0
+  primary; online 2026-09-02 on `COM6`.** 37 engines / **3** live dies (P1/P3/P7 vs
+  the primary's 26 / 2), census `FREQUENCY 291 MHz`, `THEORETICAL MAX ~11.2 GH/s`.
+  Its census adds fields 1.0.0 hides: `CHIP PARALLELIZATION`, `QUEUE DEPTH`,
+  `THEORETICAL MAX`, `TOTAL THERMAL CYCLES`, and a per-die **`MAP`** = a 16-bit
+  engine-alive bitmap (popcount == engine count): P1 `DF75`, P3 `F7FE`, P7 `DF9C` →
+  37 alive of 48 slots (dead P1 1/3/7/13, P3 0/11, P7 0/1/5/6/13). Idle die ~38 °C;
+  under sustained load it plateaus at equilibrium **~62/69 °C** (two on-die sensors),
+  **~+37–44 °C of self-heating** over a stable ~24.5 °C room (milieu berbil-15/16;
+  no detectable room plume even at 20 min). 20-min run: 3027/3033 jobs, 0 errors.
+
+- **Queued-result format is v1 OR v2 — the toolkit auto-detects (fixed 2026-09-02,
+  commit `c174ddc`).** fw 1.2.9 emits the **v2** `ZOX` row `UID, blockdata, CHIP,
+  NONCECOUNT, nonce...` (per-nonce CHIP die id); fw 1.0.0/1.1.x emit **v1** (`UID,
+  CC, NONCECOUNT, nonce...`, no CHIP). cgminer's `drv_ver` keys it off firmware
+  version (1.0/1.1 → V1, 1.2 → V2); `protocol.queued.result_version(details)` picks
+  it from the census (`CHIP PARALLELIZATION: YES` ⇒ v2). **Parsing v2 as v1 misreads
+  `NONCECOUNT` as a nonce** (the 53%→2% bin-0 artifact). `QueuedResult.chip` carries
+  the die id ⇒ **per-die nonce yield**, which on `024992` matches predicted
+  *(alive-engines × clock)* share to ~1 point across all three dies — a quantitative
+  confirmation of the `MAP`, and the dead-core signal the interleaved-scan value
+  histogram cannot provide. `scripts/hw/characterize.py` detects the format, saves
+  raw nonces, and reports per-die yield + a contamination-robust determinism verdict.
+
+- **BFL SC MCU (both Jalapeños) = `AT32UC3A1256` (AVR32, JTAG-programmed).** The
+  flash-readout security fuse is **not set in the open-source `BitForce_SC` firmware**
+  but is **UNCONFIRMED on hardware** — a JTAG fuse read (on the sacrificial unit,
+  005794) gates the firmware pull/reflash. If it reads clear, per-die reporting on
+  the 1.0.0 unit AND real clock control are a reflash away (same silicon, firmware
+  is the only difference). "Pull + 3-way diff 1.0.0 vs 1.2.9 vs the reference" is the
+  queued firmware-forensics avenue.

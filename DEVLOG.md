@@ -1,5 +1,62 @@
 # Development Log
 
+## 2026-09-02 — device #4 (GekkoScience 2Pac) + 2nd Jalapeño `024992` (fw 1.2.9): v2 protocol, per-die yield validates the MAP
+
+Two devices on the bench in one evening, and a parser bug that turned into the
+best result of the night.
+
+- **GekkoScience 2Pac (device #4) — arrived, won't enumerate, repair pending.**
+  Windows shows Code 43 / "Device Descriptor Request Failed" (phantom
+  `VID_0000&PID_0002`), no FTDI. Cause (operator, under the scope): a **lifted USB
+  data pad** on a hand-reworked connector that ties down to an **inner layer**.
+  Three independent power-good signals — it gets hot, a green rail LED is lit, and
+  the bus sees a device — so it's a **live board behind a broken data line**, not
+  dead silicon. Board ID from photos (`docs/gekko-*.jpg`, geotag coarsened): front
+  silk "Compac V0.7", back "2PAC", two BM1384 dies, **screw-clamped** heatsink.
+  Repair = top-side bodge from the connector pin to the FTDI data pad (never touches
+  the ASIC side). The **NewPac** (2× BM1387) is a separate unit still incoming (#5).
+
+- **Second Jalapeño `024992` (fw 1.2.9) online — a richer specimen than the 1.0.0
+  primary.** 37 engines across **3** live dies (P1/P3/P7, vs the primary's 26/2),
+  census `FREQUENCY 291 MHz`, `THEORETICAL MAX ~11.2 GH/s`. Its 1.2.9 firmware
+  reports fields the 1.0.0 build hides: `CHIP PARALLELIZATION`, `QUEUE DEPTH`,
+  `THEORETICAL MAX`, `TOTAL THERMAL CYCLES`, and a per-die **`MAP`** — a 16-bit
+  engine-alive bitmap (popcount == engine count): P1 `DF75` (dead 1/3/7/13), P3
+  `F7FE` (dead 0/11), P7 `DF9C` (dead 0/1/5/6/13) → **37 alive of 48 slots**.
+
+- **v1/v2 result format — root-caused a parse bug, fixed (commit `c174ddc`).** A
+  first run showed a nonce histogram with **53% of nonces piled in bin 0**.
+  Capturing raw `ZOX` rows showed why: fw 1.2.9 emits the **v2** row
+  `UID, blockdata, CHIP, NONCECOUNT, nonce...`, but `parse_queue_results` defaulted
+  to **v1** and misread the small `NONCECOUNT` field as a nonce (one spurious low
+  value per job). cgminer's `drv_ver` keys this off firmware version (1.0/1.1 → V1,
+  1.2 → V2). Fix: new `result_version(details)` **auto-detects** from the census
+  (`CHIP PARALLELIZATION` → v2), `QueuedResult.chip` captures the CHIP column;
+  `characterize.py` detects the format, saves raw nonces, and attributes nonces per
+  die. bin-0 **53% → 2%**. 6 new tests, full fast suite **902 pass**.
+
+- **Per-die yield validates the `MAP` — quantitatively (the headline).** A 20-min
+  run (3027/3033 jobs, **0 errors**, 3018 nonces, 2.51 nonce/s) showed each die's
+  nonce share matching predicted *(alive-engines × clock)* share to **~1 point**:
+  P1 28.8% vs 28.6%, P3 36.5% vs 37.6%, P7 34.7% vs 33.8%. Yield *is* proportional
+  to working silicon × clock, the `MAP` fuse-counts are physically real, and per-die
+  yield is the dead-core signal the (interleaved-scan) value histogram couldn't give.
+
+- **Determinism — proven, and the test fixed.** The old "DIVERGENCE" was a
+  collection artifact: an isolated fixed job drained fully gives exactly 2 nonces
+  reproducibly (A==B). The multi-rep test quit before the first nonce arrived
+  (empty sets) and let stale buffered nonces bleed in. Fixed with a full-window
+  drain, robust per-rep clear, a buffer purge, and a **core-based verdict** robust
+  to contamination → DETERMINISTIC.
+
+- **First ambient × unit joint data point (milieu).** milieu now publishes a sensor
+  roster (`UNITS.md`; canonical `berbil-NN` names, MACs private). Using **berbil-15**
+  (intake post, ~1.5 ft *below* the unit = clean upstream ambient) and **berbil-16**
+  (~2 ft *above* = plume-watch): over 20 min the room stayed dead flat (berbil-15
+  **24.50 °C, span 0.00**) while the die plateaued at equilibrium **~62/69 °C** — pure
+  **self-heating: idle ~+13 °C, loaded equilibrium ~+37 to +44 °C** over a stable
+  24.5 °C room. **No plume** on the above-sensor even at 20 min (room thermal mass).
+
 ## 2026-08-28 — device #3 (Antminer U1): real Icarus transport + first live clock control
 
 An **Antminer U1** arrived (device #3, on the isolated USB 2.0 hub). In one
