@@ -153,6 +153,45 @@ def test_parse_queue_results_drops_err_line():
     assert parse_queue_results(b"COUNT:1\nERR:TIMEOUT\nOK\n") == []
 
 
+def test_parse_queue_results_v2_captures_chip():
+    # Real fw-1.2.9 row: UID(midstate), BLOCKDATA, CHIP, NONCECOUNT, nonce...
+    block = b"COUNT:1\ndeadbeef,cafef00d,7,1,2fde9d3d\nOK\n"
+    res = parse_queue_results(block, version="v2")
+    assert len(res) == 1
+    assert res[0].chip == 7
+    assert res[0].nonces == [0x2FDE9D3D]
+
+
+def test_parse_queue_results_v2_multi_nonce_and_zero_count():
+    block = (b"COUNT:2\n"
+             b"aa,bb,3,3,5b1856d0,c0582e9e,bd66e1ed\n"  # chip 3, 3 nonces
+             b"cc,dd,3,0\n"                              # chip 3, 0 nonces
+             b"OK\n")
+    res = parse_queue_results(block, version="v2")
+    assert [(r.chip, r.nonces) for r in res] == [
+        (3, [0x5B1856D0, 0xC0582E9E, 0xBD66E1ED]), (3, [])]
+
+
+def test_parse_queue_results_v1_chip_is_none():
+    res = parse_queue_results(b"COUNT:1\n0a1b,0,1,deadbeef\nOK\n", version="v1")
+    assert res[0].chip is None
+    assert res[0].nonces == [0xDEADBEEF]
+
+
+def test_result_version_v2_when_chip_parallelization_yes():
+    from bfl_asic.protocol.queued import result_version
+    d = parse_details(b"FIRMWARE: 1.2.9\nCHIP PARALLELIZATION: YES @ 3\nOK\n")
+    assert result_version(d) == "v2"
+
+
+def test_result_version_v1_when_chip_parallelization_no_or_absent():
+    from bfl_asic.protocol.queued import result_version
+    assert result_version(parse_details(
+        b"FIRMWARE: 1.0.0\nCHIP PARALLELIZATION: NO\nOK\n")) == "v1"
+    assert result_version(parse_details(
+        b"FIRMWARE: 1.0.0\nENGINES: 1\nOK\n")) == "v1"
+
+
 def test_device_details_jobs_in_queue_edge_cases():
     assert parse_details(b"FIRMWARE: 1.0.0\nOK\n").jobs_in_queue == 0
     assert parse_details(b"JOBS IN QUEUE: junk\nOK\n").jobs_in_queue == 0

@@ -65,11 +65,17 @@ def build_details() -> bytes:
 
 @dataclass
 class QueuedResult:
-    """One completed job's result from a `ZOX` drain."""
+    """One completed job's result from a `ZOX` drain.
+
+    ``chip`` is the reporting die/processor id, present only in the v2
+    result row (``UID, blockdata, CHIP, NONCECOUNT, nonce...``); ``None``
+    for v1, which carries no per-chip column.
+    """
 
     uid: str
     nonces: list[int] = field(default_factory=list)
     raw: bytes = b""
+    chip: int | None = None
 
 
 class Processor(NamedTuple):
@@ -249,11 +255,32 @@ def parse_queue_results(raw: bytes, version: str = "v1") -> list[QueuedResult]:
             nonces = [int(p, 16) for p in parts[nonce_start:]]
         except ValueError:
             continue  # non-hex nonce token — skip line, keep draining
+        chip = None
+        if version == "v2":
+            try:
+                chip = int(parts[2])  # CHIP column (decimal die id)
+            except (ValueError, IndexError):
+                chip = None
         results.append(QueuedResult(
-            uid=uid, nonces=nonces,
+            uid=uid, nonces=nonces, chip=chip,
             raw=line.encode("ascii", errors="replace"),
         ))
     return results
+
+
+def result_version(details: DeviceDetails) -> str:
+    """Pick the `ZOX` result-row format (``"v1"``/``"v2"``) for a device.
+
+    Firmware that parallelizes across chips (census ``CHIP PARALLELIZATION:
+    YES``) emits the v2 row with a per-nonce ``CHIP`` column; older firmware
+    (e.g. 1.0.0) emits v1. This is the census-readable analogue of cgminer's
+    ``drv_ver`` selection — parsing a v2 device as v1 misreads the
+    ``NONCECOUNT`` field as a nonce (a low-value artifact).
+    """
+    val = details._get("CHIP PARALLELIZATION")
+    if val and "YES" in val.upper():
+        return "v2"
+    return "v1"
 
 
 def parse_details(raw: bytes) -> DeviceDetails:
