@@ -18,15 +18,32 @@ findable, opinionated audience and almost no passing traffic.
 | The repo | `github.com/bshepp/bfl-asic` | 2026-02-26 · 1 external star |
 | Round-reduced SHA-256 dataset | `huggingface.co/datasets/bshepp/round-reduced-sha256-learnability` | 2026-05-17 |
 
-That is all the ledger knows about. **`blog/` contains five venue drafts that have
-no ledger rows** — `hf-post.txt`, `hf-post-jalapeno.txt`, `hf-post-jalapeno-2.txt`,
-`hn-submission.txt`, `hackaday-tip.txt` — and `README.md` says the learnability
-writeup was "also published as a Hugging Face Article — link added on publish" with
-no link present.
+| HF Post — round-4 cliff | `huggingface.co/posts/bshepp/401535278039137` | 2026-05-18 · 1 reaction, no comments |
+| HF Post — command surface | `huggingface.co/posts/bshepp/223913258822282` | 2026-08-16 · 4 reactions, no comments |
 
-**Establish which of those were actually sent before doing anything else.** Either
-they were not, and this project is sitting on finished posts; or they were, and the
-ledger has a hole. Both are worth ten minutes.
+**Checked against Hugging Face 2026-09-05.** The last two were published and were
+missing from the ledger; they are in it now.
+
+Three things that check settled:
+
+- **`README.md` is wrong about the format.** It says the learnability writeup was
+  "also published as a Hugging Face Article — link added on publish". It went out
+  as a **Post**, not an Article, and there is no bfl-asic Article at all. Those are
+  different surfaces with different lengths and audiences. Fix that line, and
+  either drop the promised link or point it at the Post.
+- **`hf-post-jalapeno-2.txt` is not among the published posts** — the two-Jalapeño
+  nonce agreement and the production census, the strongest draft in the folder.
+  Treat this as *unconfirmed rather than unpublished*: HF reports four posts on
+  this account and only two can be enumerated even with a valid token, so check
+  while logged in before assuming it never went out.
+- **`hn-submission.txt` and `hackaday-tip.txt` cannot be checked from Hugging
+  Face.** Still open, and still worth ten minutes.
+
+**Neither Post drew a single comment.** Four reactions on the better one is
+acknowledgement, not contact — `venues/huggingface.md` now records this. The post
+that did better is the one that leads with an admitted mistake, which is the same
+pattern `venues/seqfan.md` observed: the audience rewards being situated and
+honest over being impressive.
 
 ## This project is not one category
 
