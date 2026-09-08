@@ -110,3 +110,59 @@ from [milieu's roadmap](https://github.com/bshepp/milieu#roadmap).
 
 *Speculative directions only. The trunk stays the BFL Jalapeño; everything here
 is a branch off it, to be taken (or not) purely for the fun of the question.*
+
+## Build quality as evidence — examining the shells
+
+An open question this project is unusually well placed to answer: **what does
+the hardware itself say about how BFL spent its money?** This is currently a
+qualitative impression, and it deserves to be made quantitative.
+
+The impression is that these machines are **over-engineered**, and three of our
+own measurements support it:
+
+- **Thermal headroom is enormous.** A supervised sweep stepped the fan down to
+  *off* under sustained load; the unit topped out around **41 °C** and never
+  erred. The fan is close to decorative on a desk — the part is wildly
+  over-provisioned for its own workload.
+- **The controller is over-specified.** An Atmel **AT32UC3A1256** — a 32-bit
+  AVR32 with JTAG — to shuttle 60-byte work packets over a 115200-baud serial
+  link. A cheap 8-bit part would do.
+- **The enclosures are machined aluminium**, not folded sheet or moulded
+  plastic.
+
+But one observation cuts the other way and is worth keeping: the **Single
+chassis is shared across at least three SKUs** (`BF0050G`, `SGL300G`,
+`SGL600G` — externally identical, distinguished only by connector count). That
+is deliberate tooling amortisation, i.e. someone *was* thinking about
+manufacturing economics.
+
+**Why it matters.** A pure take-the-money operation optimises for minimum unit
+cost; it does not tool up machined aluminium or specify an AVR32. So build
+quality is evidence about **where the money went**, and about whether hardware
+was genuinely being built.
+
+**What it is not evidence of.** It says nothing about **delivery**. BFL
+demonstrably failed to ship to 20,000+ paying customers; a well-built machine
+that never arrives is still a machine that never arrived. Keep the two questions
+separate — this bears on "was anything real being made", not on "were customers
+defrauded".
+
+### What to actually measure
+
+- **Process:** CNC-machined from billet vs. extruded-and-cut vs. stamped/folded
+  vs. cast — the cost spread across those is very large. Look for tool paths,
+  witness marks, extrusion die lines, wall-thickness uniformity.
+- **Finish:** anodising, bead-blast, brushing — each is a separate paid step.
+- **Fasteners and inserts:** heat-set/threaded inserts vs. self-tapping screws
+  straight into aluminium.
+- **Thermal integration:** is the enclosure also the heatsink, or is it merely a
+  box around one?
+- **Parts sharing:** which panels are common across the Jalapeño cube, the
+  Single chassis and the Monarch card bracket.
+- **The payoff number:** an estimated **per-unit enclosure cost**, compared with
+  the retail price and with what a cost-optimised 2013 product would have used.
+
+Three chassis families are already available to inspect: the Jalapeño cube (two
+in hand), the Single/SGL box (photographed in `research/ebay-survey/`), and the
+Monarch bare card.
+

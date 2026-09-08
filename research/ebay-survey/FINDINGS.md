@@ -100,6 +100,12 @@ fields have proven to matter and are not being recorded:
   for the Jalapeño serial gap: dead units still get listed, so failure changes a
   unit's price, not its visibility. Recording this makes that argument evidence
   rather than an impression.
+- **Firmware version**, where a listing or seller can supply it. Expect this to
+  be **sparse** — most listings never power the unit up — but it is the only
+  dating handle available: firmware tracks serial position in our own fleet
+  (`002659`/`005794` run 1.0.0; `024991`/`024992` run 1.2.9). Enough of these
+  and the two edges of the serial gap can be dated, which is the concrete test
+  for the cancelled-production-run explanation.
 - **Lot size and seller provenance** — single vs `n`-unit lot; one seller with
   many units; farm / data-centre / estate liquidation wording. A concentrated
   holding is the leading non-skip explanation for the gap, and bulk lots are
