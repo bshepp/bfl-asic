@@ -118,6 +118,14 @@ model. Only explanation 1 leaves ~27,000 intact.
 No currently known non-Jalapeño serial fills it: the SGL line
 (`002397`–`009401`) and the `BF0050G` (`002845`) all sit below `013626`.
 
+**One external data point bears on explanation 2.** BFL demonstrably issued
+serial numbers far ahead of deliveries: the FTC complaint states that as of
+**August 2014** the company *"had yet to ship a single Monarch machine"* (¶31),
+while Monarch serials observed in the wild already reach `8664`. A company
+carrying 8,000+ numbers on a product it had delivered *none* of was not
+numbering conservatively. That is not proof of a skip — but it is the kind of
+behaviour a skip would sit inside.
+
 **Caveat.** The test assumes uniform sampling, and this sample is not uniform —
 it is whatever survived and got listed, so survivorship and listing behaviour
 can manufacture apparent gaps on their own. BFL's surviving public material is
@@ -129,14 +137,42 @@ b-roll and say nothing about serial numbering.
 This is the interesting part. A serial is stamped at **manufacture**. The FTC's
 case against Butterfly Labs was, in essence, that they *built* machines and
 didn't deliver them — allegedly using customers' pre-ordered hardware to
-self-mine, shipping few units, and taking ~$50M in orders (settled for
-**$38.6M** in 2016). BFL publicly claimed 50,000+ machines across five product
-generations; the FTC found no documentation supporting the figure.
+self-mine, and taking ~$50M in orders (settled for **$38.6M** in 2016). The
+complaint is specific about the delivery side:
 
-So a serial-indexed count is a **"how many were manufactured"** number — and the
-gap between that and actual customer deliveries is the scandal itself,
-quantified. ~27,000 Jalapeños built is plausible as the volume leader within
-(or beyond) BFL's disputed all-products claim.
+> "as of September 2013, Defendants had failed to ship mining machines to more
+> than **20,000 customers** who had paid for the equipment in full." (¶28)
+
+> "As of **August 2014**, Defendants had yet to ship a **single Monarch
+> machine**." (¶31)
+
+So a serial-indexed count is a **"how many were numbered at manufacture"**
+number — and the gap between that and actual customer deliveries is the scandal
+itself, quantified.
+
+**A cross-check worth not over-reading.** BFL publicly claimed *more than
+50,000 machines across five product generations*. Independent serial estimates
+for the three lines visible to this project land in the same neighbourhood:
+
+| line | estimate |
+|---|--:|
+| Jalapeño | ~27,200 |
+| Single (SGL pooled) | ~10,400 |
+| Monarch | ~9,100 |
+| **total** | **~46,700** |
+
+Two readings, and this study cannot choose between them:
+
+1. It **supports the method** — BFL's 50,000 was approximately *serials issued*,
+   which is exactly what this counts; the deception was in delivery, not in
+   numbering.
+2. It **proves nothing** — if BFL's numbering outran production, this estimate
+   inherits the identical bias. Two figures agreeing because they share a bias
+   is not corroboration.
+
+Note the complaint does **not** adjudicate the 50,000 *manufacturing* claim; it
+is an action about non-delivery. **No public filing states how many units were
+built.**
 
 ## Method notes & caveats
 
@@ -157,6 +193,12 @@ quantified. ~27,000 Jalapeños built is plausible as the volume leader within
   share the `BF00nnG` naming scheme. If BFL numbered a whole product family
   in one sequence, this figure counts **BF-series units**, not Jalapeños
   alone. The arithmetic barely moves; what it *counts* would change.
+- **No official production figure exists to check against.** The one document
+  that would carry a hardware inventory — the Temporary Receiver's report (Eric
+  L. Johnson, filed 2014-12-04) — was filed **under seal**, and the court denied
+  the FTC's receiver motion on 2014-12-12, winding the receivership down without
+  a public inventory. Serial-number estimation is, for now, the only available
+  route to a production count.
 - **Built ≠ shipped ≠ surviving.** This estimates units numbered at manufacture,
   not units delivered, and not units still running in 2026.
 
@@ -167,6 +209,20 @@ Own a Jalapeño, or spot one in a listing? The board serial is on the rear label
 and the two most valuable additions are **any serial above `025327`** or **below
 `002659`**. Open a GitHub issue (or `bfl-asic report-issue`) with the serial and
 we'll fold it in.
+
+## Sources
+
+- FTC v. BF Labs, Inc. — [complaint (PDF)](https://www.ftc.gov/system/files/documents/cases/140923utterflylabscmpt.pdf),
+  No. 4:14-cv-00815 (W.D. Mo., filed 2014-09-15). Quoted above at ¶28 and ¶31.
+- FTC — [case page, BF Labs, Inc.](https://www.ftc.gov/enforcement/cases-proceedings/142-3058/bf-labs-inc)
+  and [press release](https://www.ftc.gov/news-events/news/press-releases/2014/09/ftcs-request-court-halts-bogus-bitcoin-mining-operation).
+- [BF Labs Receivership — civil court documents](https://bflreceiver2.wordpress.com/civil-court-documents/)
+  (the receiver's two 2014-12-04 reports are listed as under seal).
+- Bitcoin Magazine — [$38.6M settlement](https://bitcoinmagazine.com/business/bitcoin-mining-company-butterfly-labs-settles-case-with-federal-trade-commission-for-m-1456419270)
+  (source of BFL's "50,000 machines / five product generations" claim).
+- Model codes cross-checked against surviving retail listings, e.g. `BF0050G` =
+  BFL "Little Single" SC, 60 GH/s ([WorthPoint](https://www.worthpoint.com/worthopedia/bf0050g-butterfly-labs-bfl-little-535504535)).
+- Serial observations and per-line estimates: [`research/ebay-survey/`](../research/ebay-survey/FINDINGS.md).
 
 ---
 

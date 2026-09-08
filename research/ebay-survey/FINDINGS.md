@@ -17,9 +17,10 @@ The BFL "Single" enclosure is shared by **BF0050G**, **SGL300G** and
 (An earlier claim here that 2 connectors implies SGL600G was **wrong**;
 `002845` is a BF0050G with two connectors.)
 
-Two naming generations are in play: **BF00nnG** (BF0005G Jalapeño 5 GH/s,
-BF0050G Single 50 GH/s) and **SGLnnnG** (SGL300G, SGL600G). Monarch uses a
-separate **4-digit** serial format entirely.
+Two naming generations are in play: **BF00nnG** and **SGLnnnG**. Surviving
+retail listings confirm the codes: `BF0005G` is the Jalapeño (5 GH/s) and
+**`BF0050G` is the BFL "Little Single" SC (60 GH/s)**. Monarch uses a separate
+**4-digit** serial format entirely.
 
 ## Observed units
 
@@ -66,12 +67,20 @@ it is simply expected. **Interleaved is the better-supported hypothesis.**
 Cheapest route to hardware is clearly **multi-unit lots**. Monarch is the
 cheapest per unit observed (~$35).
 
-## Caveat that limits the Monarch estimate
+## Caveats that limit the Monarch estimate
 
 German-tank assumes independent, uniform sampling. **Four of the six Monarch
 serials came from a single 4-unit lot** — lot-mates are not independent draws,
 so the Monarch figure is the weakest here. The same caveat already applies to
 the published Jalapeño census, where `024991`/`024992` are lot-mates.
+
+**And Monarch numbering ran far ahead of delivery.** The FTC complaint states
+that as of **August 2014** BFL *"had yet to ship a single Monarch machine"*
+(¶31) — one month before the company was shut down — yet observed Monarch
+serials already reach `8664`. So Monarch serials measure *numbering*, and quite
+possibly not even manufacture; the units that reached the wild presumably did so
+through the wind-down. Treat ~9,100 as an upper-bound-ish figure for numbers
+issued, not a count of machines built.
 
 ## Open question with real consequences
 
@@ -80,3 +89,17 @@ Jalapeño and Single serial ranges **overlap** (Jalapeño 2659–25327, Single
 one sequence per *family* (or globally), then the published "~28,000
 Jalapeños" is really "~28,000 **BF-series units**" — the number barely moves,
 but **what it counts changes**. See `analyze.py` H1/H2/H3.
+
+## Sources
+
+- FTC v. BF Labs, Inc. — [complaint (PDF)](https://www.ftc.gov/system/files/documents/cases/140923utterflylabscmpt.pdf),
+  No. 4:14-cv-00815 (W.D. Mo., 2014-09-15); ¶28 (20,000+ paid-but-unshipped
+  customers as of Sept 2013) and ¶31 (no Monarch shipped as of Aug 2014).
+- [BF Labs Receivership — civil court documents](https://bflreceiver2.wordpress.com/civil-court-documents/);
+  the Temporary Receiver's two 2014-12-04 reports are **under seal**, so no
+  public hardware inventory exists.
+- `BF0050G` = BFL "Little Single" SC, 60 GH/s — surviving retail listing
+  ([WorthPoint](https://www.worthpoint.com/worthopedia/bf0050g-butterfly-labs-bfl-little-535504535)).
+- Prices/status in the table above are read from the listing photos in this
+  folder; the price-free production study lives in
+  [`docs/production-census.md`](../../docs/production-census.md).
