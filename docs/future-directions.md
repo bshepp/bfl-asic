@@ -130,11 +130,18 @@ own measurements support it:
 - **The enclosures are machined aluminium**, not folded sheet or moulded
   plastic.
 
-But one observation cuts the other way and is worth keeping: the **Single
-chassis is shared across at least three SKUs** (`BF0050G`, `SGL300G`,
-`SGL600G` — externally identical, distinguished only by connector count). That
-is deliberate tooling amortisation, i.e. someone *was* thinking about
-manufacturing economics.
+One observation cuts the other way: the **Single chassis is shared across at
+least three SKUs** (`BF0050G`, `SGL300G`, `SGL600G` — externally identical,
+distinguished only by how many 6-pin connectors are populated). Listing photos
+show the 300G panel carries **both apertures**, identical in shape and spacing;
+the second is simply left unpopulated. So it is a **common panel, populated to
+order** — the second port is not cut in later.
+
+Resist reading that as foresight. "Deliberate tooling amortisation" assumes
+planning we cannot demonstrate, and an equally good explanation is mundane:
+**order a batch of shells, then adapt them as the product changes or
+undersells.** A common panel is consistent with both, so on its own it
+discriminates nothing.
 
 **Why it matters.** A pure take-the-money operation optimises for minimum unit
 cost; it does not tool up machined aluminium or specify an AVR32. So build
@@ -159,6 +166,19 @@ defrauded".
   box around one?
 - **Parts sharing:** which panels are common across the Jalapeño cube, the
   Single chassis and the Monarch card bracket.
+- **Anodising as a record of process order.** Anodising is a *conversion
+  coating*: it exists only where the surface was present in the tank. So any
+  machining done afterwards leaves **bare aluminium**. Inspect the interior
+  edges of the second power-supply aperture under a loupe — **anodised edges**
+  mean the aperture predates the tank (built that way); **bright, bare edges**
+  mean it was cut into an already-finished shell (surplus stock adapted). This
+  is a direct, physical record of which happened, and no listing photo can
+  resolve it — the recess is in shadow either way.
+- **Population vs. provision.** Behind an unpopulated aperture, check whether
+  the **PCB carries unpopulated footprints** for the missing connector, and
+  whether **mounting bosses/standoffs** for it exist in the shell. A common PCB
+  and common shell differentiated only by population is a very different story
+  from a board revision that never had the second supply.
 - **The payoff number:** an estimated **per-unit enclosure cost**, compared with
   the retail price and with what a cost-optimised 2013 product would have used.
 
@@ -166,3 +186,6 @@ Three chassis families are already available to inspect: the Jalapeño cube (two
 in hand), the Single/SGL box (photographed in `research/ebay-survey/`), and the
 Monarch bare card.
 
+A cheap way in: the survey shows **SGL300G units clear at $40–60**, so a
+decisive teardown specimen costs less than a night out. We own Jalapeños but no
+Single, so this is a "when one is acquired" item.
