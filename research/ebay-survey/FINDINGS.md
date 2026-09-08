@@ -105,11 +105,19 @@ fields have proven to matter and are not being recorded:
   holding is the leading non-skip explanation for the gap, and bulk lots are
   precisely where in-window serials would hide.
 
-**Highest-value single action:** read the serials off the 3-unit Jalapeño lot
-(`jalapeno-3unites-unknownserials-sold-220.webp` plus its two box-art shots).
-Three unknown serials, and a multi-unit lot is exactly the kind of listing the
-concentration hypothesis predicts. Any of them landing inside `013626`–`022662`
-would be decisive.
+**Note on the multi-unit lots.** The 3-unit Jalapeño lot and the 4-unit Monarch
+lot have **no serials visible in their listing photos** — the serials are not
+merely unread, they were never pictured. Those listings are still useful data
+points: two multi-unit lots in a 23-listing sample is evidence that **bulk
+movement is common**, which is the mechanism the concentrated-holding
+explanation requires.
+
+**Open channel:** serials for lots like these have to come from **seller (and
+where possible buyer) outreach** rather than from the photos. A rear-label photo
+is all that is needed — see the "Contribute a data point" section of
+[`docs/production-census.md`](../../docs/production-census.md). Ask for the
+**model code as well as the serial**, since the same chassis housed BF0050G,
+SGL300G and SGL600G.
 
 ## Sources
 
