@@ -52,21 +52,77 @@ exists.
   almost the same point on the assembly line. This is the cleanest possible
   A/B: production-time drift is controlled out, so any difference between them
   is *pure unit-to-unit silicon variation*.
-- **A large gap (`013626` → `022662`, ~9,000).** Nearly 5× the average gap —
-  possibly sampling sparseness, possibly a **batch boundary or production
-  pause**. The units above it are the late-production cohort most likely to
-  differ (for example, a later firmware build). Three later additions
-  (`006068`, `023617`, `024017`) all landed *outside* it, so the gap is still
-  empty at `k = 13` — modest further support for a real discontinuity rather
-  than sparse sampling.
+- **A large gap (`013626` → `022662`, ~9,000).** Nearly 5× the average gap, and
+  it stayed empty as the sample grew to `k = 13` — `006068`, `023617` and
+  `024017` all landed outside it. The units above it are the late-production
+  cohort most likely to differ (for example, a later firmware build). This gap
+  is large enough to test rather than eyeball — see **Is the ~9,000 gap real?**
+  below.
 - **An even tighter pair — `024991` / `024992`, *one* apart.** Acquired
   together from a single lot, which proves multi-unit lots were numbered
-  **consecutively**. Both landed in the high cluster, so the 13.6k→22.7k gap
-  *stayed empty* as the sample grew — a mild nudge toward a real numbering gap,
-  though still far from conclusive.
+  **consecutively**.
 - **Real binning drift is already visible** between our two units: `002659`
   self-reports 27 engines at ~200 MHz; `005794` reports 29 engines at ~214 MHz
   (and a higher estimated hashrate). Same architecture, different bin.
+
+## Is the ~9,000 gap real?
+
+The largest gap in the sample — `013626` → `022662`, **9,036 wide** — is **4.8×
+the mean gap** and spans **39.9% of the whole observed range**. The next largest
+is 3,361. That is lopsided enough to test rather than eyeball.
+
+For `k` serials the largest spacing has a known distribution under uniform
+sampling. Here:
+
+> **P(largest gap ≥ 9,036 | uniform sampling) ≈ 0.045**
+
+The closed form and a 400,000-trial Monte Carlo agree to three decimals
+(`scripts/production_census_gap_test.py`). Because this is the distribution of
+the *maximum* spacing, it already accounts for us having gone looking at the
+biggest gap — it is not a post-hoc artefact. So the gap is unlikely under plain
+sparse sampling, though at roughly 1-in-22 it is not excluded.
+
+Three explanations fit:
+
+1. **Chance.** p ≈ 0.045 — unlikely, not excluded.
+2. **A genuine skip** — the block was never issued. Candidates: a batch or
+   contract-manufacturer boundary, or numbering deliberately advanced. For a
+   company the FTC found could not support its claim of 50,000+ machines, a
+   serial jump would flatter the production figure. That is a motive, not
+   evidence.
+3. **The block belongs to other BF-series products.** A `BF0050G` Single is
+   confirmed at `002845` — *inside* the Jalapeño range — sharing the `BF00nnG`
+   naming scheme, and BFL shipped Singles in volume. If the family shares one
+   sequence, `013626`–`022662` may simply be a stretch dominated by a different
+   model, which would be invisible here because this sample is collected by
+   looking for Jalapeños.
+
+What a skip would cost:
+
+| | units |
+|---|--:|
+| contiguous estimate | ~27,200 |
+| minus a 9,036 skip | **~18,200** |
+| re-fit on the gap-removed serials | ~17,400 built, + 9,036 never issued |
+
+**Explanations 2 and 3 both push the Jalapeño-only count down**, disagreeing
+only about where the missing units went — never made, or made as a different
+model. Only explanation 1 leaves ~27,000 intact.
+
+**How to settle it.** Find any BF-series serial inside `013626`–`022662`:
+
+- a `BF0050G` or other non-Jalapeño BF unit → explanation 3; no skip
+- a Jalapeño → 2 and 3 both weaken; it was sparse sampling after all
+- continued emptiness there while serials accumulate elsewhere → explanation 2
+
+No currently known non-Jalapeño serial fills it: the SGL line
+(`002397`–`009401`) and the `BF0050G` (`002845`) all sit below `013626`.
+
+**Caveat.** The test assumes uniform sampling, and this sample is not uniform —
+it is whatever survived and got listed, so survivorship and listing behaviour
+can manufacture apparent gaps on their own. BFL's surviving public material is
+no help either: the archived 2013 production videos are effectively wordless
+b-roll and say nothing about serial numbering.
 
 ## Serials count units *built*, not *shipped*
 
