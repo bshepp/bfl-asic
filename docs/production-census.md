@@ -82,7 +82,7 @@ the *maximum* spacing, it already accounts for us having gone looking at the
 biggest gap — it is not a post-hoc artefact. So the gap is unlikely under plain
 sparse sampling, though at roughly 1-in-22 it is not excluded.
 
-Three explanations fit:
+Four explanations fit:
 
 1. **Chance.** p ≈ 0.045 — unlikely, not excluded.
 2. **A genuine skip** — the block was never issued. Candidates: a batch or
@@ -96,6 +96,17 @@ Three explanations fit:
    sequence, `013626`–`022662` may simply be a stretch dominated by a different
    model, which would be invisible here because this sample is collected by
    looking for Jalapeños.
+4. **A large batch went to a single holder.** BFL numbered multi-unit lots
+   **consecutively** — the `024991`/`024992` pair above proves it — so one large
+   buyer receives one large *contiguous* block. Units concentrated in a single
+   holding never disperse to individual owners, and so never appear as
+   individual listings, working or not. The most likely such holder is **BFL
+   itself**: the FTC's central finding was that the company built machines and
+   mined on them rather than shipping them, and BFL's own Fall-2013 video shows
+   its farm dashboard (`BFL19`–`BFL27`+) running while 20,000+ paid customers
+   had received nothing. A retained block would have been liquidated in bulk or
+   scrapped at the wind-down — leaving a hole in the *retail* record without any
+   hole in *production*.
 
 What a skip would cost:
 
@@ -105,15 +116,30 @@ What a skip would cost:
 | minus a 9,036 skip | **~18,200** |
 | re-fit on the gap-removed serials | ~17,400 built, + 9,036 never issued |
 
-**Explanations 2 and 3 both push the Jalapeño-only count down**, disagreeing
-only about where the missing units went — never made, or made as a different
-model. Only explanation 1 leaves ~27,000 intact.
+What each explanation implies for the count:
 
-**How to settle it.** Find any BF-series serial inside `013626`–`022662`:
+| explanation | Jalapeños built |
+|---|--:|
+| 1 — chance | ~27,200 (unchanged) |
+| 2 — genuine skip | **~18,200** |
+| 3 — other BF products in the band | ~27,200 BF-series, fewer Jalapeños |
+| 4 — batch to one holder | ~27,200 (unchanged) |
 
-- a `BF0050G` or other non-Jalapeño BF unit → explanation 3; no skip
-- a Jalapeño → 2 and 3 both weaken; it was sparse sampling after all
-- continued emptiness there while serials accumulate elsewhere → explanation 2
+Only explanation 2 moves the headline number. Explanation 3 changes what that
+number *counts*. Explanations 1 and 4 leave it intact and merely explain why the
+band is invisible to a survey built from retail listings.
+
+**How to settle it.** Any BF-series serial inside `013626`–`022662` is decisive
+against a skip. What *kind* of find discriminates the rest:
+
+- a `BF0050G` or other non-Jalapeño BF unit → explanation 3
+- **several in-window serials arriving together**, in one lot or from one
+  seller → explanation 4, a concentrated holding breaking up
+- a single in-window Jalapeño arriving on its own → explanation 1
+- continued emptiness while serials accumulate elsewhere → explanation 2
+
+Bulk lots therefore matter more than singles: a concentrated holding is exactly
+where in-window serials would be hiding.
 
 No currently known non-Jalapeño serial fills it: the SGL line
 (`002397`–`009401`) and the `BF0050G` (`002845`) all sit below `013626`.
@@ -126,11 +152,16 @@ carrying 8,000+ numbers on a product it had delivered *none* of was not
 numbering conservatively. That is not proof of a skip — but it is the kind of
 behaviour a skip would sit inside.
 
-**Caveat.** The test assumes uniform sampling, and this sample is not uniform —
-it is whatever survived and got listed, so survivorship and listing behaviour
-can manufacture apparent gaps on their own. BFL's surviving public material is
-no help either: the archived 2013 production videos are effectively wordless
-b-roll and say nothing about serial numbering.
+**Caveat — and a correction to it.** The test assumes uniform sampling, and this
+sample is not uniform. The obvious worry would be *survivorship*: a bad batch
+died and vanished. That does **not** hold here — the secondary market lists dead
+units freely as "for parts / untested", so failure changes a unit's price, not
+its visibility. The bias that does survive scrutiny is **concentration**: units
+that never dispersed to individual owners are never individually listed, working
+or not. That is explanation 4, and it is why this study measures *units that
+reached individual owners* rather than units built. BFL's surviving public
+material is no help either: the archived 2013 production videos are effectively
+wordless b-roll and say nothing about serial numbering.
 
 ## Serials count units *built*, not *shipped*
 

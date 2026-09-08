@@ -90,6 +90,27 @@ one sequence per *family* (or globally), then the published "~28,000
 Jalapeños" is really "~28,000 **BF-series units**" — the number barely moves,
 but **what it counts changes**. See `analyze.py` H1/H2/H3.
 
+## Fields to capture on the next pass
+
+Filenames currently encode **model / serial / status / price**. Two further
+fields have proven to matter and are not being recorded:
+
+- **Condition** — `working` / `for parts` / `untested`. The prevalence of
+  "for parts / untested" listings is what **rules out a quality explanation**
+  for the Jalapeño serial gap: dead units still get listed, so failure changes a
+  unit's price, not its visibility. Recording this makes that argument evidence
+  rather than an impression.
+- **Lot size and seller provenance** — single vs `n`-unit lot; one seller with
+  many units; farm / data-centre / estate liquidation wording. A concentrated
+  holding is the leading non-skip explanation for the gap, and bulk lots are
+  precisely where in-window serials would hide.
+
+**Highest-value single action:** read the serials off the 3-unit Jalapeño lot
+(`jalapeno-3unites-unknownserials-sold-220.webp` plus its two box-art shots).
+Three unknown serials, and a multi-unit lot is exactly the kind of listing the
+concentration hypothesis predicts. Any of them landing inside `013626`–`022662`
+would be decisive.
+
 ## Sources
 
 - FTC v. BF Labs, Inc. — [complaint (PDF)](https://www.ftc.gov/system/files/documents/cases/140923utterflylabscmpt.pdf),
