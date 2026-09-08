@@ -82,14 +82,32 @@ the *maximum* spacing, it already accounts for us having gone looking at the
 biggest gap — it is not a post-hoc artefact. So the gap is unlikely under plain
 sparse sampling, though at roughly 1-in-22 it is not excluded.
 
+*A note on reasoning.* What follows is inferred from the **serial distribution
+alone**. Butterfly Labs' regulatory history is context, not evidence: the FTC
+action concerned non-delivery and marketing claims, and is silent on serial
+numbering. Explanations are weighed on what the numbers support, not on the
+company's eventual reputation.
+
 Four explanations fit:
 
 1. **Chance.** p ≈ 0.045 — unlikely, not excluded.
-2. **A genuine skip** — the block was never issued. Candidates: a batch or
-   contract-manufacturer boundary, or numbering deliberately advanced. For a
-   company the FTC found could not support its claim of 50,000+ machines, a
-   serial jump would flatter the production figure. That is a motive, not
-   evidence.
+2. **A block that was never issued.** Serial ranges are routinely *allocated*
+   before they are consumed, so a reserved block that never got built leaves a
+   permanent hole. Ordinary causes, roughly in order of plausibility: an
+   ERP/MRP block reserved per work order, site or SKU and never used; a
+   **production run cancelled or cut** — BFL announced Monarch around August
+   2013, so serials pre-allocated to a Jalapeño batch dropped in that pivot
+   would simply never be issued; a second site or contract manufacturer with
+   its own range; an RMA/replacement reserve that went barely used; or plain
+   clerical error — a counter reset, a misconfigured increment, a botched
+   migration. For a company that missed nearly every date it published,
+   disorganisation is a well-evidenced candidate.
+
+   A *deliberate* inflation is the **least** supported version of this. Serials
+   on rear labels were never a published production figure and nobody was
+   auditing the sequence, so a skip would have deceived no one — the hypothesis
+   has no beneficiary. It is also unevidenced: the FTC record says nothing
+   whatever about serial numbering.
 3. **The block belongs to other BF-series products.** A `BF0050G` Single is
    confirmed at `002845` — *inside* the Jalapeño range — sharing the `BF00nnG`
    naming scheme, and BFL shipped Singles in volume. If the family shares one
@@ -100,13 +118,12 @@ Four explanations fit:
    **consecutively** — the `024991`/`024992` pair above proves it — so one large
    buyer receives one large *contiguous* block. Units concentrated in a single
    holding never disperse to individual owners, and so never appear as
-   individual listings, working or not. The most likely such holder is **BFL
-   itself**: the FTC's central finding was that the company built machines and
-   mined on them rather than shipping them, and BFL's own Fall-2013 video shows
-   its farm dashboard (`BFL19`–`BFL27`+) running while 20,000+ paid customers
-   had received nothing. A retained block would have been liquidated in bulk or
-   scrapped at the wind-down — leaving a hole in the *retail* record without any
-   hole in *production*.
+   individual listings, working or not — a hole in the *retail* record with no hole
+   in *production*. Any bulk purchaser produces this: a mining operation, a
+   reseller, a distributor, or an overseas buyer. BFL itself is one candidate
+   among them, since it demonstrably retained machines, but **nothing in the
+   serial data points to any particular holder** — the distribution shows only
+   that a block is missing from the resale market, not who has it.
 
 What a skip would cost:
 
@@ -121,7 +138,7 @@ What each explanation implies for the count:
 | explanation | Jalapeños built |
 |---|--:|
 | 1 — chance | ~27,200 (unchanged) |
-| 2 — genuine skip | **~18,200** |
+| 2 — block never issued | **~18,200** |
 | 3 — other BF products in the band | ~27,200 BF-series, fewer Jalapeños |
 | 4 — batch to one holder | ~27,200 (unchanged) |
 
@@ -144,13 +161,13 @@ where in-window serials would be hiding.
 No currently known non-Jalapeño serial fills it: the SGL line
 (`002397`–`009401`) and the `BF0050G` (`002845`) all sit below `013626`.
 
-**One external data point bears on explanation 2.** BFL demonstrably issued
-serial numbers far ahead of deliveries: the FTC complaint states that as of
-**August 2014** the company *"had yet to ship a single Monarch machine"* (¶31),
-while Monarch serials observed in the wild already reach `8664`. A company
-carrying 8,000+ numbers on a product it had delivered *none* of was not
-numbering conservatively. That is not proof of a skip — but it is the kind of
-behaviour a skip would sit inside.
+**A note on what serials track.** BFL issued serial numbers independently of
+deliveries: the complaint records that as of **August 2014** the company *"had
+yet to ship a single Monarch machine"* (¶31), while Monarch serials observed in
+the wild already reach `8664`. That is a caution about *interpretation* — a
+serial-derived figure counts **numbering**, which need not track delivery, and
+need not strictly track completed manufacture either. It does not favour any one
+of the four explanations above.
 
 **Caveat — and a correction to it.** The test assumes uniform sampling, and this
 sample is not uniform. The obvious worry would be *survivorship*: a bad batch
