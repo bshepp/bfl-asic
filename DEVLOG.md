@@ -1,5 +1,74 @@
 # Development Log
 
+## 2026-09-08 — eBay survey: a third Single model, three new serials, and the ~9,000 gap put on trial
+
+A data-analysis evening, no hardware powered on. An operator survey of retail
+listings turned into a model discovery, three census additions, and a proper
+statistical test of the run's biggest anomaly.
+
+- **Survey ingested (23 listing photos, `research/ebay-survey/`).** The BFL
+  "Single" chassis houses **three** models, not one — `BF0050G` (Little Single,
+  60 GH/s), `SGL300G`, `SGL600G` — externally identical. Partial external tell:
+  **one** populated 6-pin PCIe aperture means SGL300G; **two** means BF0050G *or*
+  SGL600G, label required. Their serials **interleave within 448 of each other
+  across models**, favouring one shared Single-line sequence (~10,400 pooled)
+  over per-SKU sequences (~15,800 split).
+
+- **Census 10 → 13 serials.** `006068`, `023617`, `024017` added (`013626` is now
+  photo-backed too). Estimate **~27,846 ±2,785 → ~27,216 ±2,094**, ~25% tighter.
+  The census figure turned out to have **no generator** and was silently going
+  stale; added `scripts/production_census_figure.py` and regenerated it.
+
+- **First Monarch and Single censuses.** Monarch: 6 serials (4-digit, its own
+  sequence) → ~9,100 — but **4 of the 6 came from a single lot**, so lot-mates
+  are not independent draws and it is flagged as the weakest figure here.
+
+- **The gap put on trial.** `013626` → `022662` is **9,036 wide** — 4.8x the mean
+  gap, 39.9% of the observed span. Maximum-spacing test:
+  **P(largest gap >= 9,036 | uniform) = 0.045**, closed form and a 400k-trial
+  Monte Carlo agreeing to three decimals
+  (`scripts/production_census_gap_test.py`). Four explanations documented with a
+  consequences table; only a genuine skip moves the headline (~27,200 → ~18,200).
+
+- **External record chased to the end.** Read the FTC complaint in full: it
+  contains **no mention of serial numbers, production counts, or model codes** —
+  it is a non-delivery and deceptive-marketing action, not a production audit.
+  The one filing that would carry a hardware inventory (Temporary Receiver's two
+  reports, 2014-12-04) is **under seal**, and the court denied the receiver
+  motion, so **no public production figure exists**. Cited para 28 (20,000+ paid,
+  unshipped) and para 31 (no Monarch shipped as of Aug 2014). Also **corrected an
+  unsupportable line**: the doc had claimed the FTC "found no documentation
+  supporting" BFL's 50,000-machine figure — the complaint does not address it.
+
+- **Two operator corrections that materially improved the analysis.**
+  (1) Many units sell *"for parts / untested"*, so **failure does not remove a
+  unit from the sample** — that defeats the survivorship caveat and replaces it
+  with **concentration** (units that never dispersed to individual owners are
+  never individually listed), which became a fourth explanation.
+  (2) *Reason from the serial distribution, not from BFL's reputation.*
+  Explanation 2 was reframed neutrally as "a block never issued" with mundane
+  causes first (reserved-but-unconsumed ERP block, cancelled run, second contract
+  manufacturer, RMA reserve, clerical error); explanation 4 stopped naming BFL as
+  the likely holder. The strongest argument in the section fell out of that
+  discipline: a deliberate skip **has no beneficiary**, since serials were never
+  a published figure and nobody audited the sequence.
+
+- **Stopping rule recorded.** With the window pre-registered, 8 further serials
+  all missing it gives p < 0.05; 12 gives p < 0.01; 18 gives p < 0.001; 35 gives
+  ~10^-6. The existing 13 do not count (circular). Folded into the gap-test
+  script and the census's "Contribute a data point" section.
+
+- **Build quality opened as a research thread** (`docs/future-directions.md`).
+  Over-engineering is supported by our own measurements: fan stepped to **off**
+  under load topped out ~**41 °C** and never erred; an **AT32UC3A1256** AVR32
+  with JTAG to shuttle 60-byte packets at 115200 baud; machined aluminium
+  enclosures. New physical test recorded: **anodising is a conversion coating**,
+  so a machined edge's finish records process order — anodised interior edges on
+  the second power aperture mean built that way, **bare** edges mean cut into an
+  already-finished shell. No listing photo can resolve it (the recess is in
+  shadow either way); it needs a unit in hand. We own no Single; they clear at
+  $40-60.
+
 ## 2026-09-02 — device #4 (GekkoScience 2Pac) + 2nd Jalapeño `024992` (fw 1.2.9): v2 protocol, per-die yield validates the MAP
 
 Two devices on the bench in one evening, and a parser bug that turned into the

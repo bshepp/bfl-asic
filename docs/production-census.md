@@ -252,11 +252,42 @@ built.**
 
 ## Contribute a data point
 
-Own a Jalapeño, or spot one in a listing? The board serial is on the rear label
-(a photo is enough). A confirmed serial sharpens this estimate at zero cost —
-and the two most valuable additions are **any serial above `025327`** or **below
-`002659`**. Open a GitHub issue (or `bfl-asic report-issue`) with the serial and
-we'll fold it in.
+Own a Jalapeño, or spot one in a listing? The rear label carries both the
+**model code** and the **serial** — a photo of it is enough. Add the **firmware
+version** if the unit powers up: it is the only dating handle available, since
+firmware tracks serial position (`002659`/`005794` run 1.0.0; `024991`/`024992`
+run 1.2.9).
+
+Three finds are worth far more than a random serial:
+
+1. **Any BF-series serial inside `013626`–`022662`.** This window is a
+   **pre-registered test** — the ~9,000-wide gap analysed above. A single serial
+   landing inside it settles the question outright. If *several* arrive together
+   from one seller or one lot, that points to a concentrated holding rather than
+   chance. This includes non-Jalapeño `BF00nnG` units.
+2. **Any serial above `025327`** — raises the confirmed ceiling, the single most
+   powerful addition to the estimate.
+3. **Any serial below `002659`** — pins the start of the run.
+
+**When does a still-empty window become conclusive?** Under the null (no skip,
+uniform sampling) a new serial lands inside it with probability ≈ 0.33, so every
+one that misses is evidence:
+
+| further serials, all missing | p | census size |
+|--:|--:|--:|
+| 8 | < 0.05 | 21 |
+| 12 | < 0.01 | 25 |
+| 18 | < 0.001 | 31 |
+| 35 | ~10⁻⁶ | 48 |
+
+The existing thirteen do **not** count toward this: the window was derived from
+them, so reusing them would be circular. Only serials found from here on are
+evidence. Reproduce with `scripts/production_census_gap_test.py`. (It assumes
+uniform sampling, which a listings-derived sample is not — treat the counts as a
+floor on the data needed.)
+
+Open a GitHub issue (or `bfl-asic report-issue`) with the serial and we'll fold
+it in.
 
 ## Sources
 

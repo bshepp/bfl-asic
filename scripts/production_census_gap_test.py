@@ -36,6 +36,11 @@ def monte_carlo_p(frac: float, k: int, trials: int, seed: int) -> float:
     return hits / trials
 
 
+def est_for_power(serials, k):
+    """German-tank point estimate; the denominator for p_hit."""
+    return serials[-1] + (serials[-1] - serials[0]) / (k - 1)
+
+
 def main() -> None:
     s = sorted(set(SERIALS))
     k = len(s)
@@ -62,6 +67,29 @@ def main() -> None:
     compressed = sorted(x if x < lo else x - g for x in s)
     cspan = compressed[-1] - compressed[0]
     est_c = compressed[-1] + cspan / (len(compressed) - 1)
+    print()
+    print("stopping rule -- if the window STAYS empty, how much more is needed?")
+    print("  The window is now PRE-REGISTERED, so future serials are a clean")
+    print("  test. The existing serials do NOT count toward it: the window was")
+    print("  derived from them, so reusing them would be circular.")
+    est_p = est_for_power(s, k)
+    p_hit = g / est_p
+    p_miss = 1 - p_hit
+    print(f"  a new serial lands inside it with p = {g:,}/{est_p:,.0f}"
+          f" = {p_hit:.3f}")
+    print()
+    print(f"  {'new serials':>12} {'p-value':>11} {'census size':>12}")
+    for m in (3, 5, 8, 12, 18, 23, 35):
+        print(f"  {m:>12} {p_miss ** m:>11.5f} {k + m:>12}")
+    print()
+    print("  thresholds:")
+    for thr, lab in ((0.05, "unlikely"), (0.01, "strong"),
+                     (0.001, "very strong"), (1e-6, "~impossible")):
+        m = math.ceil(math.log(thr) / math.log(p_miss))
+        print(f"    p < {thr:<7g} {lab:<13} {m:>3} more  (census -> {k + m})")
+    print()
+    print("  NOTE: assumes uniform sampling. The real sample is whatever got")
+    print("  listed, so treat these as a floor on the data needed, not a promise.")
     print("\nif the block was never issued:")
     print(f"  contiguous estimate            ~{est:,.0f}")
     print(f"  minus the skipped block        ~{est - g:,.0f}")
